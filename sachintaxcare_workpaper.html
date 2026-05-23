@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Form 1040 (2025) — SachinTaxCare Workpaper</title>
+<style>
+/* ── Courier Prime for authentic typewriter feel ─────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap');
+
+:root {
+  --ink: #000;
+  --irs-blue: #1a3364;
+  --irs-lt: #e8edf5;
+  --border: #000;
+  --rule: #555;
+  --field-bg: #fffef8;
+  --entry: #1a1a8a;   /* typewritten entries in dark blue */
+  --red: #8b0000;
+  --green: #004d00;
+  --warn-bg: #fffbe6;
+  --warn-border: #c8a000;
+  --page-bg: #d0cfc8;
+  --mono: 'Courier Prime', 'Courier New', monospace;
+  --sans: 'Source Sans 3', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--page-bg);
+  font-family: var(--mono);
+  font-size: 10pt;
+  color: var(--ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.toolbar {
+  background: var(--irs-blue);
+  color: #fff;
+  padding: 9px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  font-family: var(--sans);
+}
+.tb-brand { font-size: 13px; font-weight: 700; letter-spacing: .3px; }
+.tb-sub   { font-size: 10px; opacity: .75; margin-top: 1px; }
+.tb-right { display: flex; gap: 8px; align-items: center; }
+.tb-id    { font-family: var(--mono); font-size: 11px; opacity: .85; }
+.btn { padding: 6px 14px; border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; font-family: var(--sans); }
+.btn-print { background: #fff; color: var(--irs-blue); }
+.btn-back  { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }
+
+/* ── Page wrapper ────────────────────────────────────────────────────────── */
+.pages { max-width: 900px; margin: 24px auto; padding: 0 16px 48px; }
+
+/* ── Form page (letter-size card) ───────────────────────────────────────── */
+.f-page {
+  background: #fff;
+  border: 1.5px solid #000;
+  margin-bottom: 28px;
+  padding: 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,.18);
+  page-break-after: always;
+}
+.f-page:last-child { page-break-after: avoid; }
+
+/* ── IRS-style page header ───────────────────────────────────────────────── */
+.irs-header {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  border-bottom: 2px solid #000;
+  align-items: stretch;
+}
+.irs-dept {
+  background: var(--irs-blue);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 6.5pt;
+  font-weight: 700;
+  padding: 6px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  letter-spacing: .2px;
+  line-height: 1.45;
+  text-transform: uppercase;
+  border-right: 2px solid #000;
+}
+.irs-form-id {
+  padding: 5px 10px 4px;
+  border-right: 2px solid #000;
+}
+.irs-form-num {
+  font-family: var(--sans);
+  font-size: 26pt;
+  font-weight: 700;
+  color: var(--irs-blue);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.irs-form-title {
+  font-family: var(--sans);
+  font-size: 8pt;
+  font-weight: 700;
+  margin-top: 1px;
+  color: #000;
+}
+.irs-form-period {
+  font-family: var(--sans);
+  font-size: 6.5pt;
+  color: #444;
+  margin-top: 2px;
+}
+.irs-omb {
+  padding: 5px 10px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.irs-year-num {
+  font-family: var(--sans);
+  font-size: 30pt;
+  font-weight: 900;
+  color: var(--irs-blue);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.irs-omb-num {
+  font-family: var(--sans);
+  font-size: 7pt;
+  color: #555;
+}
+
+/* ── Page 2+ mini-header ─────────────────────────────────────────────────── */
+.mini-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid #000;
+  padding: 4px 12px;
+  background: var(--irs-lt);
+}
+.mini-form-ref { font-family: var(--sans); font-size: 9pt; font-weight: 700; color: var(--irs-blue); }
+.mini-name-ssn { font-family: var(--mono); font-size: 9pt; }
+
+/* ── Form body ───────────────────────────────────────────────────────────── */
+.f-body { padding: 0 12px 10px; }
+
+/* ── Taxpayer info grid ──────────────────────────────────────────────────── */
+.tp-grid {
+  display: grid;
+  border: 1px solid #000;
+  margin: 8px 0 0;
+}
+.tp-row-3 { grid-template-columns: 1fr 1fr 160px; }
+.tp-row-2 { grid-template-columns: 1fr 160px; }
+.tp-row-1 { grid-template-columns: 1fr; }
+.tp-cell {
+  padding: 3px 6px 4px;
+  border-right: 1px solid #000;
+  min-height: 28px;
+}
+.tp-cell:last-child { border-right: none; }
+.tp-label {
+  font-family: var(--sans);
+  font-size: 6.5pt;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.tp-value {
+  font-family: var(--mono);
+  font-size: 10pt;
+  color: var(--entry);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-divider { border-top: 1px solid #000; }
+
+/* ── Filing status row ───────────────────────────────────────────────────── */
+.fs-section {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.fs-label { font-family: var(--sans); font-size: 7.5pt; font-weight: 700; margin-right: 6px; }
+.fs-chip  { display: flex; align-items: center; gap: 3px; font-family: var(--sans); font-size: 8pt; margin-right: 10px; }
+.fs-box {
+  width: 12px; height: 12px;
+  border: 1.5px solid #000;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9pt; font-weight: 700; font-family: var(--mono);
+  flex-shrink: 0;
+}
+.fs-box.checked { background: #000; color: #fff; }
+
+/* ── Dependents table ────────────────────────────────────────────────────── */
+.dep-section { border: 1px solid #000; border-top: none; }
+.dep-section-hdr {
+  background: var(--irs-lt);
+  border-bottom: 1px solid #000;
+  padding: 2px 8px;
+  font-family: var(--sans);
+  font-size: 7.5pt;
+  font-weight: 700;
+}
+.dep-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+.dep-table th {
+  font-family: var(--sans);
+  font-size: 6.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 2px 6px;
+  background: var(--irs-lt);
+  border-right: 1px solid #bbb;
+  border-bottom: 1px solid #000;
+  text-align: left;
+}
+.dep-table th:last-child { border-right: none; text-align: center; }
+.dep-table td {
+  padding: 3px 6px;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  font-family: var(--mono);
+  color: var(--entry);
+}
+.dep-table td:last-child { border-right: none; text-align: center; }
+.dep-table tr:last-child td { border-bottom: none; }
+.dep-empty { padding: 5px 8px; font-family: var(--sans); font-size: 8pt; color: #999; font-style: italic; }
+
+/* ── Section headers (IRS band style) ───────────────────────────────────── */
+.sec-hdr {
+  background: var(--irs-blue);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 8pt;
+  font-weight: 700;
+  padding: 3px 12px;
+  margin-top: 6px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+.sec-hdr.gold {
+  background: #7a5c00;
+}
+.sec-hdr.dark {
+  background: #222;
+}
+
+/* ── Line rows ───────────────────────────────────────────────────────────── */
+.lines { border: 1px solid #000; border-top: none; }
+.line-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 130px;
+  border-bottom: 1px solid #ddd;
+  min-height: 21px;
+  align-items: stretch;
+}
+.line-row:last-child { border-bottom: none; }
+.line-row.total    { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; background: #f7f6f0; }
+.line-row.subtotal { border-top: 1px solid #999; background: #fafaf5; }
+.line-row.refund-row { background: #e8f5e8; border-top: 2px solid #006600; }
+.line-row.owe-row    { background: #fff0f0; border-top: 2px solid #880000; }
+.line-row.obbba-row  { background: #fffbf0; }
+
+.l-num {
+  font-family: var(--sans);
+  font-size: 8pt;
+  font-weight: 700;
+  color: #fff;
+  background: var(--irs-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #000;
+  padding: 0 2px;
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 34px;
+}
+.line-row.total .l-num    { background: #111; }
+.line-row.subtotal .l-num { background: #444; }
+.line-row.refund-row .l-num { background: #006600; }
+.line-row.owe-row .l-num    { background: #880000; }
+.line-row.obbba-row .l-num  { background: #7a5c00; color: #fff; }
+
+.l-desc {
+  font-family: var(--sans);
+  font-size: 8.5pt;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
+  border-right: 1px solid #ddd;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.line-row.total .l-desc    { font-weight: 700; }
+.line-row.subtotal .l-desc { font-weight: 600; }
+.line-row.refund-row .l-desc { font-weight: 700; color: #006600; }
+.line-row.owe-row .l-desc    { font-weight: 700; color: #880000; }
+
+.l-note {
+  font-family: var(--sans);
+  font-size: 6.5pt;
+  color: #777;
+  font-style: italic;
+  display: block;
+  width: 100%;
+  margin-top: 1px;
+}
+.l-amt {
+  font-family: var(--mono);
+  font-size: 10pt;
+  font-weight: 700;
+  color: var(--entry);
+  text-align: right;
+  padding: 3px 8px 3px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+}
+.l-amt::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 1px;
+  background: #bbb;
+}
+.l-amt.zero    { color: #ccc; font-weight: 400; }
+.l-amt.neg     { color: var(--red); }
+.line-row.total    .l-amt { font-size: 11pt; color: #000; border-top: 2px solid #000; }
+.line-row.subtotal .l-amt { color: #222; }
+.line-row.refund-row .l-amt { font-size: 12pt; color: #006600; }
+.line-row.owe-row    .l-amt { font-size: 12pt; color: #880000; }
+
+/* ── Dollar sign prefix ──────────────────────────────────────────────────── */
+.amt-wrap { display: flex; align-items: center; gap: 1px; }
+.dsgn { font-size: 7pt; color: #666; margin-right: 1px; font-family: var(--sans); font-weight: 400; }
+.line-row.total .dsgn    { color: #333; }
+.line-row.refund-row .dsgn { color: #006600; }
+.line-row.owe-row .dsgn    { color: #880000; }
+
+/* ── Rate strip ─────────────────────────────────────────────────────────── */
+.rate-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid #000;
+  margin-top: 10px;
+}
+.rate-cell {
+  padding: 5px 8px;
+  border-right: 1px solid #000;
+  text-align: center;
+}
+.rate-cell:last-child { border-right: none; }
+.rate-lbl { font-family: var(--sans); font-size: 6.5pt; text-transform: uppercase; letter-spacing: .4px; color: #666; }
+.rate-val { font-family: var(--mono); font-size: 11pt; font-weight: 700; color: var(--entry); margin-top: 2px; }
+.rate-val.refund { color: #006600; }
+.rate-val.owe    { color: #880000; }
+
+/* ── Signature block ─────────────────────────────────────────────────────── */
+.sig-section {
+  border: 1px solid #000;
+  margin-top: 10px;
+}
+.sig-banner {
+  background: var(--irs-blue);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 7.5pt;
+  font-weight: 700;
+  padding: 3px 10px;
+  letter-spacing: .3px;
+}
+.sig-perjury {
+  font-family: var(--sans);
+  font-size: 7pt;
+  color: #333;
+  padding: 4px 10px;
+  border-bottom: 1px solid #ddd;
+  line-height: 1.5;
+}
+.sig-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.sig-col { padding: 8px 10px; border-right: 1px solid #ddd; }
+.sig-col:last-child { border-right: none; }
+.sig-col-title { font-family: var(--sans); font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #555; margin-bottom: 6px; }
+.sig-line { border-bottom: 1.5px solid #000; height: 22px; margin-bottom: 2px; }
+.sig-line-lbl { font-family: var(--sans); font-size: 6.5pt; color: #777; }
+.prep-grid { display: grid; grid-template-columns: 1fr 80px 80px; gap: 0; }
+.prep-field { padding: 4px 6px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+.prep-field:last-child { border-right: none; }
+.prep-field:nth-last-child(-n+3) { border-bottom: none; }
+.prep-lbl { font-family: var(--sans); font-size: 6pt; color: #888; text-transform: uppercase; letter-spacing: .3px; }
+.prep-line { border-bottom: 1px solid #bbb; height: 16px; margin-top: 3px; }
+
+/* ── Warning / Schedule pages ────────────────────────────────────────────── */
+.warn-banner {
+  background: var(--warn-bg);
+  border-bottom: 2px solid var(--warn-border);
+  padding: 6px 12px;
+  font-family: var(--sans);
+  font-size: 8pt;
+  color: #4a3800;
+}
+.warn-count { font-weight: 700; font-size: 9pt; }
+.warn-item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  border-bottom: 1px solid #eee;
+  padding: 5px 10px 5px 0;
+  font-family: var(--sans);
+  font-size: 8pt;
+  color: #2a1800;
+  line-height: 1.5;
+}
+.warn-item:last-child { border-bottom: none; }
+.warn-icon { color: var(--warn-border); font-size: 10pt; text-align: center; padding-top: 1px; }
+.checklist-hdr {
+  font-family: var(--sans);
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #333;
+  padding: 6px 10px 4px;
+  border-top: 1.5px solid #000;
+  border-bottom: 1px solid #ddd;
+  margin-top: 6px;
+}
+.check-item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  padding: 3px 10px 3px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-family: var(--sans);
+  font-size: 8pt;
+  color: #1a1a1a;
+  line-height: 1.4;
+}
+.check-icon { color: #006600; font-weight: 700; text-align: center; }
+
+/* ── Schedule A mini-form ─────────────────────────────────────────────────── */
+.sched-label {
+  font-family: var(--sans);
+  font-size: 7pt;
+  color: #555;
+  padding: 2px 8px 1px;
+  border-bottom: 1px solid #ddd;
+  background: #fafaf7;
+  letter-spacing: .3px;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 12px 8px;
+  font-family: var(--sans);
+  font-size: 6.5pt;
+  color: #777;
+  border-top: 1px solid #ddd;
+  margin-top: 8px;
+}
+.not-for-filing {
+  background: #fff3cd;
+  border: 1px solid #c8a000;
+  padding: 3px 8px;
+  font-family: var(--sans);
+  font-size: 7pt;
+  font-weight: 700;
+  color: #5a3e00;
+  text-align: center;
+  margin: 0 12px 6px;
+}
+
+@media print {
+  body { background: #fff; }
+  .toolbar { display: none; }
+  .pages { max-width: 100%; padding: 0; margin: 0; }
+  .f-page { margin-bottom: 0; box-shadow: none; page-break-after: always; border: 1px solid #000; }
+  .f-page:last-child { page-break-after: avoid; }
+  @page { size: letter; margin: .45in .5in; }
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div>
+    <div class="tb-brand">SachinTaxCare &mdash; Form 1040 Workpaper</div>
+    <div class="tb-sub">CPA/EA Review Copy &middot; Tax Year 2025 &middot; Not for filing</div>
+  </div>
+  <div class="tb-right">
+    <span class="tb-id" id="tp-status"></span>
+    <button class="btn btn-back" onclick="window.close()">&#8592; Back</button>
+    <button class="btn btn-print" onclick="window.print()">&#128438; Print / Save PDF</button>
+  </div>
+</div>
+
+<div class="pages" id="pw">
+  <div style="padding:2rem 2rem 2rem;font-family:var(--mono);color:#555;max-width:600px;margin:0 auto" id="loading">
+    <div id="load-status" style="text-align:center;padding:40px 0;font-size:13px">Loading result&hellip;</div>
+    <div id="load-fallback" style="display:none">
+      <div style="font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:8px">No computed result found in browser storage.</div>
+      <div style="font-size:11px;color:#666;margin-bottom:14px;line-height:1.6">
+        To generate this workpaper:<br>
+        &nbsp;&nbsp;<strong>A)</strong> Open it from within SachinTaxCare after clicking Compute Return, OR<br>
+        &nbsp;&nbsp;<strong>B)</strong> Upload a result JSON file exported from SachinTaxCare below
+      </div>
+      <label style="display:inline-block;background:#1a5fa8;color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:12px">
+        📂 Upload result JSON file
+        <input type="file" accept=".json" id="result-file-input" style="display:none" onchange="loadFromFile(this)"/>
+      </label>
+      <div style="font-size:11px;color:#888;margin-bottom:4px">— or paste JSON directly —</div>
+      <textarea id="result-paste" rows="6" placeholder='Paste exported result JSON here: {"schema":{...},"result":{...}}'
+        style="width:100%;font-family:monospace;font-size:10px;border:1px solid #ccc;border-radius:4px;padding:8px;box-sizing:border-box;resize:vertical"></textarea>
+      <button onclick="loadFromPaste()" style="margin-top:8px;background:#2d7a44;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">⚡ Generate Workpaper from JSON</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const rn = x => Math.round(x || 0);
+const fm = x => { const v = rn(x); if (!v) return null; return Math.abs(v).toLocaleString(); };
+const fd = x => '$' + Math.abs(rn(x)).toLocaleString();
+const fp = x => x != null ? (x * 100).toFixed(1) + '%' : '—';
+
+// Render a single line row
+function lineRow(num, desc, val, cls = '', note = '') {
+  const v = rn(val);
+  const fmtd = fm(v);
+  const neg = v < 0;
+  const amtCls = !fmtd ? 'zero' : (neg ? 'neg' : '');
+  const display = fmtd ? `<span class="dsgn">$</span>${neg ? '(' + fm(Math.abs(v)) + ')' : fmtd}` : '&mdash;';
+  return `<div class="line-row ${cls}">
+    <div class="l-num">${num}</div>
+    <div class="l-desc">${desc}${note ? `<span class="l-note">${note}</span>` : ''}</div>
+    <div class="l-amt ${amtCls}"><div class="amt-wrap">${display}</div></div>
+  </div>`;
+}
+
+// Render only if value is non-zero
+function lineIf(num, desc, val, cls = '', note = '') {
+  return rn(val) ? lineRow(num, desc, val, cls, note) : '';
+}
+
+function loadFromFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // Accept either {schema, result} or flat result dict
+      const s = data.schema || {};
+      const r = data.result || (data.agi !== undefined ? data : {});
+      if (!r.agi) { alert('JSON does not contain a computed result (agi missing). Export from SachinTaxCare after computing.'); return; }
+      document.getElementById('loading').style.display = 'none';
+      const name = [s.first, s.last].filter(Boolean).join(' ') || '—';
+      const isR = rn(r.l34_refund) > 0;
+      document.getElementById('pw').innerHTML = '';
+      render(s, r, name);
+    } catch(ex) { alert('Could not parse JSON: ' + ex.message); }
+  };
+  reader.readAsText(file);
+}
+function loadFromPaste() {
+  const txt = document.getElementById('result-paste').value.trim();
+  if (!txt) return;
+  try {
+    const data = JSON.parse(txt);
+    const s = data.schema || {};
+    const r = data.result || (data.agi !== undefined ? data : {});
+    if (!r.agi) { alert('JSON does not contain a computed result.'); return; }
+    document.getElementById('loading').style.display = 'none';
+    const name = [s.first, s.last].filter(Boolean).join(' ') || '—';
+    render(s, r, name);
+  } catch(ex) { alert('Invalid JSON: ' + ex.message); }
+}
+function loadResult() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem('sachintaxcare_result') || '{}'); }
+  catch(e) { document.getElementById('loading').textContent = 'Could not parse result data.'; return; }
+  const s = data.schema || {}, r = data.result || {};
+  if (r.agi === undefined) {
+    document.getElementById('load-status').style.display = 'none';
+    document.getElementById('load-fallback').style.display = 'block';
+    return;
+  }
+  document.getElementById('loading').style.display = 'none';
+  const name = [s.first, s.last].filter(Boolean).join(' ') || '—';
+  const isR = rn(r.l34_refund) > 0;
+  document.getElementById('tp-status').textContent =
+    name + ' \u00b7 ' + (isR ? 'Refund ' + fd(r.l34_refund) : 'Owe ' + fd(r.l37_owe));
+  try {
+    render(s, r, name);
+  } catch(renderErr) {
+    // Show error so user knows what went wrong instead of stuck loading screen
+    document.getElementById('pw').innerHTML =
+      '<div style="padding:2rem;font-family:monospace;color:#a32d2d;background:#fdf0f0;border-radius:8px;margin:1rem">' +
+      '<strong>Workpaper render error:</strong><br>' + renderErr.message +
+      '<br><br>Stack:<br>' + (renderErr.stack || '').replace(/\n/g, '<br>') + '</div>';
+    console.error('Workpaper render error:', renderErr);
+  }
+}
+
+function render(s, r, name) {
+  // PRE-DECLARE all sub-dicts with safe fallbacks — prevents TypeError if key missing
+  // This is the fix for "Loading result..." staying on screen (template literal throws)
+  const _sd   = r.sched_d_8949 || {};
+  const _se   = r.se_detail    || {};
+  const _f5329= r.f5329        || {};
+  const _f8962= r.f8962        || {};
+  const _f2441= r.f2441        || {};
+  const _f8863= r.f8863        || {};
+  const _f8880= r.f8880        || {};
+  const _s8812= r.s8812        || r.sched_8812 || {};
+  const _qbi  = r.qbi_detail   || {};
+
+  const fs  = s.filing_status || 'single';
+  const ssn = s.ssn || '___\u2014__\u2014____';
+  const spssn  = (r.spouse_ssn)  || (s.spouse_ssn)  || (s.spouse && s.spouse.ssn)  || '';
+  const spfirst = (r.spouse_first) || (s.spouse_first) || (s.spouse && s.spouse.first) || '';
+  const splast  = (r.spouse_last)  || (s.spouse_last)  || (s.spouse && s.spouse.last)  || '';
+  const isR = rn(r.l34_refund) > 0;
+  const deps = s.dependents || [];
+
+  // Filing status chips
+  const FS = {single:'Single', mfj:'Married filing jointly', mfs:'Married filing separately', hoh:'Head of household', qss:'Qualifying surviving spouse'};
+  const fsChips = Object.entries(FS).map(([k,v]) =>
+    `<span class="fs-chip"><span class="fs-box ${fs===k?'checked':''}">${fs===k?'X':''}</span>&nbsp;${v}</span>`
+  ).join('');
+
+  // Dependents rows
+  const depRows = deps.length === 0
+    ? `<div class="dep-empty">No dependents claimed</div>`
+    : deps.slice(0, 4).map(d => `<tr>
+        <td>${d.first || ''}&nbsp;${d.last || ''}</td>
+        <td>${d.ssn || ''}</td>
+        <td>${(d.relationship || 'child').charAt(0).toUpperCase() + (d.relationship||'child').slice(1)}</td>
+        <td style="text-align:center">${d.dob || ''}</td>
+        <td style="text-align:center">${d.ctc_eligible ? '&#9745;' : '&#9744;'}</td>
+        <td style="text-align:center">${d.odc_eligible ? '&#9745;' : '&#9744;'}</td>
+      </tr>`).join('');
+
+  // ── PAGE 1: Form 1040 ────────────────────────────────────────────────────
+  const page1 = `
+  <div class="f-page">
+    <!-- IRS Header -->
+    <div class="irs-header">
+      <div class="irs-dept">
+        Dept.<br>of the<br>Treasury<br>&mdash;<br>Internal<br>Revenue<br>Service
+      </div>
+      <div class="irs-form-id">
+        <div class="irs-form-num">Form 1040</div>
+        <div class="irs-form-title">U.S. Individual Income Tax Return</div>
+        <div class="irs-form-period">For the year Jan. 1&ndash;Dec. 31, 2025, or other tax year beginning _______, 2025, ending _______, 20__</div>
+      </div>
+      <div class="irs-omb">
+        <div class="irs-year-num">2025</div>
+        <div class="irs-omb-num">OMB No. 1545-0074</div>
+      </div>
+    </div>
+    <div class="not-for-filing">&#9888; WORKPAPER ONLY &mdash; Not a filed return. For CPA/EA review. SachinTaxCare v15 &middot; 180/180 IRS-verified tests.</div>
+    <div class="f-body">
+      <!-- Taxpayer info -->
+      <div class="tp-grid tp-row-3">
+        <div class="tp-cell"><div class="tp-label">Your first name and middle initial</div><div class="tp-value">${s.first || ''}</div></div>
+        <div class="tp-cell"><div class="tp-label">Last name</div><div class="tp-value">${s.last || ''}</div></div>
+        <div class="tp-cell"><div class="tp-label">Your social security number</div><div class="tp-value">${ssn}</div></div>
+      </div>
+      ${(fs === 'mfj' || fs === 'mfs') ? `
+      <div class="tp-grid tp-row-3 tp-divider">
+        <div class="tp-cell"><div class="tp-label">If joint return, spouse's first name and MI</div><div class="tp-value">${spfirst || (s.spouse && s.spouse.first) || ''}</div></div>
+        <div class="tp-cell"><div class="tp-label">Last name</div><div class="tp-value">${splast || (s.spouse && s.spouse.last) || ''}</div></div>
+        <div class="tp-cell"><div class="tp-label">Spouse's social security number</div><div class="tp-value">${spssn}</div></div>
+      </div>` : ''}
+      <div class="tp-grid tp-row-2 tp-divider">
+        <div class="tp-cell"><div class="tp-label">Home address (number and street). If you have a P.O. box, see instructions.</div><div class="tp-value">${s.address || ''}</div></div>
+        <div class="tp-cell"><div class="tp-label">Apt. no.</div><div class="tp-value">&nbsp;</div></div>
+      </div>
+
+      <!-- Filing status -->
+      <div class="fs-section">
+        <span class="fs-label">Filing Status:</span>
+        ${fsChips}
+      </div>
+
+      <!-- Dependents -->
+      <div class="dep-section">
+        <div class="dep-section-hdr">Dependents &mdash; If more than four dependents, see instructions and &#9746; here &nbsp; &#9744;</div>
+        ${deps.length > 0 ? `<table class="dep-table">
+          <tr>
+            <th style="width:30%">(a) First and last name</th>
+            <th style="width:18%">(b) Social security number</th>
+            <th style="width:16%">(c) Relationship</th>
+            <th style="width:16%;text-align:center">(d) Date of birth</th>
+            <th style="width:10%;text-align:center">(e) CTC &#9745;</th>
+            <th style="width:10%;text-align:center">(f) ODC &#9745;</th>
+          </tr>
+          ${depRows}
+        </table>` : `<div class="dep-empty">No dependents claimed</div>`}
+      </div>
+
+      <!-- Income -->
+      <div class="sec-hdr">Income</div>
+      <div class="lines">
+        ${lineRow('1a', 'Total amount from Form(s) W-2, box 1', rn(r.wages))}
+        ${lineIf('2b', 'Taxable interest. Attach Sch. B if required', rn(r.interest))}
+        ${lineIf('3b', 'Ordinary dividends. Attach Sch. B if required', rn(r.dividends))}
+        ${lineIf('3a', 'Qualified dividends', rn(r.dividends_qual || r.qualified_dividends))}
+        ${lineIf('4a', 'IRA distributions &mdash; gross amount', rn(r.l4a_ira_gross))}
+        ${lineIf('4b', 'IRA distributions &mdash; taxable amount', rn(r.l4b_ira_taxable))}
+        ${lineIf('5a', 'Pensions and annuities &mdash; gross amount', rn(r.l5a_pension_gross))}
+        ${lineIf('5b', 'Pensions and annuities &mdash; taxable amount', rn(r.l5b_pension_taxable))}
+        ${lineIf('6a', 'Social security benefits &mdash; total amount', rn(r.l6a_ss_total))}
+        ${lineIf('6b', 'Social security benefits &mdash; taxable amount', rn(r.l6b_ss_taxable))}
+        ${lineIf('7',  'Capital gain or (loss). Attach Schedule D if required', rn(r.cap_gains || r.cap_gain_net))}
+        ${lineIf('8',  'Additional income from Schedule 1, line 10 (Sch C $' + fd(rn(r.se_net_profit)) + ' + other $' + fd(rn(r.misc_other_income||0)) + ')', rn(r.additional_income || r.l8_other_income))}
+        ${lineRow('9',  'Total income. Add lines 1z through 8', rn(r.total_income), 'subtotal')}
+        ${lineRow('10', 'Adjustments to income from Schedule 1, Part II, line 26', -rn(r.total_adjustments))}
+        ${lineRow('11', 'Adjusted gross income. Subtract line 10 from line 9', rn(r.agi), 'total')}
+      </div>
+    </div>
+    <div class="page-footer">
+      <span>Form 1040 (2025)</span>
+      <span>Page 1</span>
+    </div>
+  </div>`;
+
+  // ── PAGE 2: Tax, Credits, Payments, Result ───────────────────────────────
+  const page2 = `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form 1040 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Page 2</span>
+    </div>
+    <div class="f-body">
+
+      <div class="sec-hdr">Standard Deduction or Itemized Deductions</div>
+      <div class="lines">
+        ${lineRow('12', 'Standard deduction or itemized deductions (from Schedule A)', rn(r.deduction_used), '', r.deduction_type === 'itemized' ? '(Itemized &mdash; Schedule A attached)' : '(Standard deduction)')}
+        ${lineIf('13a', 'Qualified business income deduction (Form 8995 or 8995-A)', rn(r.adj_qbi))}
+        ${rn(r.l13b_schedule1a) > 0 ? lineRow('13b', 'Additional deductions (Schedule 1-A) — tips, overtime, auto loan, senior', rn(r.l13b_schedule1a), '', 'f1040s1a.pdf Part VI · IR-2026-28 · P.L. 119-21') : ''}
+        ${lineRow('15', 'Taxable income. Subtract lines 12, 13a, and 13b from line 11', rn(r.taxable_income), 'total')}
+      </div>
+
+      <div class="sec-hdr" style="margin-top:5px">Tax, Credits, and Other Taxes</div>
+      <div class="lines">
+        ${lineRow('16', 'Tax (see instructions). Check if any from: Form(s) 8814 &#9744; 4972 &#9744;', rn(r.income_tax))}
+        ${lineIf('17', 'Alternative minimum tax &mdash; Form 6251', rn(r.amt_tax))}
+        ${lineRow('18', 'Add lines 16 and 17', rn(r.income_tax) + rn(r.amt_tax), 'subtotal')}
+        ${lineIf('19', 'Child tax credit or credit for other dependents &mdash; Sch 8812', rn(r.l19_ctc))}
+        ${rn((r.sch3 && r.sch3.l8_total_nonref) || 0) > 0 ? lineRow('20', 'Schedule 3 nonrefundable credits (line 8) — care, education, saver, FTC', rn((r.sch3 && r.sch3.l8_total_nonref) || 0)) : ''}
+        ${rn((r.sch3 && r.sch3.l3_edu) || 0) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Education credits (Form 8863 nonrefundable) &mdash; Schedule 3 line 3</span><span class="line-amt">${fd(rn((r.sch3 && r.sch3.l3_edu) || 0))}</span></div>` : ''}
+        ${rn(r.care_credit) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Child and dependent care (Form 2441) &mdash; Schedule 3 line 2</span><span class="line-amt">${fd(rn(r.care_credit))}</span></div>` : ''}
+        ${rn((r.sch3 && r.sch3.l4_saver) || 0) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Saver&rsquo;s credit (Form 8880) &mdash; Schedule 3 line 4</span><span class="line-amt">${fd(rn((r.sch3 && r.sch3.l4_saver)||0))}</span></div>` : ''}
+        ${lineRow('21', 'Subtract lines 19 and 20 from line 18 — tax after credits', Math.max(0, rn(r.income_tax) + rn(r.amt_tax) - rn(r.l19_ctc||0) - rn((r.sch3 && r.sch3.l8_total_nonref)||0)), 'subtotal')}
+        ${(r.sch2 && rn(r.sch2.l4_se_tax)) ? lineRow('Sch2 L4', 'Self-employment tax (Schedule SE)', rn(r.sch2.l4_se_tax)) : ''}
+        ${(r.sch2 && rn(r.sch2.l8_5329_penalty)) ? lineRow('Sch2 L8', 'Form 5329 early distribution penalty', rn(r.sch2.l8_5329_penalty)) : ''}
+        ${(r.sch2 && rn(r.sch2.l8_hsa_penalty)) ? lineRow('Sch2 L8', 'HSA penalty', rn(r.sch2.l8_hsa_penalty)) : ''}
+        ${(r.sch2 && rn(r.sch2.l11_addl_med)) ? lineRow('Sch2 L11', 'Additional Medicare tax 0.9%', rn(r.sch2.l11_addl_med)) : ''}
+        ${(r.sch2 && rn(r.sch2.l12_niit)) ? lineRow('Sch2 L12', 'Net investment income tax 3.8%', rn(r.sch2.l12_niit)) : ''}
+        ${lineRow('17/other', 'Other taxes (Schedule 2 line 17)', rn((r.sch2 && r.sch2.l17_total) || 0), 'subtotal')}
+        ${lineRow('24', 'Total tax. Add lines 16 through 23', rn(r.l24_total_tax), 'total')}
+      </div>
+
+      <div class="sec-hdr" style="margin-top:5px">Payments</div>
+      <div class="lines">
+        ${lineRow('25a', 'Federal income tax withheld &mdash; Form(s) W-2', rn(r.l25a_w2_wh), '', 'Line 25a: W-2 Box 2 only')}
+        ${(() => {
+          const r1099 = rn(r.l25b_1099r_wh || 0);
+          const rssa  = rn(r.l25b_ssa_wh   || 0);
+          const total25b = r1099 + rssa;
+          if (total25b === 0) return '';
+          const note = [
+            r1099 > 0 ? `1099-R: ${fd(r1099)}` : '',
+            rssa  > 0 ? `SSA Box 6: ${fd(rssa)}`  : '',
+          ].filter(Boolean).join(' + ');
+          return lineRow('25b', 'Federal income tax withheld &mdash; Form(s) 1099 and SSA-1099', total25b, '', note);
+        })()}
+        ${lineRow('25d', 'Total withholding. Add lines 25a and 25b', rn(r.l25d_total_wh), 'subtotal')}
+        ${lineIf('26',  'Estimated tax payments and amount applied from prior year', rn(Math.max(0,(r.l33_total_pmts||0)-(r.l25d_total_wh||0)-(r.l32||0))))}
+        ${lineIf('27a', 'Earned income credit (EIC)', rn(r.l27a_eitc), '', 'Source: IRS EIC Table p1040.pdf pp.16+ · $50 band algorithm')}
+        ${lineIf('28',  'Additional child tax credit from Schedule 8812', rn(r.l28_actc))}
+        ${lineIf('29',  'American opportunity credit from Form 8863, line 8', rn(r.l29_aoc))}
+        ${lineIf('31',  'Net premium tax credit &mdash; Form 8962', rn(r.ptc_net))}
+        ${rn(r.l32) > 0 ? lineRow('32', 'Total other credits and payments. Add lines 27a through 31', rn(r.l32), 'subtotal') : ''}
+        ${lineRow('33', 'Total payments. Add lines 25d through 32', rn(r.l33_total_pmts), 'total')}
+      </div>
+
+      <div class="sec-hdr ${isR ? '' : 'gold'}" style="margin-top:5px">${isR ? 'Refund' : 'Amount You Owe'}</div>
+      <div class="lines">
+        ${isR
+          ? lineRow('34', '<strong>Amount overpaid.</strong> If line 33 is more than line 24, subtract line 24 from line 33', rn(r.l34_refund), 'refund-row')
+          : lineRow('37', '<strong>Amount you owe.</strong> Subtract line 33 from line 24', rn(r.l37_owe), 'owe-row')
+        }
+      </div>
+
+      <!-- Rate summary grid -->
+      <div class="rate-strip">
+        <div class="rate-cell"><div class="rate-lbl">AGI</div><div class="rate-val">${fd(rn(r.agi))}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">Taxable Income</div><div class="rate-val">${fd(rn(r.taxable_income))}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">Total Tax</div><div class="rate-val">${fd(rn(r.l24_total_tax))}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">Effective Rate</div><div class="rate-val">${fp(r.effective_rate)}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">${isR ? 'Refund' : 'Amount Owed'}</div><div class="rate-val ${isR ? 'refund' : 'owe'}">${fd(isR ? rn(r.l34_refund) : rn(r.l37_owe))}</div></div>
+      </div>
+
+      <!-- Signature block -->
+      <div class="sig-section" style="margin-top:8px">
+        <div class="sig-banner">Sign Here</div>
+        <div class="sig-perjury">
+          Under penalties of perjury, I declare that I have examined this return and accompanying schedules and statements, and to the best of my
+          knowledge and belief, they are true, correct, and complete. Declaration of preparer (other than taxpayer) is based on all information of which preparer has any knowledge.
+        </div>
+        <div class="sig-grid">
+          <div class="sig-col">
+            <div class="sig-col-title">Taxpayer</div>
+            <div class="sig-line"></div><div class="sig-line-lbl">Your signature &nbsp;&nbsp;&nbsp; Date &nbsp;&nbsp;&nbsp; Your occupation</div>
+            ${fs === 'mfj' ? `<div class="sig-line" style="margin-top:8px"></div><div class="sig-line-lbl">Spouse's signature. If a joint return, <em>both</em> must sign. &nbsp;&nbsp; Date</div>` : ''}
+          </div>
+          <div class="sig-col">
+            <div class="sig-col-title">Paid Preparer Use Only</div>
+            <div class="prep-grid">
+              <div class="prep-field"><div class="prep-lbl">Preparer's name</div><div class="prep-line"></div></div>
+              <div class="prep-field"><div class="prep-lbl">PTIN</div><div class="prep-line"></div></div>
+              <div class="prep-field"><div class="prep-lbl">Date</div><div class="prep-line"></div></div>
+              <div class="prep-field"><div class="prep-lbl">Firm's name</div><div class="prep-line"></div></div>
+              <div class="prep-field"><div class="prep-lbl">Firm's EIN</div><div class="prep-line"></div></div>
+              <div class="prep-field"><div class="prep-lbl">Phone</div><div class="prep-line"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="page-footer">
+      <span>Form 1040 (2025) &middot; SachinTaxCare v15 &middot; Workpaper &mdash; Not a filed return</span>
+      <span>Generated ${new Date().toLocaleDateString()}</span>
+    </div>
+  </div>`;
+
+  // ── PAGE 3: Schedule 1 / SE / QBI ───────────────────────────────────────
+  const hasSE  = rn(r.se_net_profit) > 0 || rn(r.se_tax) > 0;
+  const hasAdj = rn(r.total_adjustments) !== 0;
+  const hasQBI = rn(r.adj_qbi) > 0;
+
+  const page3 = `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule 1 (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Additional Income &amp; Adjustments</span>
+    </div>
+    <div class="f-body">
+
+      ${rn(r.additional_income || r.l8_other_income) ? `
+      <div class="sec-hdr">Part I &mdash; Additional Income (Schedule 1)</div>
+      <div class="lines">
+        ${(r.sch1 && rn(r.sch1.l3_se_income)) ? lineRow('3', 'Business income or (loss) — Schedule C', rn(r.sch1.l3_se_income)) : ''}
+        ${(r.sch1 && rn(r.sch1.l4_1231_gain)) ? lineRow('4', 'Other gains or (losses) — Form 4797', rn(r.sch1.l4_1231_gain)) : ''}
+        ${(r.sch1 && rn(r.sch1.l5_rental)) ? lineRow('5', 'Rental real estate — Schedule E', rn(r.sch1.l5_rental)) : ''}
+        ${(r.sch1 && rn(r.sch1.l7_unemployment)) ? lineRow('7', 'Unemployment compensation — Form 1099-G', rn(r.sch1.l7_unemployment)) : ''}
+        ${(r.sch1 && rn(r.sch1.l8a_gambling)) ? lineRow('8a', 'Net gambling income — Form W-2G', rn(r.sch1.l8a_gambling)) : ''}
+        ${(r.sch1 && rn(r.sch1.l8b_cancellation_debt)) ? lineRow('8b', 'Cancellation of debt — Form 1099-C', rn(r.sch1.l8b_cancellation_debt)) : ''}
+        ${(r.sch1 && rn(r.sch1.l8c_prize)) ? lineRow('8c', 'Prize / award income — Form 1099-MISC', rn(r.sch1.l8c_prize)) : ''}
+        ${lineRow('10', 'Combine lines 1 through 9 — enter here and on Form 1040, line 8', rn(r.sch1 ? r.sch1.l10_total : r.additional_income), 'subtotal')}
+      </div>` : ''}
+
+      <div class="sec-hdr" style="margin-top:6px">Part II &mdash; Adjustments to Income</div>
+      <div class="lines">
+        ${lineIf('11', 'Educator expenses', rn(r.teacher_adj))}
+        ${lineIf('13', 'Health savings account deduction (Form 8889)', rn(r.adj_hsa))}
+        ${hasSE ? lineRow('15', 'Deductible part of self-employment tax', rn(r.se_tax_deduction)) : ''}
+        ${hasSE && rn(r.adj_se_retirement) ? lineRow('16', 'Self-employed SEP, SIMPLE, and qualified plans', rn(r.adj_se_retirement)) : ''}
+        ${hasSE && rn(r.adj_se_health) ? lineRow('17', 'Self-employed health insurance deduction', rn(r.adj_se_health)) : ''}
+        ${lineIf('20', 'IRA deduction', rn(r.adj_ira_deduction))}
+        ${lineIf('21', 'Student loan interest deduction', rn(r.adj_student_loan), '',
+           (r.form_1098es_detail && r.form_1098es_detail.length)
+             ? 'From: ' + r.form_1098es_detail.map(sl => sl.lender + ' $' + fd(sl.interest)).join('; ') + ' (gross — capped at $2,500)'
+             : '')}
+        ${/* OBBBA deductions removed from Sch 1 Part II — now on Schedule 1-A → Form 1040 Line 13b (f1040s1a.pdf; IR-2026-28) */''}
+        ${lineRow('26', 'Total adjustments to income &mdash; enter on Form 1040, line 10', rn(r.total_adjustments), 'total')}
+      </div>
+
+      ${hasSE ? `
+      <div class="sec-hdr" style="margin-top:8px">Schedule SE &mdash; Self-Employment Tax</div>
+      <div class="lines">
+        ${lineRow('2',  'Net profit (or loss) from Schedule C, line 31', rn(r.se_net_profit))}
+        ${lineRow('3',  'Net earnings from self-employment &mdash; multiply line 2 by 92.35% (.9235)', rn(r.net_earnings_se))}
+        ${lineRow('12', 'Self-employment tax &mdash; enter on Schedule 2, line 4', rn(r.se_tax), 'total')}
+        ${lineRow('13', 'Deduction for one-half of self-employment tax &mdash; Schedule 1, line 15', rn(r.se_tax_deduction), 'subtotal')}
+      </div>` : ''}
+
+      ${hasQBI ? `
+      <div class="sec-hdr" style="margin-top:8px">Form ${r.qbi_form_used || '8995'} &mdash; §199A Qualified Business Income Deduction</div>
+      <div class="lines">
+        ${(r.qbi_detail && r.qbi_detail.per_biz) ? r.qbi_detail.per_biz.map(biz =>
+          \`<div class="line-row"><span class="line-ref">Biz</span><span class="line-desc">\${biz.name}\${biz.business_code ? ' (' + biz.business_code + ')' : ''} — Net profit \${fd(biz.net_profit)}\${biz.is_sstb ? ' <em>(SSTB)</em>' : ''}</span><span class="line-amt">\${fd(biz.net_profit)}</span></div>\`
+        ).join('') : ''}
+        ${lineRow('2', 'Qualified business income (net profit × 92.35%)', rn(r.qbi_detail && r.qbi_detail.l2_qbi))}
+        ${lineRow('3', 'Tentative deduction — 20% of line 2', rn(r.qbi_detail && r.qbi_detail.l3_tentative))}
+        ${lineIf('4', 'Net capital gain (reduces TI for limit)', rn(r.qbi_detail && r.qbi_detail.l4_net_cap_gain))}
+        ${lineRow('5', 'Ordinary taxable income (TI minus net cap gain)', rn(r.qbi_detail && r.qbi_detail.l5_ordinary_ti))}
+        ${lineRow('6', 'TI limitation — 20% of line 5', rn(r.qbi_detail && r.qbi_detail.l6_ti_limit))}
+        ${lineRow('7', 'Lesser of tentative deduction (L3) or TI limit (L6)', rn(r.qbi_detail && r.qbi_detail.l7))}
+        ${lineRow('15', 'QBI deduction — enter on Form 1040, line 13', rn(r.adj_qbi), 'total', 'Source: irs.gov/pub/irs-pdf/f8995.pdf; IRC §199A; Rev. Proc. 2024-40')}
+      </div>` : ''}
+
+      ${s.use_itemized && rn(r.itemized_deduction) ? `
+      <div class="sec-hdr" style="margin-top:8px">Schedule A &mdash; Itemized Deductions (Form 1040 Line 12)</div>
+      <div class="lines">
+        ${lineIf('4',  'Medical and dental expenses (after 7.5% AGI floor)', rn(r.sched_a_medical))}
+        ${lineIf('7',  'State and local taxes (SALT &mdash; OBBBA cap applied)', rn(r.sched_a_salt))}
+        ${lineIf('8a', 'Home mortgage interest and points (Form 1098)', rn(r.sched_a_mort_int))}
+        ${lineIf('11', 'Gifts by cash or check', rn(r.sched_a_cash_char))}
+        ${lineIf('12', 'Gifts other than by cash or check', rn(r.sched_a_noncash_char))}
+        ${lineIf('15', 'Casualty and theft losses', rn(r.sched_a_casualty))}
+        ${lineRow('17', 'Total itemized deductions &mdash; enter on Form 1040, line 12', rn(r.itemized_deduction || r.deduction_used), 'total')}
+      </div>` : ''}
+
+    </div>
+    <div class="page-footer">
+      <span>Schedule 1 / SE / QBI (Form 1040) 2025 &middot; SachinTaxCare v15</span>
+      <span>Page 3</span>
+    </div>
+  </div>`;
+
+  // ── PAGE 3B: Schedule 1-A — OBBBA Additional Deductions ──────────────────
+  const hasSchedule1A = rn(r.obbba_total_deductions) > 0;
+  const page3b = hasSchedule1A ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule 1-A (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Additional Deductions</span>
+    </div>
+    <div class="f-body">
+      <div class="note obbba-note" style="background:#fffbf0;border-left:4px solid #f5a623;padding:6px 10px;font-size:8pt;margin-bottom:8px">
+        Schedule 1-A reports below-the-line deductions under the One Big Beautiful Bill Act (P.L. 119-21).
+        Total flows to Form 1040 Line 13b. These deductions do <strong>not</strong> reduce AGI.
+        Source: f1040s1a.pdf; IR-2026-28 (Mar 2, 2026); irs.gov/pub/irs-pdf/f1040s1a.pdf
+      </div>
+
+      <div class="sec-hdr">Part I — Modified Adjusted Gross Income (MAGI) Amount</div>
+      <div class="lines">
+        ${lineRow('1', 'Enter amount from Form 1040, Line 11 (AGI)', rn(r.agi))}
+        ${lineRow('3', 'MAGI (Line 1 plus any foreign income exclusion addbacks)', rn(r.agi), 'subtotal', 'Used for all OBBBA phase-out tests')}
+      </div>
+
+      ${rn(r.obbba_tip_deduction) > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Part II — No Tax on Tips (OBBBA §70201)</div>
+      <div class="lines">
+        ${lineRow('13', 'Qualified tip income deduction', rn(r.obbba_tip_deduction), 'total', 'Cap $25,000 · Phase-out MAGI > $150k single / $300k MFJ · P.L. 119-21 §70201; IRS Notice 2025-65')}
+      </div>` : ''}
+
+      ${rn(r.obbba_overtime_deduction) > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Part III — No Tax on Overtime (OBBBA §70202)</div>
+      <div class="lines">
+        ${lineRow('21', 'FLSA qualifying overtime compensation deduction', rn(r.obbba_overtime_deduction), 'total', 'Cap $12,500 single / $25,000 MFJ · Phase-out MAGI > $150k/$300k · MFS ineligible · P.L. 119-21 §70202')}
+      </div>` : ''}
+
+      ${rn(r.obbba_auto_loan_deduction) > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Part IV — No Tax on Car Loan Interest (OBBBA §70301)</div>
+      <div class="lines">
+        ${lineRow('30', 'Qualified passenger vehicle loan interest deduction', rn(r.obbba_auto_loan_deduction), 'total', 'Cap $10,000 · New US-assembled vehicle · Loan originated after 12/31/2024 · P.L. 119-21 §70301')}
+      </div>` : ''}
+
+      ${rn(r.obbba_senior_deduction) > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Part V — Enhanced Deduction for Seniors (OBBBA §70103)</div>
+      <div class="lines">
+        ${lineRow('37', 'Enhanced senior deduction ($6,000/person, age ≥ 65)', rn(r.obbba_senior_deduction), 'total', 'Phase-out MAGI > $75k single / $150k MFJ · MFS ineligible · P.L. 119-21 §70103')}
+      </div>` : ''}
+
+      <div class="sec-hdr" style="margin-top:6px">Part VI — Total Additional Deductions</div>
+      <div class="lines">
+        ${lineRow('38', 'Total Schedule 1-A deductions — enter on Form 1040, Line 13b', rn(r.l13b_schedule1a), 'total', 'f1040s1a.pdf Part VI → Form 1040 Line 13b; IR-2026-28')}
+      </div>
+    </div>
+    <div class="page-footer">
+      <span>Schedule 1-A (Form 1040) 2025 &middot; SachinTaxCare v15</span>
+      <span>Page 3B</span>
+    </div>
+  </div>` : '';
+
+  // ── PAGE 4: Schedule 3 — Nonrefundable Credits ────────────────────────────
+  const warnings = r.warnings || [];
+  const warningsHtml = warnings.length === 0
+    ? `<div style="padding:10px;font-family:var(--sans);font-size:8pt;color:#555;font-style:italic">No warnings generated.</div>`
+    : warnings.map(w => `
+        <div class="warn-item">
+          <div class="warn-icon">&#9888;</div>
+          <div>${w}</div>
+        </div>`).join('');
+
+  const _sch3 = r.sch3 || {};
+  const hasSch3 = Object.values(_sch3).some(v => v > 0);
+  const page4 = hasSch3 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule 3 (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Additional Credits and Payments</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Part I &mdash; Nonrefundable Credits</div>
+      <div class="lines">
+        ${lineIf('1', 'Foreign tax credit &mdash; attach Form 1116',             rn(_sch3.l1_ftc))}
+        ${lineIf('2', 'Child and dependent care expenses &mdash; Form 2441, line 11', rn(_sch3.l2_care))}
+        ${lineIf('3', 'Education credits from Form 8863, line 19',               rn(_sch3.l3_edu))}
+        ${lineIf('4', "Retirement savings contributions credit &mdash; Form 8880, line 12", rn(_sch3.l4_saver))}
+        ${lineRow('8', 'Add lines 1 through 7 &mdash; enter on Form 1040, line 20', rn(_sch3.l8_total_nonref), 'total')}
+      </div>
+      <div class="sec-hdr" style="margin-top:8px">Part II &mdash; Other Payments and Refundable Credits</div>
+      <div class="lines">
+        ${lineIf('9', 'Net premium tax credit &mdash; Form 8962', rn(_sch3.l9_ptc))}
+        ${lineRow('15','Add lines 9 through 14 &mdash; enter on Form 1040, line 31', rn(_sch3.l15), 'total')}
+      </div>
+      <div class="sec-hdr" style="margin-top:8px">Credit Limit Worksheet (CLW) &mdash; Used by Forms 8863, 8880, 8812</div>
+      <div class="lines">
+        ${lineRow('CLW 1','Tax after credits applied earlier (Form 1040 Line 18)', rn(r.income_tax))}
+        ${lineIf('CLW 2', 'Education credits applied (8863 nonref)', rn((_sch3.l3_edu)||0))}
+        ${lineIf('CLW 3', 'Remaining tax after 8863', rn(Math.max(0, rn(r.income_tax) - rn((_sch3.l3_edu)||0))))}
+      </div>
+    </div>
+    <div class="page-footer"><span>Schedule 3 (Form 1040) 2025 &middot; SachinTaxCare</span><span>Page 4</span></div>
+  </div>` : '';
+
+  // ── PAGE 5: Schedule 8812 — Child Tax Credit / ODC ───────────────────────
+  const _s8812 = r.s8812 || {};
+  // Show Sch 8812 whenever CTC, ODC, or ACTC is present
+  const has8812 = rn(_s8812.ctc_total) > 0 || rn(_s8812.odc_total) > 0 || rn(_s8812.l27_actc) > 0 || rn(_s8812.l14_ctc) > 0;
+  const page5 = has8812 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule 8812 (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Credits for Qualifying Children and Other Dependents</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Part I &mdash; Child Tax Credit and Credit for Other Dependents</div>
+      <div class="lines">
+        ${lineRow('4a', 'Qualifying children × $2,200 (CTC) — OBBBA §70104',         rn(_s8812.l4a_ctc_amt || _s8812.ctc_total), '', `${rn(_s8812.l4a_ctc_kids || 0)} qualifying child(ren)`)}
+        ${lineIf('4b',  'Other qualifying dependents × $500 (ODC) — IRC §24(h)(4)',  rn(_s8812.l4b_odc_amt || _s8812.odc_total), '', `${rn(_s8812.l4b_odc_deps || 0)} other dependent(s) · all dependents route through Sch 8812`)}
+        ${lineRow('4c', 'Total CTC + ODC (line 4a + line 4b)',                        rn(_s8812.l4c_total || (_s8812.ctc_total||0)+(_s8812.odc_total||0)), 'subtotal')}
+        ${rn(_s8812.po_reduction) > 0 ? lineRow('5', 'Phaseout reduction ($50 per $1,000 AGI above threshold)', -rn(_s8812.po_reduction)) : ''}
+        ${lineRow('12', 'CTC + ODC after phaseout — enters Credit Limit Worksheet',  rn(_s8812.l12), 'subtotal')}
+        <div class="line-row" style="background:var(--f-bg2)">
+          <span class="line-ref">CLW</span>
+          <span class="line-desc">Credit Limit Worksheet — income tax after earlier credits</span>
+          <span class="line-amt">${fd(rn(_s8812.clw_l3))}</span>
+        </div>
+        ${lineRow('14', 'Child tax credit &amp; ODC (nonrefundable) — enter on Form 1040, line 19', rn(_s8812.l14_ctc), 'total', 'CTC + ODC combined; IRS f1040s8.pdf L14')}
+        ${rn(_s8812.odc_credit) > 0 ? `<div class="line-row" style="font-style:italic;color:#555;padding-left:32px"><span class="line-ref" style="font-style:normal;color:#888">&#8627;</span><span class="line-desc">ODC portion of line 14: ${fd(rn(_s8812.odc_credit))} (IRC §24(h)(4) · all ODC through Sch 8812, not Sch 3)</span><span class="line-amt"></span></div>` : ''}
+      </div>
+      <div class="sec-hdr" style="margin-top:8px">Part II &mdash; Additional Child Tax Credit (ACTC) &mdash; Refundable</div>
+      <div class="lines">
+        ${lineRow('16a','Excess CTC after line 14 (line 12 minus line 14)',            rn(Math.max(0,rn(_s8812.l12)-rn(_s8812.l14_ctc))))}
+        ${lineRow('16b','CTC cap: qualifying children × $1,700 (ACTC cap per child)',  rn(_s8812.l16b))}
+        ${lineRow('17', 'Lesser of line 16a or 16b',                                   rn(_s8812.l17))}
+        ${lineRow('19', 'Earned income for ACTC (wages + SE − $2,500)',                rn(Math.max(0, rn(_s8812.l19_earned||_s8812.earned_for_actc) - rn(_s8812.l19_floor||2500))), '', `Earned income: ${fd(rn(_s8812.l19_earned||_s8812.earned_for_actc))} − floor ${fd(rn(_s8812.l19_floor||2500))}`)}
+        ${lineRow('20', 'Line 19 × 15% (ACTC rate) — IRC §24(d)',                     rn(_s8812.l20))}
+        ${lineRow('27', 'ACTC — lesser of line 17 or line 20 — enter on Form 1040, line 28', rn(_s8812.l27_actc), 'total')}
+      </div>
+      <div class="mini-note" style="margin-top:6px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Source: irs.gov/pub/irs-pdf/f1040s8.pdf · OBBBA §70104 (CTC $2,200) · IRC §24(h)(4) (ODC $500) · IRC §24(d) (ACTC 15%).
+        CTC phaseout: $50 per $1,000 AGI above MFJ $400,000 / Other $200,000.
+        All dependents (children and other qualifying) route through Schedule 8812 — not Schedule 3.
+      </div>
+    </div>
+    <div class="page-footer"><span>Schedule 8812 (Form 1040) 2025 &middot; SachinTaxCare</span><span>Page 5</span></div>
+  </div>` : '';
+
+  // ── PAGE 6: Form 8863 — Education Credits ────────────────────────────────
+  const _f8863 = r.f8863 || {};
+  const has8863 = (_f8863.details || []).length > 0;
+  const page6 = has8863 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form 8863 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Education Credits (AOTC and LLC)</span>
+    </div>
+    <div class="f-body">
+      ${(_f8863.details || []).map((d, i) => `
+      <div class="sec-hdr">${d.type === 'AOC' ? 'American Opportunity Credit (AOTC)' : 'Lifetime Learning Credit (LLC)'} &mdash; ${d.institution || 'Institution ' + (i+1)}</div>
+      <div class="lines">
+        ${lineRow('27','Qualified education expenses (Adjusted)',                rn(d.qualified_exp_used))}
+        ${d.type === 'AOC' ? lineRow('28','First $2,000 of qualified expenses at 100%',    rn(Math.min(d.qualified_exp_used, 2000))) : ''}
+        ${d.type === 'AOC' ? lineRow('29','Next $2,000 at 25%',                            rn(Math.max(0, Math.min(d.qualified_exp_used - 2000, 2000)) * 0.25)) : ''}
+        ${d.type === 'LLC' ? lineRow('31','20% of qualified expenses (max $10,000)',        rn(d.total)) : ''}
+        ${lineRow('30','Tentative credit before phaseout',                       rn(d.total))}
+        ${lineIf('31','Phaseout applied',                                        d.phaseout_applied ? rn(d.total - d.nonref - d.refundable) : 0)}
+        ${lineRow('32','Credit after phaseout',                                  rn(d.nonref + (d.refundable || 0)))}
+        ${d.type === 'AOC' ? lineRow('33','Refundable portion (40%) &mdash; Form 1040 line 29', rn(d.refundable)) : ''}
+        ${d.type === 'AOC' ? lineRow('33b','Nonrefundable portion (60%)',                   rn(d.nonref)) : ''}
+      </div>` ).join('')}
+      <div class="sec-hdr" style="margin-top:8px">Credit Limit Worksheet (CLW) &mdash; Nonrefundable portion</div>
+      <div class="lines">
+        ${lineRow('CLW 1','Tax (Form 1040 line 18)',                              rn(_f8863.clw_l1))}
+        ${lineRow('CLW 2','Other nonrefundable credits already applied',          rn(_f8863.clw_l2))}
+        ${lineRow('CLW 3','Remaining tax — credit limited to this amount',        rn(Math.max(0, rn(_f8863.clw_l1) - rn(_f8863.clw_l2))), 'subtotal')}
+        ${lineRow('19','Nonrefundable credit applied &mdash; Form 1040 Sch 3 line 3', rn(_f8863.nonref_applied), 'total')}
+        ${lineRow('8', 'Refundable AOTC &mdash; Form 1040 line 29',              rn(_f8863.refundable_aoc), 'total')}
+      </div>
+      <div class="mini-note" style="margin-top:6px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Source: IRC §25A. AOTC: max $2,500/yr × max 4 years per student; 40% refundable.
+        Phaseout: single $80k–$90k, MFJ $160k–$180k. Source: Rev. Proc. 2024-40.
+      </div>
+    </div>
+    <div class="page-footer"><span>Form 8863 (2025) &middot; SachinTaxCare</span><span>Page 6</span></div>
+  </div>` : '';
+
+  // ── PAGE 7: Form 8880 — Saver's Credit ───────────────────────────────────
+  const _f8880 = r.f8880 || {};
+  const has8880 = rn(_f8880.l3) > 0;
+  const page7 = has8880 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form 8880 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Credit for Qualified Retirement Savings Contributions</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Saver&rsquo;s Credit Computation</div>
+      <div class="lines">
+        ${lineRow('1', 'Traditional IRA contributions (taxpayer)',                rn(_f8880.l1_ira))}
+        ${lineRow('2', 'Elective deferrals to 401(k), 403(b), SIMPLE, SEP',     rn(_f8880.l2_deferrals))}
+        ${lineRow('3', 'Add lines 1 and 2',                                      rn(_f8880.l3))}
+        ${lineRow('5', 'Applicable contributions (limited to $2,000)',           rn(_f8880.l5), 'subtotal')}
+        ${lineRow('6', 'Rate (50% / 20% / 10% based on AGI)',                    null, '', rn(_f8880.l9_rate * 100).toFixed(0) + '%')}
+        ${lineRow('10','Tentative saver&rsquo;s credit (line 5 × rate)',          rn(_f8880.l10))}
+      </div>
+      <div class="sec-hdr" style="margin-top:8px">Credit Limit Worksheet</div>
+      <div class="lines">
+        ${lineRow('CLW 1','Tax (Form 1040 line 18)',                              rn(_f8880.clw_l1))}
+        ${lineRow('CLW 2','8863 nonrefundable credit already applied',            rn(_f8880.clw_l2))}
+        ${lineRow('CLW 3','Remaining tax',                                        rn(_f8880.clw_l3))}
+        ${lineRow('11','Credit limited to remaining tax',                         rn(_f8880.l11))}
+        ${lineRow('12','Saver&rsquo;s credit &mdash; lesser of line 10 or 11 &mdash; Schedule 3 line 4', rn(_f8880.l12_credit), 'total')}
+      </div>
+      <div class="mini-note" style="margin-top:6px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Source: IRC §25B; Rev. Proc. 2024-40. AGI limits 2025: MFJ $79k / HOH $59,250 / Single $39,500.
+        Full-time students and those claimed as dependents are not eligible.
+      </div>
+    </div>
+    <div class="page-footer"><span>Form 8880 (2025) &middot; SachinTaxCare</span><span>Page 7</span></div>
+  </div>` : '';
+
+  // ── PAGE 8: Social Security Benefits Worksheet (Pub 915 WS1) ─────────────
+  const _ssd = r.ss_detail || {};
+  const _ws1 = _ssd.worksheet1_detail || {};
+  const hasSS = rn(r.l6a_ss_total) > 0;
+  const page8 = hasSS ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">IRS Pub. 915 Worksheet 1 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Social Security Benefit Taxability</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Worksheet 1 &mdash; Figuring the Taxable Part of Your Social Security Benefits</div>
+      <div class="mini-note" style="margin-bottom:4px;font-size:7.5pt;font-family:var(--sans);color:#555">
+        Source: IRS Pub. 915 (2025); IRC §86. MFJ base $32,000 / Single &amp; HOH $25,000.
+      </div>
+      <div class="lines">
+        ${lineRow('1', 'Net SS benefits (SSA-1099 Box 5)',                        rn(_ws1.l1 || r.l6a_ss_total))}
+        ${lineRow('2', '1/2 of line 1',                                           rn(_ws1.l2))}
+        ${lineRow('3', 'Income before SS (AGI excluding SS)',                     rn(_ws1.l3))}
+        ${lineIf('4',  'Tax-exempt interest',                                     rn(_ws1.l4))}
+        ${lineRow('6', 'Combined income (line 2 + line 3 + 4 + 5)',               rn(_ws1.l6))}
+        ${lineRow('9', 'Base amount (MFJ $32,000 / Single $25,000)',              rn(_ws1.l9))}
+        ${lineRow('10','Line 6 minus line 9',                                     rn(_ws1.l10))}
+        ${lineRow('13','Tier 1 inclusion (50% of income above base)',             rn(_ws1.l14))}
+        ${lineRow('16','50% of benefits (line 1 × 50%)',                          rn(_ws1.l16))}
+        ${lineRow('17','Tier 2 inclusion (85% of income above upper threshold)',  rn(_ws1.l17))}
+        ${lineRow('18','85% of net benefits',                                     rn(_ws1.l18))}
+        ${lineRow('19','Taxable SS &mdash; lesser of line 17 or 18 &mdash; Form 1040 Line 6b', rn(_ws1.l19_taxable || r.l6b_ss_taxable), 'total')}
+      </div>
+      <div class="rate-strip" style="margin-top:6px">
+        <div class="rate-cell"><div class="rate-lbl">Gross benefits</div><div class="rate-val">${fd(rn(r.l6a_ss_total))}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">Taxable portion</div><div class="rate-val">${fd(rn(r.l6b_ss_taxable))}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">% taxable</div><div class="rate-val">${rn(r.l6a_ss_total) > 0 ? (rn(r.l6b_ss_taxable)/rn(r.l6a_ss_total)*100).toFixed(0)+'%' : '0%'}</div></div>
+        <div class="rate-cell"><div class="rate-lbl">Combined income</div><div class="rate-val">${fd(rn(_ssd.combined_income))}</div></div>
+      </div>
+    </div>
+    <div class="page-footer"><span>Pub. 915 WS1 (2025) &middot; SachinTaxCare</span><span>Page 8</span></div>
+  </div>` : '';
+
+  // ── PAGE 9: Simplified Method Worksheet (Pub 575 Worksheet A) ────────────
+  const _smList = r.f1099r_simplified_method || [];
+  const hasSM = _smList.some(sm => sm.applicable);
+  const page9 = hasSM ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">IRS Pub. 575 Worksheet A (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Simplified Method &mdash; Pension Taxability</span>
+    </div>
+    <div class="f-body">
+      ${_smList.filter(sm => sm.applicable).map((sm, i) => `
+      <div class="sec-hdr">${sm.payer || 'Pension ' + (i+1)}</div>
+      <div class="mini-note" style="margin-bottom:4px;font-size:7.5pt;font-family:var(--sans);color:#555">
+        Source: IRS Pub. 575 Worksheet A; IRC §72(d). Expected payments from Pub. 575 Table 1 (single life)
+        or Table 2 (joint &amp; survivor). Monthly exclusion = cost ÷ expected payments. Round AFTER multiplying by 12.
+      </div>
+      <div class="lines">
+        ${lineRow('1', 'Cost in the contract (Box 9b)',                           rn(sm.cost_in_contract))}
+        ${lineRow('2', 'Prior tax-free amounts recovered',                        rn(sm.prior_recovered))}
+        ${lineRow('3', 'Remaining cost (line 1 minus line 2)',                    rn(sm.remaining_basis_before))}
+        ${lineRow('4', 'Expected payments (Pub. 575 Table 1 or 2)',               rn(sm.expected_payments))}
+        ${lineRow('5', 'Monthly exclusion = line 1 ÷ line 4',                    sm.monthly_tax_free.toFixed(5))}
+        ${lineRow('6', 'Annual tax-free amount = line 5 × 12 months (round)',    rn(sm.annual_tax_free))}
+        ${lineRow('7', 'Gross pension income (Box 1)',                            rn(sm.cost_in_contract + sm.remaining_basis_before))}
+        ${lineRow('8', 'Taxable pension = gross minus line 6',                   rn(sm.taxable_amount), 'total')}
+        ${lineRow('—', 'Remaining basis after this year',                        rn(sm.remaining_basis_after))}
+      </div>`).join('')}
+    </div>
+    <div class="page-footer"><span>Pub. 575 Worksheet A (2025) &middot; SachinTaxCare</span><span>Page 9</span></div>
+  </div>` : '';
+
+  // ── PAGE 10: Schedule R — Credit for Elderly or Disabled ─────────────────
+  const hasSchedR = (s.taxpayer_age_for_senior_ded >= 65 || s.spouse_age_for_senior_ded >= 65);
+  const page10 = hasSchedR ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule R (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Credit for the Elderly or the Permanently and Totally Disabled</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Schedule R &mdash; Credit for Elderly or Disabled</div>
+      <div class="mini-note" style="margin-bottom:4px;font-size:7.5pt;font-family:var(--sans);color:#555">
+        Source: IRC §22; IRS Schedule R instructions 2025. Credit requires taxpayer age ≥ 65 OR permanently disabled.
+        Initial amount: MFJ both ≥65 $7,500; MFJ one ≥65 $5,000; Single ≥65 $5,000.
+        Reduced by: nontaxable SS + nontaxable pensions + 15% of (AGI − $10,000 MFJ / $7,500 single).
+        <strong>Note:</strong> This credit is frequently zero because nontaxable SS alone eliminates it for most retirees.
+      </div>
+      <div class="lines">
+        ${lineRow('10','Initial amount (MFJ both 65+ $7,500; one 65+ $5,000; Single $5,000)',
+          rn(fs === 'mfj' && rn(s.taxpayer_age_for_senior_ded) >= 65 && rn(s.spouse_age_for_senior_ded) >= 65 ? 7500
+           : fs === 'mfj' ? 5000 : 5000))}
+        ${lineIf('11','Nontaxable SS benefits (Line 6a minus 6b)',
+          rn(Math.max(0, rn(r.l6a_ss_total) - rn(r.l6b_ss_taxable))))}
+        ${lineIf('12','Nontaxable pension / disability income',                   0)}
+        ${lineIf('13','Add lines 11 + 12',
+          rn(Math.max(0, rn(r.l6a_ss_total) - rn(r.l6b_ss_taxable))))}
+        ${lineRow('14','Subtract line 13 from line 10 (if zero or less, stop — no credit)', 
+          rn(Math.max(0,
+            (fs === 'mfj' && rn(s.taxpayer_age_for_senior_ded) >= 65 && rn(s.spouse_age_for_senior_ded) >= 65 ? 7500 : 5000)
+            - Math.max(0, rn(r.l6a_ss_total) - rn(r.l6b_ss_taxable)))))}
+        ${lineRow('16','AGI limitation base (MFJ $10,000 / Other $7,500)',        rn(fs === 'mfj' ? 10000 : 7500))}
+        ${lineRow('17','Excess AGI (AGI minus line 16)',                           rn(Math.max(0, rn(r.agi) - (fs === 'mfj' ? 10000 : 7500))))}
+        ${lineRow('18','Multiply line 17 × 15%',                                  rn(Math.max(0, rn(r.agi) - (fs === 'mfj' ? 10000 : 7500)) * 0.15))}
+        ${lineRow('19','Subtract line 18 from line 14 (if zero or less, credit = 0)',
+          rn(Math.max(0,
+            (fs === 'mfj' && rn(s.taxpayer_age_for_senior_ded) >= 65 && rn(s.spouse_age_for_senior_ded) >= 65 ? 7500 : 5000)
+            - Math.max(0, rn(r.l6a_ss_total) - rn(r.l6b_ss_taxable))
+            - Math.max(0, rn(r.agi) - (fs === 'mfj' ? 10000 : 7500)) * 0.15)))}
+        ${lineRow('21','Schedule R credit = line 19 × 15%',
+          rn(Math.max(0,
+            (fs === 'mfj' && rn(s.taxpayer_age_for_senior_ded) >= 65 && rn(s.spouse_age_for_senior_ded) >= 65 ? 7500 : 5000)
+            - Math.max(0, rn(r.l6a_ss_total) - rn(r.l6b_ss_taxable))
+            - Math.max(0, rn(r.agi) - (fs === 'mfj' ? 10000 : 7500)) * 0.15) * 0.15), 'total')}
+      </div>
+    </div>
+    <div class="page-footer"><span>Schedule R (Form 1040) 2025 &middot; SachinTaxCare</span><span>Page 10</span></div>
+  </div>` : '';
+
+  // ── PAGE 11: CPA/EA Review — Warnings & Checklist ─────────────────────────
+
+  const checklist = [
+    'EITC: Confirm from IRS EIC Table (p1040.pdf pp. 16+). Use the <strong>larger</strong> of earned income or AGI.',
+    'Form 8962 Line 5: TRUNCATE to whole number (never round). Use the exact Table 2 row.',
+    'Mortgage interest: outstanding balance &gt;$750k post-2017 &rarr; partial deduction only. PMI not deductible in 2025.',
+    'AOC: limited to 4 tax years total per student. Form 8880: full-time student is barred from saver&#39;s credit.',
+    'Line 25a = W-2 Box 2 <strong>only</strong>. Line 32 = lines 27a+28+29+30+31 only.',
+    'Form 8606: ALL traditional/SEP/SIMPLE IRA balances aggregate in the denominator (Line 6 aggregation rule).',
+  ].map(t => `<div class="check-item"><div class="check-icon">&#10003;</div><div>${t}</div></div>`).join('');
+
+  const page11 = `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">CPA/EA Review Copy</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Warnings &amp; Flags</span>
+    </div>
+    <div class="f-body" style="padding-top:6px">
+      <div class="warn-banner">
+        <span class="warn-count">${warnings.length} Warning${warnings.length !== 1 ? 's' : ''}</span>
+        &mdash; All IRS-source cited. Review each item before filing.
+      </div>
+      <div>${warningsHtml}</div>
+      <div class="checklist-hdr">Pre-Filing Checklist</div>
+      <div>${checklist}</div>
+    </div>
+    <div class="page-footer">
+      <span>SachinTaxCare v15 &middot; Python engine &middot; 180/180 IRS-verified tests &middot; Not for filing without CPA/EA review</span>
+      <span>${new Date().toLocaleDateString()}</span>
+    </div>
+  </div>`;
+
+
+  // ── PAGE A: W-2 Summary ─────────────────────────────────────────────────
+  const hasW2 = s.w2s && s.w2s.length > 0;
+  const pageA = hasW2 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form W-2 Summary (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Wage &amp; Tax Statements</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">W-2 Wage and Tax Statement Detail</div>
+      ${(s.w2s || []).map((w, i) => `
+      <div style="margin-bottom:10px;border:0.5px solid #ccc;border-radius:4px;padding:6px 10px;background:#fafaf8">
+        <div style="font-weight:600;font-size:8.5pt;margin-bottom:4px">${w.employer || 'Employer ' + (i+1)}${w.ein ? ' &nbsp; EIN: ' + w.ein : ''}${w.for_spouse ? ' &nbsp; <em>(Spouse)</em>' : ''}</div>
+        <div class="lines">
+          ${lineRow('1', 'Wages, tips, other compensation', w.box1_wages||0)}
+          ${lineRow('2', 'Federal income tax withheld', w.box2_fed_wh||0)}
+          ${(w.box3_ss_wages||0) > 0 ? lineRow('3', 'Social security wages', w.box3_ss_wages||0) : ''}
+          ${(w.box4_ss_wh||0) > 0 ? lineRow('4', 'Social security tax withheld', w.box4_ss_wh||0) : ''}
+          ${(w.box5_medicare_wages||w.box5_med_wages||0) > 0 ? lineRow('5', 'Medicare wages', w.box5_medicare_wages||w.box5_med_wages||0) : ''}
+          ${(w.box6_medicare_wh||w.box6_med_wh||0) > 0 ? lineRow('6', 'Medicare tax withheld', w.box6_medicare_wh||w.box6_med_wh||0) : ''}
+          ${(w.box10_dep_care||w.box10_dependent_care||0) > 0 ? lineRow('10', 'Dependent care benefits', w.box10_dep_care||w.box10_dependent_care||0) : ''}
+          ${['a','b','c','d'].filter(x => w['box12' + x + '_code']).map(x =>
+            `<div class="line-row"><span class="line-ref">12${x.toUpperCase()}</span><span class="line-desc">Code ${w['box12' + x + '_code']} — ${
+              {'D':'Traditional 401(k)','E':'403(b)','F':'408(k)(6) SEP','G':'457(b)','H':'501(c)(18)(D)',
+               'S':'SIMPLE IRA','W':'HSA employer','AA':'Roth 401(k)','BB':'Roth 403(b)','EE':'Roth 457(b)',
+               'C':'Group term life (taxable)','J':'Sick pay (excl)','K':'Excise tax on excess golden parachute',
+               'L':'Substantiated employee business expense','M':'Uncollected SS on GTL','N':'Uncollected Medicare on GTL',
+               'P':'Excludable moving expense','R':'Employer contributions to MSA','T':'Adoption benefits',
+               'V':'Income from NQSO','Y':'Deferrals to §409A NQDC','Z':'Income under §409A NQDC'}[w['box12' + x + '_code']] || 'See instructions'
+            }</span><span class="line-amt">${fd(w['box12' + x + '_amt']||0)}</span></div>`
+          ).join('')}
+          ${(w.box16_state_wages||0) > 0 ? lineRow('16', 'State wages', w.box16_state_wages||0, '', w.box15_state || '') : ''}
+          ${(w.box17_state_wh||0) > 0 ? lineRow('17', 'State income tax withheld', w.box17_state_wh||0) : ''}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="page-footer"><span>W-2 Summary (2025) &middot; SachinTaxCare</span><span>Page A</span></div>
+  </div>` : '';
+
+  // ── PAGE B: Schedule B — Interest and Dividends ──────────────────────────
+  const hasSchB = (s.form_1099ints && s.form_1099ints.some(f => f.box1_interest > 0))
+               || (s.form_1099divs && s.form_1099divs.some(f => f.box1a_ordinary_div > 0));
+  const pageBpage = hasSchB ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule B (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Interest and Ordinary Dividends</span>
+    </div>
+    <div class="f-body">
+      ${(s.form_1099ints && s.form_1099ints.some(f => f.box1_interest > 0)) ? `
+      <div class="sec-hdr">Part I &mdash; Interest Income (Form(s) 1099-INT)</div>
+      <div class="lines">
+        ${(s.form_1099ints || []).filter(fi => fi.box1_interest > 0).map(fi =>
+          lineRow('', fi.payer + (fi.payer_ein ? ' (EIN ' + fi.payer_ein + ')' : ''), fi.box1_interest||0, '',
+                  (fi.box2_early_withdrawal_penalty||0) > 0 ? 'Early withdrawal penalty: ' + fd(fi.box2_early_withdrawal_penalty) : ''
+          )
+        ).join('')}
+        ${(s.form_1099ints || []).some(f => (f.box3_us_savings_bond||0) > 0) ?
+          lineRow('3', 'U.S. savings bond / Treasury interest (state-exempt)',
+            (s.form_1099ints || []).reduce((a, f) => a + (f.box3_us_savings_bond||0), 0)) : ''}
+        ${lineRow('4', 'Total taxable interest — enter on Form 1040, line 2b', rn(r.interest), 'subtotal')}
+      </div>` : ''}
+      ${(s.form_1099divs && s.form_1099divs.some(f => f.box1a_ordinary_div > 0)) ? `
+      <div class="sec-hdr" style="margin-top:8px">Part II &mdash; Ordinary Dividends (Form(s) 1099-DIV)</div>
+      <div class="lines">
+        ${(s.form_1099divs || []).filter(fd2 => fd2.box1a_ordinary_div > 0).map(fd2 =>
+          lineRow('', fd2.payer, fd2.box1a_ordinary_div||0, '',
+                  (f.box1b_qualified_div||0) > 0 ? 'Qualified: ' + fd(f.box1b_qualified_div) +
+                  ((f.box2a_total_cap_gain||f.box2a_cap_gain_dist||0) > 0 ? ' · Cap gain dist: ' + fd(f.box2a_total_cap_gain||f.box2a_cap_gain_dist) : '') +
+                  ((f.box5_sec199a_div||0) > 0 ? ' · §199A div: ' + fd(f.box5_sec199a_div) : '') : '')
+        ).join('')}
+        ${lineRow('6', 'Total ordinary dividends — enter on Form 1040, line 3b', rn(r.dividends), 'subtotal')}
+        ${rn(r.dividends_qual) > 0 ? lineRow('', 'Qualified dividends — Form 1040 line 3a', rn(r.dividends_qual), '', 'Taxed at 0% / 15% / 20%') : ''}
+      </div>` : ''}
+    </div>
+    <div class="page-footer"><span>Schedule B (Form 1040) 2025 &middot; SachinTaxCare</span><span>Page B</span></div>
+  </div>` : '';
+
+  // ── PAGE C: Schedule D / Form 8949 ──────────────────────────────────────
+  // _sd pre-declared above
+  const hasSD = Object.keys(_sd).length > 0 || rn(r.cap_gain_net) !== 0 || rn(r.div_cap_gain_dist) > 0;
+  const pageC = hasSD ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule D / Form 8949 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Capital Gains and Losses</span>
+    </div>
+    <div class="f-body">
+
+      ${(_sd.box_a_rows || []).length > 0 ? `
+      <div class="sec-hdr">Box A — Short-Term Covered (Basis Reported to IRS)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:7.5pt;font-family:var(--mono);margin-bottom:4px">
+        <tr style="border-bottom:1px solid #ccc"><th align="left" style="padding:2px 4px">Description</th><th align="left">Acquired</th><th align="left">Sold</th><th align="right">Proceeds</th><th align="right">Basis</th><th align="right">Gain/(Loss)</th></tr>
+        ${(_sd.box_a_rows || []).map(row => `<tr><td style="padding:2px 4px">${row.description||''}</td><td>${row.date_acquired||''}</td><td>${row.date_sold||''}</td><td align="right">${fd(row.proceeds)}</td><td align="right">${fd(row.basis)}</td><td align="right">${fd(row.gain_loss)}</td></tr>`).join('')}
+      </table>` : ''}
+
+      ${(_sd.box_c_rows || []).length > 0 ? `
+      <div class="sec-hdr">Box C — Short-Term Noncovered (Basis NOT Reported to IRS)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:7.5pt;font-family:var(--mono);margin-bottom:4px">
+        <tr style="border-bottom:1px solid #ccc"><th align="left" style="padding:2px 4px">Description</th><th align="left">Acquired</th><th align="left">Sold</th><th align="right">Proceeds</th><th align="right">Basis</th><th align="right">Gain/(Loss)</th></tr>
+        ${(_sd.box_c_rows || []).map(row => `<tr><td style="padding:2px 4px">${row.description||''}</td><td>${row.date_acquired||''}</td><td>${row.date_sold||''}</td><td align="right">${fd(row.proceeds)}</td><td align="right">${fd(row.basis)}</td><td align="right">${fd(row.gain_loss)}</td></tr>`).join('')}
+      </table>` : ''}
+
+      <div class="sec-hdr">Part I &mdash; Short-Term Capital Gains and Losses (Assets Held 1 Year or Less)</div>
+      <div class="lines">
+        ${rn(_sd.schd_l1b_st) !== 0 ? lineRow('1b', 'Total Box A (covered ST) — Proceeds: ' + fd(_sd.st_proceeds||0) + ' Basis: ' + fd(_sd.st_basis||0), rn(_sd.schd_l1b_st)) : ''}
+        ${rn(_sd.schd_l2_st) !== 0 ? lineRow('2',  'Total Box C (noncovered ST)', rn(_sd.schd_l2_st)) : ''}
+        ${lineRow('7', 'Net short-term capital gain or (loss) — combines lines 1–6', rn(_sd.schd_l7_st_total), 'subtotal')}
+      </div>
+
+      ${(_sd.box_b_rows || []).length > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Box B — Long-Term Covered</div>
+      <table style="width:100%;border-collapse:collapse;font-size:7.5pt;font-family:var(--mono);margin-bottom:4px">
+        <tr style="border-bottom:1px solid #ccc"><th align="left" style="padding:2px 4px">Description</th><th align="left">Acquired</th><th align="left">Sold</th><th align="right">Proceeds</th><th align="right">Basis</th><th align="right">Gain/(Loss)</th></tr>
+        ${(_sd.box_b_rows || []).map(row => `<tr><td style="padding:2px 4px">${row.description||''}</td><td>${row.date_acquired||''}</td><td>${row.date_sold||''}</td><td align="right">${fd(row.proceeds)}</td><td align="right">${fd(row.basis)}</td><td align="right">${fd(row.gain_loss)}</td></tr>`).join('')}
+      </table>` : ''}
+
+      ${(_sd.box_d_rows || []).length > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Box D — Long-Term Noncovered</div>
+      <table style="width:100%;border-collapse:collapse;font-size:7.5pt;font-family:var(--mono);margin-bottom:4px">
+        <tr style="border-bottom:1px solid #ccc"><th align="left" style="padding:2px 4px">Description</th><th align="left">Acquired</th><th align="left">Sold</th><th align="right">Proceeds</th><th align="right">Basis</th><th align="right">Gain/(Loss)</th></tr>
+        ${(_sd.box_d_rows || []).map(row => `<tr><td style="padding:2px 4px">${row.description||''}</td><td>${row.date_acquired||''}</td><td>${row.date_sold||''}</td><td align="right">${fd(row.proceeds)}</td><td align="right">${fd(row.basis)}</td><td align="right">${fd(row.gain_loss)}</td></tr>`).join('')}
+      </table>` : ''}
+
+      <div class="sec-hdr" style="margin-top:6px">Part II &mdash; Long-Term Capital Gains and Losses (Assets Held More Than 1 Year)</div>
+      <div class="lines">
+        ${rn(_sd.schd_l8b_lt) !== 0 ? lineRow('8b', 'Total Box B (covered LT)', rn(_sd.schd_l8b_lt)) : ''}
+        ${rn(_sd.schd_l9_lt) !== 0 ? lineRow('9',  'Total Box D (noncovered LT)', rn(_sd.schd_l9_lt)) : ''}
+        ${rn(r.div_cap_gain_dist) > 0 ? lineRow('13', 'Capital gain distributions from 1099-DIV Box 2a', rn(r.div_cap_gain_dist)) : ''}
+        ${lineRow('15', 'Net long-term capital gain or (loss) — combines lines 8a–14', rn(_sd.schd_l15_lt_total), 'subtotal')}
+      </div>
+
+      <div class="sec-hdr" style="margin-top:6px">Part III &mdash; Summary</div>
+      <div class="lines">
+        ${lineRow('16', 'Combine lines 7 and 15 — net capital gain or (loss)', rn(_sd.net_capital_gain_loss))}
+        ${lineRow('21', 'If loss: smaller of line 16 or ($3,000) — enter on Form 1040, line 7', rn(_sd.cap_loss_deductible), 'subtotal', 'Maximum deductible loss: $(3,000) per year — excess carried to next year')}
+        ${rn(_sd.cap_loss_carryover) < 0 ? lineRow('CF', 'Capital loss carryover to next year', rn(_sd.cap_loss_carryover), '', 'Amount exceeding $3,000 limit — use on next year Schedule D Line 6/14') : ''}
+        ${rn(_sd.cap_gain_taxable) > 0 ? lineRow('18', 'Net capital gain — enter on Form 1040, line 7', rn(_sd.cap_gain_taxable), 'total') : ''}
+      </div>
+      <div class="mini-note" style="margin-top:6px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        ST/LT classification uses actual holding period from date_acquired to date_sold (>365 days = LT). 
+        Source: f1040sd.pdf; f8949.pdf; IRC §1222. LT cap gains taxed at 0%/15%/20% (QDCGT rates).
+      </div>
+    </div>
+    <div class="page-footer"><span>Schedule D / Form 8949 (2025) &middot; SachinTaxCare</span><span>Page C</span></div>
+  </div>` : '';
+
+  // ── PAGE D: Schedule C detail ────────────────────────────────────────────
+  // _se pre-declared above
+  const hasScC = (_se.per_business || []).length > 0;
+  const pageD = hasScC ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Schedule C (Form 1040) 2025</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Profit or Loss From Business</span>
+    </div>
+    <div class="f-body">
+      ${(_se.per_business || []).map((b, i) => {
+        const sc = s.schedule_cs && s.schedule_cs[i];
+        return `
+      <div style="margin-bottom:10px">
+        <div style="font-weight:600;font-size:8.5pt;margin-bottom:3px">
+          ${b.name || 'Business'}${b.business_code ? ' &nbsp; NAICS: ' + b.business_code : ''}${sc && sc.principal_product ? ' &nbsp; Principal product: ' + sc.principal_product : ''}
+        </div>
+        <div class="sec-hdr">Net Profit — How It Is Calculated</div>
+        <div class="lines" style="background:#f9f8f5;border-radius:4px;padding:2px 0;margin-bottom:4px">
+          ${lineRow('1', 'Gross receipts (Line 1)', b.gross_receipts||0)}
+          ${(b.other_income||0) > 0 ? lineRow('+6', '+ Other income (Line 6)', b.other_income||0) : ''}
+          ${lineRow('=7', '= Gross income (Line 7)', b.gross_profit||0, 'subtotal')}
+          ${lineRow('-28','− Total expenses (Line 28)', b.total_expenses||0)}
+          ${lineRow('=31','= Net profit (Line 31)', b.net_profit||0, 'total')}
+        </div>
+        <div class="mini-note" style="font-size:7pt;color:#444;margin:0 0 6px;padding:5px 8px;background:#fff8e6;border-left:3px solid #d4930a;border-radius:2px;font-family:var(--sans)">
+          <strong>SE Tax (Sch SE):</strong> 15.3% × 92.35% × $${(b.net_profit||0).toLocaleString()} net profit = <strong>$${rn((b.net_profit||0) * 0.9235 * 0.153).toLocaleString()}</strong>
+          &nbsp;&nbsp;|&nbsp;&nbsp;
+          <strong>QBI §199A (Form 8995):</strong> 20% × ($${(b.net_profit||0).toLocaleString()} × 92.35%) = <strong>$${rn((b.net_profit||0) * 0.9235 * 0.20).toLocaleString()}</strong> tentative (before TI limit)
+          <br>⚠ 1099-NEC income must be included in Line 1 gross receipts above — do not enter in both SE panel and Other Income panel.
+        </div>
+        <div class="sec-hdr">Part I &mdash; Income Detail</div>
+        <div class="lines">
+          ${lineRow('1',  'Gross receipts or sales', b.gross_receipts||0)}
+          ${(b.other_income||0) > 0 ? lineRow('6', 'Other income', b.other_income||0) : ''}
+          ${lineRow('7',  'Gross income', b.gross_profit||0, 'subtotal')}
+        </div>
+        <div class="sec-hdr" style="margin-top:4px">Part II &mdash; Expenses</div>
+        <div class="lines">
+          ${sc && (sc.advertising||0)         > 0 ? lineRow('8',  'Advertising',                    sc.advertising)        : ''}
+          ${(b.car_expense||sc && (sc.car_truck_expenses||0)) > 0 ? lineRow('9',
+            (b.business_miles||0) > 0 && !(sc && (sc.car_truck_expenses||0))
+              ? 'Car and truck — standard mileage: ' + (b.business_miles||0).toLocaleString() + ' miles × $' + (b.mileage_rate||0.67) + '/mi (Rev. Proc. 2024-45)'
+              : 'Car and truck expenses (actual)',
+            b.car_expense || (sc && sc.car_truck_expenses) || 0) : ''}
+          ${sc && (sc.commissions_fees||0)    > 0 ? lineRow('10', 'Commissions and fees',           sc.commissions_fees)    : ''}
+          ${sc && (sc.contract_labor||0)      > 0 ? lineRow('11', 'Contract labor',                 sc.contract_labor)      : ''}
+          ${sc && (sc.depletion||0)           > 0 ? lineRow('12', 'Depletion',                      sc.depletion)           : ''}
+          ${sc && (sc.depreciation||0)        > 0 ? lineRow('13', 'Depreciation',                   sc.depreciation)        : ''}
+          ${sc && (sc.insurance||0)           > 0 ? lineRow('15', 'Insurance',                      sc.insurance)           : ''}
+          ${sc && (sc.legal_professional||0)  > 0 ? lineRow('17', 'Legal and professional',         sc.legal_professional)  : ''}
+          ${sc && (sc.office_expense||0)      > 0 ? lineRow('18', 'Office expense',                 sc.office_expense)      : ''}
+          ${sc && (sc.rent_lease_other||0)    > 0 ? lineRow('20b','Rent — other business property', sc.rent_lease_other)    : ''}
+          ${sc && (sc.repairs_maintenance||0) > 0 ? lineRow('21', 'Repairs and maintenance',        sc.repairs_maintenance) : ''}
+          ${sc && (sc.supplies||0)            > 0 ? lineRow('22', 'Supplies',                       sc.supplies)            : ''}
+          ${sc && (sc.taxes_licenses||0)      > 0 ? lineRow('23', 'Taxes and licenses',             sc.taxes_licenses)      : ''}
+          ${sc && (sc.meals||0)               > 0 ? lineRow('24b','Meals (50% deductible)',          b.meals_deductible||0) : ''}
+          ${sc && (sc.utilities||0)           > 0 ? lineRow('25', 'Utilities',                      sc.utilities)           : ''}
+          ${sc && (sc.wages||0)               > 0 ? lineRow('26', 'Wages',                          sc.wages)               : ''}
+          ${sc && (sc.other_expenses||0)      > 0 ? lineRow('48', 'Other expenses',                 sc.other_expenses)      : ''}
+          ${lineRow('28', 'Total expenses',                                       b.total_expenses||0, 'subtotal')}
+        </div>
+        ${b.home_office > 0 ? `<div class="lines">${lineRow('30', 'Business use of home (Form 8829 / simplified method)', b.home_office)}</div>` : ''}
+        <div class="lines">
+          ${lineRow('31', 'Net profit or (loss) — enter on Schedule 1, line 3 and Schedule SE', b.net_profit||0, 'total')}
+        </div>
+      </div>`;}).join('')}
+      <div class="mini-note" style="margin-top:4px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Source: f1040sc.pdf; i1040sc.pdf. Meals at 50%. SE tax = 15.3% × 92.35% of net profit. QBI = net profit × 92.35% (after ½ SE tax adj).
+      </div>
+    </div>
+    <div class="page-footer"><span>Schedule C (Form 1040) 2025 &middot; SachinTaxCare</span><span>Page D</span></div>
+  </div>` : '';
+
+  // ── PAGE E: Form 1099-R detail + Form 5329 ──────────────────────────────
+  // _f5329 pre-declared above
+  const has1099R = s.form_1099rs && s.form_1099rs.some(f => (f.box1_gross||0) > 0);
+  const pageE = has1099R ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form 1099-R / Form 5329 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Distributions and Early Withdrawal Penalty</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Form 1099-R — Distributions from IRAs, Pensions, and Annuities</div>
+      ${(s.form_1099rs || []).filter(fr => (fr.box1_gross||0) > 0).map(fr => `
+      <div style="margin-bottom:8px;border:0.5px solid #ccc;border-radius:4px;padding:6px 10px;background:#fafaf8">
+        <div style="font-weight:600;font-size:8.5pt;margin-bottom:3px">${fr.payer || 'Payer'}${(fr.ein||fr.payer_ein) ? ' &nbsp; EIN: ' + (fr.ein||fr.payer_ein) : ''}</div>
+        <div class="lines">
+          ${lineRow('1',  'Gross distribution',        fr.box1_gross||0)}
+          ${lineRow('2a', 'Taxable amount',             fr.box2a_taxable||0)}
+          ${lineRow('4',  'Federal income tax withheld',fr.box4_fed_wh||0)}
+          <div class="line-row"><span class="line-ref">7</span><span class="line-desc">Distribution code(s): <strong>${fr.box7_code||''}${fr.box7_code2 ? '/' + fr.box7_code2 : ''}</strong>${fr.box7_ira_sep_simple ? ' &nbsp; IRA/SEP/SIMPLE ✓' : ''}</span><span class="line-amt">&nbsp;</span></div>
+        </div>
+      </div>`).join('')}
+
+      ${rn(_f5329.l1_total) > 0 ? `
+      <div class="sec-hdr" style="margin-top:6px">Form 5329 Part I — Additional Tax on Early Distributions (Before Age 59½)</div>
+      <div class="mini-note" style="margin-bottom:4px;font-size:7.5pt;font-family:var(--sans);color:#555">
+        Source: irs.gov/pub/irs-pdf/f5329.pdf Part I; FETCH_VERIFIED 2026-05-21; IRC §72(t)
+      </div>
+      <div class="lines">
+        ${lineRow('1', 'Early distributions subject to 10% penalty', rn(_f5329.l1_total))}
+        ${lineRow('2', 'Distributions excepted from penalty — exception code(s): ' +
+          ((_f5329.exception_detail || []).map(ex => ex.code + ' ($' + fd(ex.allowed) + ')').join(', ') || 'none'),
+          rn(_f5329.l2_exceptions))}
+        ${lineRow('3', 'Taxable early distributions (line 1 minus line 2)', rn(_f5329.l1_total) - rn(_f5329.l2_exceptions))}
+        ${lineRow('4', 'Additional 10% tax — enter on Schedule 2, line 8', rn(_f5329.l4_penalty), 'total')}
+      </div>
+      ${(_f5329.exception_detail || []).length > 0 ? `
+      <div class="mini-note" style="margin-top:4px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Exceptions applied: ${(_f5329.exception_detail || []).map(ex =>
+          'Code ' + ex.code + ': $' + fd(ex.requested) + ' requested → $' + fd(ex.allowed) + ' allowed').join('; ')}
+      </div>` : ''}` : ''}
+    </div>
+    <div class="page-footer"><span>Form 1099-R / Form 5329 (2025) &middot; SachinTaxCare</span><span>Page E</span></div>
+  </div>` : '';
+
+  // ── PAGE F: Form 8962 — Premium Tax Credit ───────────────────────────────
+  // _f8962 pre-declared above
+  const has8962 = rn(_f8962.l24_total_ptc) > 0 || rn(_f8962.l27_excess_aptc) > 0;
+  const pageF = has8962 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form 8962 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Premium Tax Credit</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Part I &mdash; Annual and Monthly Contribution Amount</div>
+      <div class="lines">
+        ${lineRow('1', 'Family size (household members)', rn(_f8962.l1_family_size))}
+        ${lineRow('2a','Modified AGI', rn(_f8962.l2a_magi))}
+        ${lineRow('4', 'Federal poverty line (${_f8962.l1_family_size || 1}-person household, contiguous US)', rn(_f8962.l4_fpl))}
+        ${lineRow('5', 'Household income as percentage of FPL (MAGI ÷ FPL)', (_f8962.l5_pct_raw ? (_f8962.l5_pct_raw * 100).toFixed(0) + '%' : ''))  }
+        ${lineRow('7', 'Applicable figure (Table 2 — TRUNCATE, never round)', rn(_f8962.l7_app_figure), '', 'Source: Rev. Proc. 2024-35 Table 2; i8962.pdf — truncate to whole number')}
+        ${lineRow('8a','Annual contribution amount (MAGI × applicable figure)', rn(_f8962.l8a_annual_contrib))}
+      </div>
+      <div class="sec-hdr" style="margin-top:6px">Part II &mdash; Premium Tax Credit Computation (Annual Method)</div>
+      <div class="lines">
+        ${lineRow('24','Annual PTC (col A — SLCSP premium)', rn(_f8962.l24_total_ptc))}
+        ${lineRow('25','Annual APTC received (col C — advance payments)', rn(_f8962.l25_total_aptc))}
+        ${rn(_f8962.l26_net_ptc) > 0 ? lineRow('26','Net PTC (line 24 minus 25) — Schedule 3 line 9', rn(_f8962.l26_net_ptc), 'total') : ''}
+        ${rn(_f8962.l27_excess_aptc) > 0 ? lineRow('27','Excess APTC repayment — Schedule 2 line 2', rn(_f8962.l27_excess_aptc), 'total') : ''}
+      </div>
+      <div class="mini-note" style="margin-top:6px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Source: f8962.pdf; i8962.pdf; Rev. Proc. 2024-35 (applicable percentages Table 2). APTC = advance payments from Marketplace (Form 1095-A col C).
+      </div>
+    </div>
+    <div class="page-footer"><span>Form 8962 (2025) &middot; SachinTaxCare</span><span>Page F</span></div>
+  </div>` : '';
+
+  // ── PAGE G: Form 2441 — Child and Dependent Care ─────────────────────────
+  // _f2441 pre-declared above
+  const has2441 = rn(_f2441.l11_credit) > 0 || (s.care_providers && s.care_providers.some(p => (p.expenses||0) > 0));
+  const pageG = has2441 ? `
+  <div class="f-page">
+    <div class="mini-header">
+      <span class="mini-form-ref">Form 2441 (2025)</span>
+      <span class="mini-name-ssn">${name} &nbsp;&nbsp; ${ssn}</span>
+      <span class="mini-form-ref">Child and Dependent Care Expenses</span>
+    </div>
+    <div class="f-body">
+      <div class="sec-hdr">Part I &mdash; Persons or Organizations Who Provided the Care</div>
+      <div class="lines">
+        ${(s.care_providers || []).filter(p => (p.expenses||0) > 0).map(p =>
+          lineRow('', p.name + (p.ein ? ' (EIN ' + p.ein + ')' : ''), p.expenses||0)).join('')}
+      </div>
+      <div class="sec-hdr" style="margin-top:6px">Part II &mdash; Credit Computation</div>
+      <div class="lines">
+        ${lineRow('3',  'Qualifying expenses — smaller of total paid or per-child cap ($3,000 × 1 child / $6,000 × 2+)', rn(_f2441.l3_qualifying_exp||_f2441.l11_credit && (s.care_providers||[]).reduce((a,p)=>a+(p.expenses||0),0)))}
+        ${lineRow('4',  'Earned income (taxpayer)', rn(_f2441.l4_earned_income))}
+        ${lineRow('8',  'Applicable % — AGI-based rate table (f2441.pdf line 8)', _f2441.l8_pct ? (_f2441.l8_pct * 100).toFixed(0) + '%' : rn(_f2441.l8_rate||0) + '%')}
+        ${lineRow('9c', 'Tentative credit (line 3 × rate)', rn(_f2441.l9c||_f2441.l11_credit))}
+        ${lineRow('11', 'Credit — lesser of tentative credit or tax — Schedule 3 line 2', rn(_f2441.l11_credit), 'total')}
+      </div>
+      <div class="mini-note" style="margin-top:6px;font-size:7.5pt;color:#555;font-family:var(--sans)">
+        Source: f2441.pdf; i2441.pdf; IRC §21. Nonrefundable — limited to income tax after earlier credits. Rate: 20%–35% based on AGI.
+      </div>
+    </div>
+    <div class="page-footer"><span>Form 2441 (2025) &middot; SachinTaxCare</span><span>Page G</span></div>
+  </div>` : '';
+
+    document.getElementById('pw').innerHTML = page1 + pageA + pageBpage + page2 + pageC + pageD + page3 + page3b + pageE + pageF + pageG + page4 + page5 + page6 + page7 + page8 + page9 + page10 + page11;
+}
+
+window.addEventListener('DOMContentLoaded', loadResult);
+</script>
+</body>
+</html>

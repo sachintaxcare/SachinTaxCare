@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SachinTaxCare — Software Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --bg:       #ffffff;
+  --bg2:      #f8f7f5;
+  --bg3:      #f1efeb;
+  --border:   rgba(0,0,0,0.08);
+  --border2:  rgba(0,0,0,0.16);
+  --text:     #1a1a18;
+  --muted:    #72716c;
+  --dim:      #a8a6a0;
+
+  --purple:   #5a4fcf;
+  --purple-bg:#f0eeff;
+  --teal:     #0d7a62;
+  --teal-bg:  #e6f7f3;
+  --blue:     #1a5fa8;
+  --blue-bg:  #e8f2fb;
+  --green:    #2d7a44;
+  --green-bg: #eaf5ee;
+  --amber:    #8c5a00;
+  --amber-bg: #fff8e6;
+  --coral:    #c44a2a;
+  --coral-bg: #fdf0ec;
+  --gray:     #5a5a56;
+  --gray-bg:  #f3f2ef;
+
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 48px 32px 80px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border2);
+}
+.hdr-left h1 {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: .03em;
+}
+.hdr-left p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+.badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: .05em;
+}
+.badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(45,122,68,.2); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(140,90,0,.2); }
+
+/* ── Layer wrapper ── */
+.layers { display: flex; flex-direction: column; gap: 8px; max-width: 1100px; margin: 0 auto; }
+
+.layer-row {
+  display: grid;
+  align-items: start;
+  gap: 8px;
+}
+.layer-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--dim);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  border-right: 1px solid var(--border);
+  padding-right: 6px;
+  margin-right: 4px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  position: relative;
+  transition: border-color .15s, background .15s;
+  cursor: default;
+}
+.card:hover { border-color: var(--border2); background: var(--bg3); }
+
+.card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-sub {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: .04em;
+}
+
+/* Layer colors */
+.layer-browser .card  { border-color: rgba(90,79,207,.18); }
+.layer-browser .card:hover { border-color: rgba(90,79,207,.40); }
+.layer-browser .card-title { color: var(--purple); }
+.layer-browser .tag   { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(90,79,207,.15); }
+
+.layer-server .card   { border-color: rgba(13,122,98,.15); }
+.layer-server .card:hover { border-color: rgba(13,122,98,.35); }
+.layer-server .card-title { color: var(--teal); }
+.layer-server .tag    { background: var(--teal-bg); color: var(--teal); border: 1px solid rgba(13,122,98,.15); }
+
+.layer-engine .card   { border-color: rgba(26,95,168,.15); }
+.layer-engine .card:hover { border-color: rgba(26,95,168,.35); }
+.layer-engine .card-title { color: var(--blue); }
+.layer-engine .tag    { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(26,95,168,.15); }
+
+.layer-tests .card    { border-color: rgba(45,122,68,.15); }
+.layer-tests .card:hover { border-color: rgba(45,122,68,.35); }
+.layer-tests .card-title { color: var(--green); }
+.layer-tests .tag     { background: var(--green-bg); color: var(--green); border: 1px solid rgba(45,122,68,.15); }
+
+.layer-output .card   { border-color: rgba(196,74,42,.15); }
+.layer-output .card:hover { border-color: rgba(196,74,42,.35); }
+.layer-output .card-title { color: var(--coral); }
+.layer-output .tag    { background: var(--coral-bg); color: var(--coral); border: 1px solid rgba(196,74,42,.15); }
+
+/* ── Connectors ── */
+.connector-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding-left: 38px;
+  height: 28px;
+}
+.connector-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  position: relative;
+}
+.connector-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: .06em;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+.arrow-down {
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dim);
+  font-size: 11px;
+}
+.flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0 6px 38px;
+}
+.flow-arrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.flow-arrow span { color: var(--muted); }
+
+/* ── Engine internals ── */
+.engine-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+.fn-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--blue);
+  background: var(--blue-bg);
+  border: 1px solid rgba(26,95,168,.18);
+  border-radius: 3px;
+  padding: 3px 6px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── PARAMS table ── */
+.params-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.param-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--amber);
+  background: var(--amber-bg);
+  border: 1px solid rgba(140,90,0,.18);
+  border-radius: 3px;
+  padding: 2px 6px;
+  letter-spacing: .02em;
+}
+
+/* ── Strict mode banner ── */
+.strict-banner {
+  border: 1px dashed rgba(140,90,0,.35);
+  border-radius: 6px;
+  background: var(--amber-bg);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 38px;
+}
+.strict-banner::before {
+  content: '⚡';
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Metrics footer ── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.metric {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+.metric-val {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+.metric-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Gate row ── */
+.gate-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: 38px;
+  padding: 8px 0;
+}
+.gate {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--green);
+  background: var(--green-bg);
+  border: 1px solid rgba(45,122,68,.2);
+  border-radius: 3px;
+  padding: 3px 8px;
+  letter-spacing: .04em;
+}
+
+@media (max-width: 700px) {
+  .layer-row { grid-template-columns: 1fr !important; }
+  .engine-grid { grid-template-columns: repeat(2,1fr); }
+  .metrics { grid-template-columns: repeat(3,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>SachinTaxCare — Software Architecture</h1>
+    <p>TY 2025 + TY 2026 · OBBBA · EA accuracy review 2026-05-19 · v2 engine</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="badge badge-green">568 PASS</span>
+    <span class="badge badge-green">0 FAIL</span>
+    <span class="badge badge-amber">9 WARN</span>
+  </div>
+</div>
+
+<div class="layers">
+
+  <!-- ═══ LAYER 1: BROWSER ═══ -->
+  <div class="layer-row layer-browser" style="grid-template-columns:24px 1fr 1fr">
+    <div class="layer-label">Browser</div>
+    <div class="card">
+      <div class="card-title">sachintaxcare_pro.html</div>
+      <div class="card-sub">Intake UI — 4,476 lines · 404 field IDs mapped</div>
+      <div class="card-tags">
+        <span class="tag">buildSchema()</span>
+        <span class="tag">renderResult()</span>
+        <span class="tag">populateFromSchema()</span>
+        <span class="tag">exportJSON()</span>
+        <span class="tag">go() nav</span>
+        <span class="tag">importJSON()</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">sachintaxcare_workpaper.html</div>
+      <div class="card-sub">CPA workpaper — 1,244 lines · 12 pages rendered client-side</div>
+      <div class="card-tags">
+        <span class="tag">Form 1040 p1/p2</span>
+        <span class="tag">Schedule 1-A ★</span>
+        <span class="tag">Schedule A</span>
+        <span class="tag">Sch 3 / 8812</span>
+        <span class="tag">SE / QBI</span>
+        <span class="tag">CA 540</span>
+        <span class="tag">Credits</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-row">
+    <div class="flow-arrow">↓ <span>POST /compute — JSON schema</span></div>
+    <div class="flow-arrow" style="margin-left:40px">↑ <span>JSON result — 153 computed keys</span></div>
+  </div>
+
+  <!-- ═══ LAYER 2: SERVER ═══ -->
+  <div class="layer-row layer-server" style="grid-template-columns:24px 1fr 1fr">
+    <div class="layer-label">Server</div>
+    <div class="card">
+      <div class="card-title">sachintaxcare_server.py — Flask · 754 lines</div>
+      <div class="card-sub">HTTP bridge between browser and engine. Routes: / · /workpaper · /health · POST /compute</div>
+      <div class="card-tags">
+        <span class="tag">deserialize_schema()</span>
+        <span class="tag">map_result()</span>
+        <span class="tag">_marginal_rate()</span>
+        <span class="tag">run_startup_tests()</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bridge layer — strict mode capable</div>
+      <div class="card-sub">JSON key → TaxpayerSchema field translation. 25 known bridge transforms. Strict mode returns 422 on unregistered keys.</div>
+      <div class="card-tags">
+        <span class="tag">_KNOWN_BRIDGES (25)</span>
+        <span class="tag">_DISPLAY_ONLY (20)</span>
+        <span class="tag">_validate_bridge_strict()</span>
+        <span class="tag">?strict=true</span>
+        <span class="tag">X-Bridge-Strict</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strict mode -->
+  <div class="strict-banner">
+    POST /compute?strict=true → 422 {"error":"bridge_strict_violation","dropped_keys":[{"key":"...","class":"...","suggested":"..."}]}
+    &nbsp;&nbsp;·&nbsp;&nbsp; Added 2026-05-19 EA review
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-row">
+    <div class="flow-arrow">↓ <span>TaxpayerSchema dataclass (517 fields · 39 dataclasses)</span></div>
+  </div>
+
+  <!-- ═══ LAYER 3: ENGINE ═══ -->
+  <div class="layer-row layer-engine" style="grid-template-columns:24px 1fr">
+    <div class="layer-label">Engine</div>
+    <div>
+      <!-- Top row: schema + params + result -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="card">
+          <div class="card-title">TaxpayerSchema</div>
+          <div class="card-sub">39 dataclasses · 517 typed fields<br>All fields direct-access (0 getattr)</div>
+          <div class="card-tags">
+            <span class="tag">W2 · Form1099R · FormSSA1099</span>
+            <span class="tag">Form1098T · Form1099C</span>
+            <span class="tag">Form982Data ★</span>
+            <span class="tag">ScheduleK1 (basis) ★</span>
+            <span class="tag">DeceasedSpouse</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">PARAMS_2025 / PARAMS_2026</div>
+          <div class="card-sub">127 / 151 constants after dead code removal<br>Rev. Proc. 2024-40 + 2025-32 · P.L. 119-21</div>
+          <div class="params-row">
+            <span class="param-chip">std deductions</span>
+            <span class="param-chip">bracket thresholds</span>
+            <span class="param-chip">EITC tables</span>
+            <span class="param-chip">CTC · ACTC · ODC</span>
+            <span class="param-chip">AMT exemptions</span>
+            <span class="param-chip">OBBBA §70103-70301</span>
+            <span class="param-chip">HSA · IRA limits</span>
+            <span class="param-chip">CA 540 constants</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">dict(computed) — 153 output keys</div>
+          <div class="card-sub">All 1040 lines · sub-dicts per form<br>1,425 IRS source citations in engine</div>
+          <div class="card-tags">
+            <span class="tag">agi · taxable_income</span>
+            <span class="tag">l34_refund · l37_owe</span>
+            <span class="tag">s8812 · f8962 · f2441</span>
+            <span class="tag">ca_540 · qbi_detail</span>
+            <span class="tag">warnings[]</span>
+            <span class="tag">l13b_schedule1a ★</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- engine.run() orchestrator -->
+      <div class="card" style="margin-bottom:8px">
+        <div class="card-title">engine.run() — computation orchestrator · 8,434 lines</div>
+        <div class="card-sub" style="margin-bottom:8px">12-step pipeline: Income → SS taxable → Adjustments → AGI → Deduction → Schedule 1-A → QBI → Tax → Credits → Payments → Refund → CA 540</div>
+        <div class="engine-grid">
+          <span class="fn-chip">compute_tax()</span>
+          <span class="fn-chip">compute_ss_taxable()</span>
+          <span class="fn-chip">compute_ss_lump_sum()</span>
+          <span class="fn-chip">compute_aoc() ★PARAMS</span>
+          <span class="fn-chip">compute_llc() ★PARAMS</span>
+          <span class="fn-chip">compute_eitc()</span>
+          <span class="fn-chip">compute_qbi_deduction()</span>
+          <span class="fn-chip">compute_caleitc()</span>
+          <span class="fn-chip">compute_f8962()</span>
+          <span class="fn-chip">compute_form_982() ★</span>
+          <span class="fn-chip">compute_k1_income() ★</span>
+          <span class="fn-chip">compute_qdcgt_tax()</span>
+          <span class="fn-chip">compute_schedule_a()</span>
+          <span class="fn-chip">compute_california_540()</span>
+          <span class="fn-chip">compute_simplified_method()</span>
+          <span class="fn-chip">compute_saver_credit()</span>
+          <span class="fn-chip">compute_f8962() — ACA</span>
+          <span class="fn-chip">get_saver_rate() ★QSS</span>
+          <span class="fn-chip">compute_form_2210…()</span>
+          <span class="fn-chip">+ 21 more</span>
+        </div>
+      </div>
+
+      <!-- Special forms row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="card">
+          <div class="card-title">Schedule 1-A (OBBBA) ★</div>
+          <div class="card-sub">Below-line deductions → Form 1040 Line 13b. Does NOT reduce AGI. Source: f1040s1a.pdf · IR-2026-28</div>
+          <div class="card-tags">
+            <span class="tag">§70103 Senior $6k/person</span>
+            <span class="tag">§70201 Tips $25k</span>
+            <span class="tag">§70202 Overtime $12.5k/$25k</span>
+            <span class="tag">§70301 Auto loan $10k</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Form 982 insolvency worksheet ★</div>
+          <div class="card-sub">IRC §108 — auto-computes bankruptcy exclusion (Title 11) and insolvency exclusion (liabilities − assets FMV)</div>
+          <div class="card-tags">
+            <span class="tag">Form982Data dataclass</span>
+            <span class="tag">compute_form_982()</span>
+            <span class="tag">partial exclusion</span>
+            <span class="tag">tax attribute warning</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">CA Schedule CA (partial)</div>
+          <div class="card-sub">CalEITC uses W-2 Box 16 CA wages (fixed). YCTC · FYTC. OBBBA nonconformity addback. Community property: NOT implemented.</div>
+          <div class="card-tags">
+            <span class="tag">compute_caleitc()</span>
+            <span class="tag">Box 16 wages ★</span>
+            <span class="tag">tp_age from DOB ★</span>
+            <span class="tag">OBBBA addback</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-row">
+    <div class="flow-arrow">↓ <span>engine.run() called directly from test harnesses</span></div>
+  </div>
+
+  <!-- ═══ LAYER 4: TESTS ═══ -->
+  <div class="layer-row layer-tests" style="grid-template-columns:24px 1fr 1fr 1fr">
+    <div class="layer-label">Tests</div>
+    <div class="card">
+      <div class="card-title">sachintaxcare_test.py · 2,403 lines</div>
+      <div class="card-sub">Primary regression suite. 568 assertions across 10 layers.</div>
+      <div class="card-tags">
+        <span class="tag">L1 bridge audit</span>
+        <span class="tag">L1B DC fields (200)</span>
+        <span class="tag">L2 pipeline (70)</span>
+        <span class="tag">L3 PARAMS TY25 (100)</span>
+        <span class="tag">L3B PARAMS TY26 (36)</span>
+        <span class="tag">QCD · EITC-2 · F2210</span>
+        <span class="tag">F4-F9 EA findings</span>
+        <span class="tag">EWP · QSS · F8880</span>
+        <span class="tag">BRIDGE.B1-5 · C1-5</span>
+        <span class="tag">File registry</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">test_vita_irs.py · 2,547 lines</div>
+      <div class="card-sub">IRS known-answer tests. 189 assertions against published ground truth.</div>
+      <div class="card-tags">
+        <span class="tag">34 sections</span>
+        <span class="tag">Tax brackets</span>
+        <span class="tag">SS Pub 915 WS1</span>
+        <span class="tag">EITC band vs table</span>
+        <span class="tag">VITA composite (7 returns)</span>
+        <span class="tag">Form 8962 PTC</span>
+        <span class="tag">OBBBA TY2025 (18)</span>
+        <span class="tag">TY 2026 constants</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">test_ui_fields.js · 725 lines</div>
+      <div class="card-sub">UI field manifest test + round-trip audit.</div>
+      <div class="card-tags">
+        <span class="tag">404 field IDs</span>
+        <span class="tag">12 SKIP (known gaps)</span>
+        <span class="tag">38 round-trip keys ★</span>
+        <span class="tag">RT_KNOWN_SAFE set</span>
+        <span class="tag">buildSchema ↔ populate</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session gates -->
+  <div class="gate-row">
+    <span style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-right:4px">SESSION GATES →</span>
+    <span class="gate">9C PARAMS (21 checks)</span>
+    <span class="gate">9F bridge (25 targets)</span>
+    <span class="gate">sachintaxcare_test.py → 568 PASS</span>
+    <span class="gate">test_vita_irs.py → 189 PASS</span>
+    <span class="gate">test_ui_fields.js → 404 PASS + 38 round-trip</span>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-row">
+    <div class="flow-arrow">↓ <span>schema export · result JSON · workpaper HTML · warning stream</span></div>
+  </div>
+
+  <!-- ═══ LAYER 5: OUTPUT ═══ -->
+  <div class="layer-row layer-output" style="grid-template-columns:24px 1fr 1fr 1fr 1fr">
+    <div class="layer-label">Output</div>
+    <div class="card">
+      <div class="card-title">JSON schema</div>
+      <div class="card-sub">Saved / restored via exportJSON() → importJSON(). Round-trip audited.</div>
+      <div class="card-tags">
+        <span class="tag">care_providers ★fixed</span>
+        <span class="tag">deceased_spouse</span>
+        <span class="tag">form_1095a</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">JSON result</div>
+      <div class="card-sub">153 computed keys returned from /compute. All 1040 lines. Sub-dicts per form.</div>
+      <div class="card-tags">
+        <span class="tag">l34_refund</span>
+        <span class="tag">l13b_schedule1a</span>
+        <span class="tag">qcd_total</span>
+        <span class="tag">effective_rate</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">12-page workpaper</div>
+      <div class="card-sub">CPA-grade. Rendered in browser from result JSON. Printable PDF via browser.</div>
+      <div class="card-tags">
+        <span class="tag">1040 p1/p2</span>
+        <span class="tag">Sch 1-A ★</span>
+        <span class="tag">Form 8962</span>
+        <span class="tag">Schedule 8812</span>
+        <span class="tag">CA 540</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Warning stream</div>
+      <div class="card-sub">IRS-sourced, per-form, computed at run-time. Included in result JSON.</div>
+      <div class="card-tags">
+        <span class="tag">QCD §408(d)(8)</span>
+        <span class="tag">Form 2210 harbor</span>
+        <span class="tag">K-1 basis cap</span>
+        <span class="tag">Form 982 exclusion</span>
+        <span class="tag">8962 Table 2 verify</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Metrics ── -->
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-val">8,434</div>
+    <div class="metric-lbl">engine.py lines</div>
+  </div>
+  <div class="metric">
+    <div class="metric-val">517</div>
+    <div class="metric-lbl">schema fields</div>
+  </div>
+  <div class="metric">
+    <div class="metric-val">153</div>
+    <div class="metric-lbl">computed keys</div>
+  </div>
+  <div class="metric">
+    <div class="metric-val">1,425</div>
+    <div class="metric-lbl">IRS citations</div>
+  </div>
+  <div class="metric">
+    <div class="metric-val">568</div>
+    <div class="metric-lbl">test assertions</div>
+  </div>
+  <div class="metric">
+    <div class="metric-val" style="color:var(--green)">0</div>
+    <div class="metric-lbl">test failures</div>
+  </div>
+</div>
+
+<!-- ── Legend ── -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Browser layer</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--teal)"></span>Server / bridge</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Computation engine</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Test infrastructure</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--coral)"></span>Output layer</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>New / fixed this session</div>
+  <div class="legend-item" style="margin-left:auto;color:var(--dim)">★ = added or fixed 2026-05-19</div>
+</div>
+
+</body>
+</html>

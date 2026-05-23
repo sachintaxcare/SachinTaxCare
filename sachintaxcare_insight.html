@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SachinTaxCare — Project Insight · 2026-05-20</title>
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f6f5f0; --bg3: #eeedea;
+    --text: #1a1a18; --text2: #5a5a56; --text3: #8a8a85;
+    --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+    --green-bg: #eaf3de; --green-text: #3b6d11;
+    --amber-bg: #faeeda; --amber-text: #854f0b;
+    --red-bg: #fcebeb;   --red-text: #a32d2d;
+    --blue-bg: #e6f1fb;  --blue-text: #185fa5;
+    --gray-bg: #f1efe8;  --gray-text: #5f5e5a;
+    --radius: 10px; --radius-sm: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); line-height: 1.6; font-size: 14px; }
+  .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--text3); font-size: 13px; margin-bottom: 2rem; }
+  .section { margin-bottom: 2.5rem; }
+  .section-title {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 1rem; padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: .75rem;
+  }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: .75rem; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: .6rem; margin-bottom: .75rem; }
+  @media (max-width: 640px) {
+    .grid2,.grid3 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+  }
+  .stat-card { background: var(--bg2); border-radius: var(--radius-sm); padding: .75rem 1rem; }
+  .stat-label { font-size: 11px; color: var(--text3); margin-bottom: .2rem; }
+  .stat-val { font-size: 22px; font-weight: 500; }
+  .stat-sub { font-size: 11px; color: var(--text2); margin-top: .15rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-weight: 600; color: var(--text2); padding: .4rem .5rem; border-bottom: 1px solid var(--border); }
+  td { padding: .4rem .5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: "SF Mono","Fira Code",Menlo,monospace; font-size: 11px; }
+  .pill {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 99px; margin: 2px;
+  }
+  .pill-ok   { background: var(--green-bg); color: var(--green-text); }
+  .pill-warn { background: var(--amber-bg); color: var(--amber-text); }
+  .pill-risk { background: var(--red-bg);   color: var(--red-text); }
+  .pill-info { background: var(--blue-bg);  color: var(--blue-text); }
+  .pill-neu  { background: var(--gray-bg);  color: var(--gray-text); }
+  .flow-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .5rem; }
+  .fbox {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: .35rem .7rem;
+    font-size: 11.5px; font-weight: 600;
+  }
+  .fbox.engine { background: var(--blue-bg); color: var(--blue-text); border-color: transparent; }
+  .fbox.ok     { background: var(--green-bg); color: var(--green-text); border-color: transparent; }
+  .fbox.risk   { background: var(--amber-bg); color: var(--amber-text); border-color: transparent; }
+  .arr { color: var(--text3); font-size: 13px; }
+  .bar-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .3rem; }
+  .bar-lbl { font-size: 11px; color: var(--text2); width: 140px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--blue-text); }
+  .bar-fill.ok   { background: var(--green-text); }
+  .bar-fill.warn { background: var(--amber-text); }
+  .bar-val { font-size: 11px; font-family: monospace; color: var(--text); min-width: 36px; }
+  .risk-row { display: flex; align-items: flex-start; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .risk-row:last-child { border-bottom: none; }
+  .risk-area { font-weight: 600; width: 160px; flex-shrink: 0; }
+  .risk-note { color: var(--text2); flex: 1; }
+  .check-row { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; font-size: 12px; }
+  .ok-icon { color: var(--green-text); font-weight: 700; }
+  .before { color: var(--red-text); }
+  .after  { color: var(--green-text); }
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
+  .session-badge {
+    display: inline-block; background: var(--blue-bg); color: var(--blue-text);
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+    vertical-align: middle; margin-left: 4px; letter-spacing: .03em;
+  }
+  .fixed-badge {
+    display: inline-block; background: var(--green-bg); color: var(--green-text);
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+    vertical-align: middle; margin-left: 4px;
+  }
+  .print-btn {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--text); color: var(--bg);
+    border: none; border-radius: 99px;
+    padding: .55rem 1.2rem; font-size: 13px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,.15);
+  }
+  .print-btn:hover { opacity: .85; }
+  @media print { .print-btn { display: none; } .card { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>SachinTaxCare — Project Insight</h1>
+<div class="subtitle">Generated 2026-05-20 · Engine v2 · TY 2025 + TY 2026 · 568 PASS · 0 FAIL · Dead code removed · Bridge hardening complete</div>
+
+<!-- ═══ SESSION SUMMARY ═══ -->
+<div class="section">
+<div class="section-title">Sessions summary — all changes to date</div>
+<div class="card">
+  <div class="card-title">All changes (chronological)</div>
+  <table>
+    <tr><th>Session</th><th>Category</th><th>Item</th><th>Impact</th></tr>
+    <tr><td>05-19</td><td><span class="pill pill-risk">Critical</span></td><td>OBBBA deductions → Schedule 1-A Line 13b (below-line)</td><td>Was reducing AGI; now reduces taxable income only. f1040s1a.pdf; IR-2026-28.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-risk">Critical</span></td><td>QCD Code Y excluded from Line 4b + Sch A warning</td><td>Was fully taxed. $105k cap enforced. IRC §408(d)(8).</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-risk">Critical</span></td><td>EITC 0-child single params corrected (was using MFJ values)</td><td>max $632 / limit $18,591. Rev. Proc. 2024-40.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-risk">Critical</span></td><td>Form 2210: prior_year_tax=0 no longer grants harbor (b)</td><td>IRC §6654(d)(1)(B).</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-warn">High</span></td><td>CalEITC: W-2 Box 16 CA wages instead of AGI proxy</td><td>tp_age derived from DOB. FTB 3514 Step 1.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-warn">High</span></td><td>K-1 outside basis enforcement (IRC §704(d)/§1366(d))</td><td>outside_basis + at_risk_amount fields; loss capped at basis.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-warn">High</span></td><td>Form 982 insolvency worksheet (IRC §108)</td><td>Form982Data + compute_form_982(). Auto insolvency/bankruptcy exclusion.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-neu">Low</span></td><td>IRA MAGI proxy: student loan addback per Pub 590-A WS 1-2</td><td>IRC §219(g)(3)(A)(ii).</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-neu">Low</span></td><td>Form 8880 QSS: uses MFJ AGI thresholds</td><td>f8880.pdf; Rev. Proc. 2024-40.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-neu">Low</span></td><td>UI panel bug: FLSA overtime block missing wrapper divs</td><td>Blocks rendering outside panel-adj in all panels.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-neu">Sync</span></td><td>Workpaper alias keys + server form_982 bridge</td><td>6 alias keys in computed dict; form_982 in _SCALAR_NESTED.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-risk">Bridge</span></td><td>Early withdrawal penalty: box2_early_withdrawal_penalty (renamed)</td><td>Was silently dropped by safe_init. f1099int.pdf Box 2; IRC §62(a)(9).</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-warn">Bridge</span></td><td>27 missing fields added to 8 dataclasses</td><td>TaxpayerSchema +5, ScheduleC +1, Form1098T +3, Form1099C +6, FormSSA1099 +7, Form1099R +3, SimplifiedMethodData +1.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-warn">Bridge</span></td><td>Strict mode: ?strict=true → 422 bridge_strict_violation</td><td>_KNOWN_BRIDGES (25) + _DISPLAY_ONLY (20) + _validate_bridge_strict(). Returns dropped_keys list.</td></tr>
+    <tr><td>05-19</td><td><span class="pill pill-warn">Bridge</span></td><td>11 B-category bridges added to deserialize_schema()</td><td>W2 (4), Form1099INT (1), CaliforniaData (2), plus documentation for others.</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-risk">Bug fix</span></td><td>Form 8880 L2: auto-read W-2 Box 12 elective deferrals</td><td>Engine now reads codes D,E,F,G,H,S,AA,BB,EE from W-2 automatically. i8880.pdf L2; IRC §402(g).</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-warn">Bug fix</span></td><td>care_providers round-trip: populateFromSchema dual-key fix</td><td>Was reading cp.provider_name (undefined); now reads cp.name || cp.provider_name.</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-neu">Test</span></td><td>Round-trip audit added to test_ui_fields.js</td><td>38 keys checked: buildSchema() → populateFromSchema() coverage. RT_KNOWN_SAFE set.</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-neu">Cleanup</span></td><td>Dead code removal: 13 dead PARAMS_2025 keys removed</td><td>AOC/LLC/kiddie/CA constants that were defined but never read.</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-neu">Cleanup</span></td><td>5 redundant PARAMS_2026 overrides removed</td><td>Same value as P25 — now inherited via merge.</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-neu">Cleanup</span></td><td>17 getattr(schema,...) → direct schema.field access</td><td>All fields now properly typed; getattr() masked typos.</td></tr>
+    <tr><td>05-20</td><td><span class="pill pill-neu">Cleanup</span></td><td>compute_aoc() / compute_llc() wired to PARAMS</td><td>Was hardcoding 2500/4000/0.40/10000/0.20 inline.</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══ ARCHITECTURE ═══ -->
+<div class="section">
+<div class="section-title">Architecture</div>
+
+<div class="card">
+  <div class="card-title">Data flow — Browser → Server → Engine → Screen</div>
+  <div class="flow-wrap">
+    <div class="fbox">Browser UI<br><span style="font-weight:400;font-size:10px;opacity:.7">sachintaxcare_pro.html · 4,479 lines</span></div>
+    <div class="arr">→ buildSchema() →</div>
+    <div class="fbox risk">Flask /compute<br><span style="font-weight:400;font-size:10px;opacity:.7">deserialize + bridge · 754 lines</span></div>
+    <div class="arr">→</div>
+    <div class="fbox engine">engine.run()<br><span style="font-weight:400;font-size:10px;opacity:.7">Pure Python · 8,434 lines</span></div>
+    <div class="arr">→ dict(computed) →</div>
+    <div class="fbox ok">renderResult()<br><span style="font-weight:400;font-size:10px;opacity:.7">153 keys auto</span></div>
+  </div>
+  <div class="flow-wrap" style="margin-top:.4rem">
+    <div class="fbox">importJSON()</div>
+    <div class="arr">→</div>
+    <div class="fbox risk">safe_init() + bridges<br><span style="font-weight:400;font-size:10px;opacity:.7">25 _KNOWN_BRIDGES · strict mode</span></div>
+    <div class="arr">→ bridge →</div>
+    <div class="fbox engine">TaxpayerSchema<br><span style="font-weight:400;font-size:10px;opacity:.7">543 fields · 39 dataclasses</span></div>
+    <div class="arr">→</div>
+    <div class="fbox ok">Workpaper · 12 pages<br><span style="font-weight:400;font-size:10px;opacity:.7">incl. Sch 1-A</span></div>
+  </div>
+</div>
+
+<div class="grid2">
+<div class="card">
+  <div class="card-title">Engine internals</div>
+  <div class="bar-row"><div class="bar-lbl">Dataclasses</div><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span class="bar-val">39</span></div>
+  <div class="bar-row"><div class="bar-lbl">Schema fields</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="bar-val">543</span></div>
+  <div class="bar-row"><div class="bar-lbl">Compute functions</div><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span class="bar-val">40</span></div>
+  <div class="bar-row"><div class="bar-lbl">Computed keys out</div><div class="bar-track"><div class="bar-fill ok" style="width:100%"></div></div><span class="bar-val">153</span></div>
+  <div class="bar-row"><div class="bar-lbl">IRS citations</div><div class="bar-track"><div class="bar-fill ok" style="width:100%"></div></div><span class="bar-val">1,484</span></div>
+  <div class="bar-row"><div class="bar-lbl">PARAMS_2025 keys</div><div class="bar-track"><div class="bar-fill" style="width:85%"></div></div><span class="bar-val">127</span></div>
+  <div class="bar-row"><div class="bar-lbl">PARAMS_2026 keys</div><div class="bar-track"><div class="bar-fill" style="width:99%"></div></div><span class="bar-val">151</span></div>
+</div>
+<div class="card">
+  <div class="card-title">File registry</div>
+  <table>
+    <tr><th>File</th><th>Lines</th><th>Role</th></tr>
+    <tr><td class="mono">sachintaxcare_engine.py</td><td class="mono">8,434</td><td>Computation core</td></tr>
+    <tr><td class="mono">sachintaxcare_pro.html</td><td class="mono">4,479</td><td>UI + intake</td></tr>
+    <tr><td class="mono">sachintaxcare_workpaper.html</td><td class="mono">1,244</td><td>12-page CPA output</td></tr>
+    <tr><td class="mono">sachintaxcare_test.py</td><td class="mono">2,403</td><td>568-assertion suite</td></tr>
+    <tr><td class="mono">sachintaxcare_server.py</td><td class="mono">754</td><td>Flask + bridge</td></tr>
+    <tr><td class="mono">test_vita_irs.py</td><td class="mono">2,547</td><td>189 IRS known-answer tests</td></tr>
+    <tr><td class="mono">test_ui_fields.js</td><td class="mono">725</td><td>404 field IDs + 38 round-trip</td></tr>
+  </table>
+</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Bridge layer — strict mode + known transforms</div>
+  <table>
+    <tr><th>JSON key</th><th>Engine field</th><th>Dataclass</th><th>Status</th></tr>
+    <tr><td class="mono">box2_early_withdrawal_penalty</td><td class="mono">box2_early_withdrawal_penalty</td><td>Form1099INT</td><td>Renamed to match — no bridge needed</td></tr>
+    <tr><td class="mono">box10_dep_care</td><td class="mono">box10_dependent_care</td><td>W2</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">box5_medicare_wages</td><td class="mono">box5_med_wages</td><td>W2</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">box6_medicare_wh</td><td class="mono">box6_med_wh</td><td>W2</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">box6_foreign_tax_paid</td><td class="mono">box6_foreign_tax</td><td>Form1099INT</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">box2_discharged</td><td class="mono">box2_amount_discharged</td><td>Form1099C</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">exclusion_applies</td><td class="mono">is_excluded</td><td>Form1099C</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">box6_vol_wh</td><td class="mono">box6_voluntary_wh</td><td>FormSSA1099</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">box8_at_least_half_time</td><td class="mono">box8_half_time</td><td>Form1098T</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">sdi_withheld</td><td class="mono">ca_sdi_withheld</td><td>CaliforniaData</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">other_subtractions</td><td class="mono">ca_other_subtractions</td><td>CaliforniaData</td><td>Bridge in server</td></tr>
+    <tr><td class="mono">age_at_start / joint_age_at_start</td><td class="mono">age_at_annuity_start / joint_age_at_annuity_start</td><td>SimplifiedMethodData</td><td>Bridge in server</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══ TAX ACCURACY ═══ -->
+<div class="section">
+<div class="section-title">Tax accuracy</div>
+
+<div class="grid4">
+  <div class="stat-card"><div class="stat-label">Forms implemented</div><div class="stat-val">36</div><div class="stat-sub">incl. Form 982, Sch 1-A, K-1 basis</div></div>
+  <div class="stat-card"><div class="stat-label">Tax years</div><div class="stat-val">2025 + 2026</div><div class="stat-sub">OBBBA · Rev. Proc. 2025-32</div></div>
+  <div class="stat-card"><div class="stat-label">PARAMS constants</div><div class="stat-val">278</div><div class="stat-sub">127 TY25 · 151 TY26 (after cleanup)</div></div>
+  <div class="stat-card"><div class="stat-label">9C audit checks</div><div class="stat-val">21</div><div class="stat-sub">0 divergences</div></div>
+</div>
+
+<div class="card">
+  <div class="card-title">EA accuracy review findings — all 9 resolved</div>
+  <table>
+    <tr><th>#</th><th>Severity</th><th>Finding</th><th>Status</th></tr>
+    <tr><td>F1</td><td><span class="pill pill-risk">Critical</span></td><td>QCD Code Y taxed as income + Sch A double-dip</td><td><span class="fixed-badge">Fixed</span> Code Y → skip list; $105k cap; Sch A conflict. IRC §408(d)(8).</td></tr>
+    <tr><td>F2</td><td><span class="pill pill-risk">Critical</span></td><td>EITC 0-child single: MFJ values (max $649 / limit $19,104)</td><td><span class="fixed-badge">Fixed</span> Corrected to max $632 / limit $18,591. Rev. Proc. 2024-40.</td></tr>
+    <tr><td>F3</td><td><span class="pill pill-risk">Critical</span></td><td>Form 2210: prior_year_tax=0 always granted harbor (b)</td><td><span class="fixed-badge">Fixed</span> Harbor (b) skipped when prior year unknown. IRC §6654(d)(1)(B).</td></tr>
+    <tr><td>F4</td><td><span class="pill pill-warn">High</span></td><td>CalEITC: AGI proxy instead of W-2 Box 16 CA wages</td><td><span class="fixed-badge">Fixed</span> Box 16 wages + tp_age from DOB. FTB 3514 Step 1.</td></tr>
+    <tr><td>F5</td><td><span class="pill pill-warn">High</span></td><td>K-1 outside basis not enforced</td><td><span class="fixed-badge">Fixed</span> outside_basis + at_risk_amount; loss capped per IRC §704(d)/§465.</td></tr>
+    <tr><td>F6</td><td><span class="pill pill-warn">High</span></td><td>Form 982: manual boolean only — no insolvency worksheet</td><td><span class="fixed-badge">Fixed</span> Form982Data + compute_form_982(). IRC §108.</td></tr>
+    <tr><td>F7</td><td><span class="pill pill-neu">Low</span></td><td>Form 2210 annual rate only</td><td><span class="fixed-badge">Noted</span> Warning strengthened. Quarterly calc LOW priority.</td></tr>
+    <tr><td>F8</td><td><span class="pill pill-neu">Low</span></td><td>IRA MAGI missing student loan addback</td><td><span class="fixed-badge">Fixed</span> Pub 590-A WS 1-2; IRC §219(g)(3)(A)(ii).</td></tr>
+    <tr><td>F9</td><td><span class="pill pill-neu">Low</span></td><td>QBI 8995-A above-threshold warning weak</td><td><span class="fixed-badge">Strengthened</span> Action item and F9 label added.</td></tr>
+  </table>
+</div>
+
+<div class="grid2">
+<div class="card">
+  <div class="card-title">Implemented ✅ — 36 forms/schedules</div>
+  <div class="tag-wrap">
+    <span class="pill pill-ok">Form 1040 all lines</span>
+    <span class="pill pill-ok">Schedule 1 Part I+II</span>
+    <span class="pill pill-ok">Schedule 1-A (OBBBA) ★</span>
+    <span class="pill pill-ok">Schedule A</span>
+    <span class="pill pill-ok">Schedule B</span>
+    <span class="pill pill-ok">Schedule C</span>
+    <span class="pill pill-ok">Schedule D / 8949</span>
+    <span class="pill pill-ok">Schedule E / 8582</span>
+    <span class="pill pill-ok">Schedule K-1 (basis) ★</span>
+    <span class="pill pill-ok">Schedule SE</span>
+    <span class="pill pill-ok">Form 982 (insolvency) ★</span>
+    <span class="pill pill-ok">Form 2441</span>
+    <span class="pill pill-ok">Form 6251 AMT</span>
+    <span class="pill pill-ok">Form 8606</span>
+    <span class="pill pill-ok">Form 8863 AOTC+LLC ★PARAMS</span>
+    <span class="pill pill-ok">Form 8880 saver's ★QSS fix</span>
+    <span class="pill pill-ok">Schedule 8812 CTC/ACTC</span>
+    <span class="pill pill-ok">Form 8889 HSA</span>
+    <span class="pill pill-ok">Form 8962 PTC</span>
+    <span class="pill pill-ok">Form 1116 FTC</span>
+    <span class="pill pill-ok">Form 4797</span>
+    <span class="pill pill-ok">Form 5329</span>
+    <span class="pill pill-ok">Form 8615 Kiddie</span>
+    <span class="pill pill-ok">Pub 915 WS1 SS tax</span>
+    <span class="pill pill-ok">Pub 575 SM worksheet</span>
+    <span class="pill pill-ok">OBBBA §70103–70301</span>
+    <span class="pill pill-ok">CA 540 (partial)</span>
+    <span class="pill pill-ok">CalEITC/YCTC/FYTC ★Box16</span>
+    <span class="pill pill-ok">TY 2026 full params</span>
+    <span class="pill pill-ok">QCD §408(d)(8) ★</span>
+  </div>
+  <div style="margin-top:.5rem;font-size:10px;color:var(--text3)">★ = new or significantly upgraded this session</div>
+</div>
+<div class="card">
+  <div class="card-title">Not yet implemented ⬜</div>
+  <div class="tag-wrap">
+    <span class="pill pill-risk">CA Schedule CA full ← HIGH</span>
+    <span class="pill pill-warn">EITC exact IRS table ← P2</span>
+    <span class="pill pill-warn">Form 2210 quarterly calc ← P3</span>
+    <span class="pill pill-neu">Form 8829 home office</span>
+    <span class="pill pill-neu">K-1 multi-year basis tracking</span>
+    <span class="pill pill-neu">Non-CA state returns</span>
+    <span class="pill pill-neu">AMT ISO / NQSO detail</span>
+    <span class="pill pill-neu">§1231 5-yr auto-compute</span>
+  </div>
+</div>
+</div>
+
+<div class="card">
+  <div class="card-title">OBBBA TY 2025 key constants (P.L. 119-21 · Schedule 1-A → Line 13b)</div>
+  <table>
+    <tr><th>Item</th><th>Single</th><th>MFJ</th><th>Phase-out MAGI</th><th>Source</th></tr>
+    <tr><td>Standard deduction</td><td class="mono">$15,750</td><td class="mono">$31,500</td><td>—</td><td>Rev. Proc. 2025-32</td></tr>
+    <tr><td>Age-65 add-on</td><td class="mono">$2,000/condition</td><td class="mono">$1,600/spouse</td><td>—</td><td>IRC §63(f)</td></tr>
+    <tr><td>Senior bonus deduction</td><td class="mono">$6,000/person</td><td class="mono">$12,000 max</td><td>&gt;$75k / $150k</td><td>OBBBA §70103</td></tr>
+    <tr><td>Tip deduction</td><td class="mono">$25,000</td><td class="mono">$25,000</td><td>&gt;$150k / $300k</td><td>OBBBA §70201</td></tr>
+    <tr><td>Overtime deduction</td><td class="mono">$12,500</td><td class="mono">$25,000</td><td>&gt;$150k / $300k</td><td>OBBBA §70202</td></tr>
+    <tr><td>Auto loan interest</td><td class="mono" colspan="2">$10,000 max · new US-assembled vehicle</td><td>&gt;$100k / $200k</td><td>OBBBA §70301</td></tr>
+    <tr><td>CTC / ACTC</td><td class="mono" colspan="2">$2,200/child · ACTC cap $1,700</td><td>—</td><td>OBBBA §70104</td></tr>
+    <tr><td>SALT cap</td><td class="mono">$20,000 MFS</td><td class="mono">$40,000</td><td>Phase-down &gt;$500k</td><td>OBBBA §70106</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══ CODE HEALTH ═══ -->
+<div class="section">
+<div class="section-title">Code health</div>
+
+<div class="grid4">
+  <div class="stat-card"><div class="stat-label">Test suite</div><div class="stat-val">568</div><div class="stat-sub">PASS · 0 FAIL · 9 WARN</div></div>
+  <div class="stat-card"><div class="stat-label">9C sync audit</div><div class="stat-val">21/21</div><div class="stat-sub">0 divergences</div></div>
+  <div class="stat-card"><div class="stat-label">UI field test</div><div class="stat-val">404</div><div class="stat-sub">PASS · 0 FAIL · 38 RT</div></div>
+  <div class="stat-card"><div class="stat-label">9F bridge audit</div><div class="stat-val">25/25</div><div class="stat-sub">0 missing targets</div></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Test layers — 568 total assertions</div>
+  <table>
+    <tr><th>Layer</th><th>~Count</th><th>What it catches</th></tr>
+    <tr><td>L1 — Bridge audit</td><td class="mono">~16</td><td>safe_init field name mismatches; dataclass field existence</td></tr>
+    <tr><td>L1B — DC field registry</td><td class="mono">~200</td><td>All 39 engine dataclasses; every required field confirmed</td></tr>
+    <tr><td>L2 — Pipeline regression</td><td class="mono">~70</td><td>Full schema→bridge→engine→computed roundtrip; dollar values</td></tr>
+    <tr><td>L3 — Engine unit (TY 2025)</td><td class="mono">~100</td><td>Every PARAMS_2025 constant verified against IRS source</td></tr>
+    <tr><td>L3B — PARAMS TY 2026</td><td class="mono">~36</td><td>Every PARAMS_2026 constant vs Rev. Proc. 2025-32</td></tr>
+    <tr><td>QCD regression</td><td class="mono">5</td><td>Code Y exclusion, $105k cap, Sch A conflict. IRC §408(d)(8).</td></tr>
+    <tr><td>EITC-2 regression</td><td class="mono">5</td><td>0-child single/MFJ corrected params. Rev. Proc. 2024-40.</td></tr>
+    <tr><td>F2210 regression</td><td class="mono">9</td><td>Prior-year guard, harbors (a)+(b)+(c), 110% AGI. IRC §6654.</td></tr>
+    <tr><td>F4–F9 regression</td><td class="mono">11</td><td>CalEITC Box16, K-1 basis cap, Form 982 worksheet, IRA MAGI.</td></tr>
+    <tr><td>EWP / QSS</td><td class="mono">5</td><td>Early withdrawal penalty bridge fix; QSS std deduction = MFJ.</td></tr>
+    <tr><td>F8880 rate + auto W-2</td><td class="mono">8</td><td>QSS uses MFJ thresholds; Box 12 codes auto-populate L2.</td></tr>
+    <tr><td>BRIDGE.B1–B5, C1–C5, STRICT</td><td class="mono">13</td><td>End-to-end bridge coverage; strict mode response.</td></tr>
+    <tr><td>File registry</td><td class="mono">8</td><td>Line-count audit — detects accidental truncation.</td></tr>
+    <tr><td>Round-trip (test_ui_fields.js)</td><td class="mono">38</td><td>buildSchema() keys → populateFromSchema() read-back coverage.</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">Dead code removed — 2026-05-20</div>
+  <table>
+    <tr><th>Category</th><th>Items</th><th>Detail</th></tr>
+    <tr><td>Dead PARAMS_2025 keys</td><td>13 removed</td><td>aoc_max_credit/expenses/refundable_pct, llc_max_credit/expenses/rate, kiddie_tax_std_offset, ca_std_ded_* (4), ca_sdi_rate_2025, ca_eitc_enabled — defined but never read by any compute function</td></tr>
+    <tr><td>Redundant PARAMS_2026 overrides</td><td>5 removed</td><td>auto_loan_deduction_max/magi_single/magi_mfj, charitable_agi_floor_pct, ctc_phaseout_mfj — same value as P25, now inherited via merge</td></tr>
+    <tr><td>getattr(schema,...) calls</td><td>17 replaced</td><td>All replaced with direct schema.field access. All fields now properly typed in TaxpayerSchema.</td></tr>
+    <tr><td>Hardcoded constants wired to PARAMS</td><td>compute_aoc() + compute_llc()</td><td>Was hardcoding 2500/4000/0.40/10000/0.20 inline. Now reads PARAMS keys for year-over-year maintainability.</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">Structural risks — current state</div>
+  <div class="risk-row">
+    <span class="pill pill-warn">MEDIUM</span>
+    <div class="risk-area">safe_init() silent drops</div>
+    <div class="risk-note">Strict mode (?strict=true) now surfaces all unregistered key drops. 9F bridge audit (25 targets) verifies every known transform. Run strict mode during development for any new UI field.</div>
+  </div>
+  <div class="risk-row">
+    <span class="pill pill-risk">HIGH</span>
+    <div class="risk-area">CA Schedule CA incomplete</div>
+    <div class="risk-note">Community property MFS, military pay, full OBBBA addback not implemented. CalEITC now uses exact W-2 Box 16 wages (fixed). Do not rely on CA results for filing without independent verification.</div>
+  </div>
+  <div class="risk-row">
+    <span class="pill pill-warn">MEDIUM</span>
+    <div class="risk-area">EITC formula approximation</div>
+    <div class="risk-note">Band algorithm matches IRS EIC Table within $0–$3. 0-child single params corrected. Warning emitted at compute time. P2 to embed exact table.</div>
+  </div>
+  <div class="risk-row">
+    <span class="pill pill-neu">LOW</span>
+    <div class="risk-area">Form 2210 annual rate</div>
+    <div class="risk-note">Penalty uses annual rate not quarterly dates. Warning explicitly states limitation. IRS computes quarterly independently.</div>
+  </div>
+  <div class="risk-row">
+    <span class="pill pill-neu">LOW</span>
+    <div class="risk-area">K-1 multi-year basis</div>
+    <div class="risk-note">Single-year outside_basis enforced. Multi-year tracking not implemented. Preparer must maintain basis schedule and enter current-year basis.</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Session start gate — run all five before any changes</div>
+  <div class="check-row"><span class="ok-icon">✅</span><span class="mono">python3 sachintaxcare_test.py</span><span style="color:var(--text2);font-size:11px;margin-left:.5rem">→ 568 PASS · 0 FAIL · 9 WARN (expected)</span></div>
+  <div class="check-row"><span class="ok-icon">✅</span><span class="mono">python3 test_vita_irs.py</span><span style="color:var(--text2);font-size:11px;margin-left:.5rem">→ 189 PASS · 0 FAIL</span></div>
+  <div class="check-row"><span class="ok-icon">✅</span><span class="mono">python3 [9C PARAMS audit]</span><span style="color:var(--text2);font-size:11px;margin-left:.5rem">→ 21/21 · 0 divergences</span></div>
+  <div class="check-row"><span class="ok-icon">✅</span><span class="mono">python3 [9F bridge audit]</span><span style="color:var(--text2);font-size:11px;margin-left:.5rem">→ 25/25 targets present</span></div>
+  <div class="check-row"><span class="ok-icon">✅</span><span class="mono">node test_ui_fields.js sachintaxcare_pro.html</span><span style="color:var(--text2);font-size:11px;margin-left:.5rem">→ 404 PASS + 38 round-trip PASS</span></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Remaining priorities</div>
+  <table>
+    <tr><th>#</th><th>Priority</th><th>Item</th><th>Complexity</th></tr>
+    <tr><td>P1</td><td><span class="pill pill-risk">HIGH</span></td><td>CA Schedule CA full line-by-line (community property, military pay, bonus dep addback)</td><td>High</td></tr>
+    <tr><td>P2</td><td><span class="pill pill-warn">MEDIUM</span></td><td>Embed IRS EIC Table — remove formula approximation warning</td><td>Medium</td></tr>
+    <tr><td>P3</td><td><span class="pill pill-warn">MEDIUM</span></td><td>Form 2210 quarterly rate calculation</td><td>Medium</td></tr>
+    <tr><td>P4</td><td><span class="pill pill-neu">LOW</span></td><td>K-1 multi-year outside basis carryforward tracking</td><td>High</td></tr>
+    <tr><td>P5</td><td><span class="pill pill-neu">LOW</span></td><td>Form 8829 home office deduction</td><td>Medium</td></tr>
+    <tr><td>P6</td><td><span class="pill pill-neu">LOW</span></td><td>1099-INT Box 9 PAB → AMT route verify</td><td>Low</td></tr>
+    <tr><td>P7</td><td><span class="pill pill-neu">LOW</span></td><td>Schedule B Line 3 Treasury bond premium in workpaper</td><td>Low</td></tr>
+  </table>
+</div>
+
+</div>
+
+<div style="font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:1rem;margin-top:2rem">
+  SachinTaxCare Project Insight · Generated 2026-05-20 · IRS sources: irs.gov/pub/irs-pdf/ · Rev. Proc. 2024-40 · Rev. Proc. 2025-32 · P.L. 119-21 (OBBBA) · f1040s1a.pdf · IR-2026-28 · IRC §25A, §24, §63, §86, §108, §219, §402(g), §408(d)(8), §469, §704(d) · IRS Pub 575, 915, 939, 590-A, 4681
+</div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()">⬇ Save / Print</button>
+
+</body>
+</html>
