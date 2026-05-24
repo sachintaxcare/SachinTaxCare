@@ -208,11 +208,13 @@ check("4.3 ACTC earned $18k 1 child — capped at $1,700", "f1040s8.pdf L27; IRC
       c_actc['l28_actc'], 1700, tolerance=0)
 
 # Case 4.4: ODC — 1 qualifying relative (no CTC)
+# ODC routes through Sch 8812 l4b/odc_total, never sch3 l6d (Rule 2 — 2026-05-17)
+# Source: f1040s8.pdf; IRC §24(h)(4)
 r = e.run(e.TaxpayerSchema(first='ODC', last='Test', filing_status='single', tax_year=2025,
     w2s=[e.W2(employer='C', box1_wages=60000, box2_fed_wh=10000)],
     dependents=[e.Dependent('Parent','T','200-00-0001','01/01/1945','Father',odc_eligible=True)]))
 check("4.4 ODC $500 for qualifying relative", "f1040s8.pdf; IRC §24(h)(4)",
-      r['computed']['sch3']['l6d_odc'], 500, tolerance=0)
+      r['computed']['s8812']['odc_total'], 500, tolerance=0)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SECTION 5: EITC
@@ -506,16 +508,18 @@ check("14.2 Exception 09 first home $10k cap → penalty on remaining $5k",
       "f5329.pdf; IRC §72(t)(2)(F)",
       r['computed']['f5329']['l4_penalty'], 500, tolerance=0)
 
-# Case 14.3: Code 02 exception rejected for IRA (employer plan only)
+# Case 14.3: Code 01 (age-55 separation from service) rejected for IRA — plan-only exception
+# Source: i5329.pdf Line 2; IRC §72(t)(2)(A)(v) — code 01 applies ONLY to employer plans, not IRAs
+# Code 02 (SEPP) is valid for both IRAs and plans — wrong exception was used in prior version
 r = e.run(e.TaxpayerSchema(first='Inv', last='Except', filing_status='single', tax_year=2025,
     w2s=[e.W2(employer='C', box1_wages=40000, box2_fed_wh=6000)],
     form_1099rs=[e.Form1099R(payer='IRA Co', box1_gross=20000, box2a_taxable=20000,
                               box4_fed_wh=0, box7_code='1',
                               box7_ira_sep_simple=True, is_ira=True)],
     form_5329_exceptions=[e.Form5329Exception(payer_name='IRA Co',
-                          distribution_amount=20000, exception_code='02', plan_type='ira')]))
+                          distribution_amount=20000, exception_code='01', plan_type='ira')]))
 assert r['computed']['f5329']['exception_detail'][0]['valid'] == False
-check("14.3 Exception 02 IRA invalid → full penalty", "f5329.pdf; IRC §72(t)(2)(A)(v)",
+check("14.3 Exception 01 (age-55 plan-only) invalid for IRA → full penalty", "f5329.pdf; IRC §72(t)(2)(A)(v); i5329.pdf Line 2",
       r['computed']['f5329']['l4_penalty'], 2000, tolerance=0)
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1259,9 +1263,9 @@ r322 = e.run(e.TaxpayerSchema(first='Senior', last='Single', filing_status='sing
 check("32.2a Senior Bonus Ded $6,000 (age 70, MAGI $60k < $75k threshold)",
       "OBBBA §70103; irs.gov/newsroom/one-big-beautiful-bill-provisions",
       r322['computed']['obbba_senior_deduction'], 6000, tolerance=0)
-check("32.2b Senior Bonus Ded reduces AGI",
-      "OBBBA §70103",
-      r322['computed']['agi'], 54000, tolerance=0)
+check("32.2b Senior Bonus Ded reduces taxable income (L13b below-the-line — not AGI — V17 Rule 1)",
+      "OBBBA §70103; f1040.pdf L13b",
+      r322['computed']['taxable_income'], 36250, tolerance=0)
 
 # Case 32.3: Senior Bonus Deduction — phase-out (MAGI $90k > $75k → $0)
 r323 = e.run(e.TaxpayerSchema(first='SeniorPO', last='Test', filing_status='single', tax_year=2025,
@@ -1278,9 +1282,9 @@ r324 = e.run(e.TaxpayerSchema(first='Tipper', last='Test', filing_status='single
 check("32.4a Tip Deduction $20k (MAGI $80k < $150k)",
       "OBBBA §70201",
       r324['computed']['obbba_tip_deduction'], 20000, tolerance=0)
-check("32.4b Tip Deduction reduces AGI",
-      "OBBBA §70201",
-      r324['computed']['agi'], 60000, tolerance=0)
+check("32.4b Tip Deduction reduces taxable income (L13b below-the-line — not AGI — V17 Rule 1)",
+      "OBBBA §70201; f1040.pdf L13b",
+      r324['computed']['taxable_income'], 44250, tolerance=0)
 
 # Case 32.5: Tip Deduction — cap at $25,000
 r325 = e.run(e.TaxpayerSchema(first='HighTip', last='Test', filing_status='single', tax_year=2025,
@@ -1361,9 +1365,9 @@ r3213 = e.run(e.TaxpayerSchema(first='Combined', last='OBBBA', filing_status='si
 check("32.13 Combined tip ($15k) + overtime ($10k) = $25k OBBBA deductions",
       "OBBBA §70201 + §70202",
       r3213['computed']['obbba_total_deductions'], 25000, tolerance=0)
-check("32.13b AGI reduced by $25k OBBBA deductions",
-      "OBBBA combined",
-      r3213['computed']['agi'], 75000, tolerance=0)
+check("32.13b Taxable income reduced by $25k OBBBA (L13b below-the-line — not AGI — V17 Rule 1)",
+      "OBBBA combined; f1040.pdf L13b",
+      r3213['computed']['taxable_income'], 59250, tolerance=0)
 
 print()
 print("=" * 65)
@@ -2422,9 +2426,9 @@ check("32.2a Senior Bonus Ded $6,000 (age 70, MAGI $60k < $75k threshold)",
       "OBBBA §70103; irs.gov/newsroom/one-big-beautiful-bill-provisions",
       r322['computed']['obbba_senior_deduction'], 6000, tolerance=0)
 # AGI should be reduced by $6,000
-check("32.2b Senior Bonus Ded reduces AGI",
-      "OBBBA §70103",
-      r322['computed']['agi'], 54000, tolerance=0)
+check("32.2b Senior Bonus Ded reduces taxable income (L13b below-the-line — not AGI — V17 Rule 1)",
+      "OBBBA §70103; f1040.pdf L13b",
+      r322['computed']['taxable_income'], 36250, tolerance=0)
 
 # Case 32.3: Senior Bonus Deduction — phase-out (MAGI $90k > $75k, excess $15k)
 # $6,000 - $15,000 excess = max(0, -$9,000) → $0 after phase-out
@@ -2443,9 +2447,9 @@ r324 = e.run(e.TaxpayerSchema(first='Tipper', last='Test', filing_status='single
 check("32.4a Tip Deduction $20k (under $25k cap, MAGI $80k < $150k)",
       "OBBBA §70201; irs.gov/newsroom/one-big-beautiful-bill-provisions",
       r324['computed']['obbba_tip_deduction'], 20000, tolerance=0)
-check("32.4b Tip Deduction reduces AGI",
-      "OBBBA §70201",
-      r324['computed']['agi'], 60000, tolerance=0)
+check("32.4b Tip Deduction reduces taxable income (L13b below-the-line — not AGI — V17 Rule 1)",
+      "OBBBA §70201; f1040.pdf L13b",
+      r324['computed']['taxable_income'], 44250, tolerance=0)
 
 # Case 32.5: Tip Deduction — cap at $25,000
 r325 = e.run(e.TaxpayerSchema(first='HighTip', last='Test', filing_status='single', tax_year=2025,
@@ -2531,9 +2535,9 @@ r3213 = e.run(e.TaxpayerSchema(first='Combined', last='OBBBA', filing_status='si
 check("32.13 Combined tip ($15k) + overtime ($10k) = $25k total OBBBA deductions",
       "OBBBA §70201 + §70202",
       r3213['computed']['obbba_total_deductions'], 25000, tolerance=0)
-check("32.13b AGI reduced by $25k OBBBA deductions",
-      "OBBBA combined",
-      r3213['computed']['agi'], 75000, tolerance=0)
+check("32.13b Taxable income reduced by $25k OBBBA (L13b below-the-line — not AGI — V17 Rule 1)",
+      "OBBBA combined; f1040.pdf L13b",
+      r3213['computed']['taxable_income'], 59250, tolerance=0)
 
 print()
 print("=" * 65)

@@ -25,5 +25,7 @@ This forces Claude to: read the reference, check versions, and not assume anythi
 Step 3 — Upload the files needed for that session's work as chat attachments. 
 Even though they're in the project, Claude needs the actual file on disk (in uploads/) to run tests, edit code, and write outputs. The project copy gives Claude the content to read; the chat upload gives Claude a file it can actually operate on.
 
+Ask "Are you using project's files as baseline for this session inclduing TaxReturn_PlanningReference.md? If not make sure to do that before we start working."
+
 Step 4 — End of session, download any changed files from outputs/ and replace them in the project before closing the chat.
 The single biggest protection against drift: always end a session by updating the project files before closing, and always start by asking Claude to verify the sync audit before doing any work.

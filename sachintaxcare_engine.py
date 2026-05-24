@@ -2189,6 +2189,7 @@ PARAMS_2026 = {
     "qbi_phase_in_range_single": 75000,
     "qbi_phase_in_range_mfj":   150000,
     "qbi_min_deduction":          400,   # NEW for 2026: minimum QBI deduction if QBI ≥ $1,000
+    "qbi_min":                    400,   # Alias for qbi_min_deduction — Source: OBBBA §70XXX; TY 2026 only
 
     # ── Retirement Plans — TY 2026 ───────────────────────────────────────────
     # Source: IRS Notice 2025-67 (irs.gov/pub/irs-drop/n-25-67.pdf); Rev. Proc. 2025-32
