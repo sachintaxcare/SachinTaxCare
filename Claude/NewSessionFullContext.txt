@@ -1,0 +1,29 @@
+How to start a new session with full context
+
+Here's the exact process:
+
+What Claude.ai Projects actually does:
+Every file you add to a Project's knowledge base is injected verbatim into Claude's context window at the start of every new conversation in that project. Claude reads them as text — it cannot run them, diff them, or write back to them. They are read-only context.
+
+Practical constraints to know:
+Context window has a limit. Your project currently has ~16 files totalling ~700KB of text. Large files like sachintaxcare_engine.py (377KB) consume most of the context. Claude may not be able to hold all files fully in context simultaneously.
+Claude cannot execute code from project files at session start — it can only read them. To run tests you still need to upload files to the chat.
+
+Recommended session-start protocol:
+Step 1 — Before opening a new chat, confirm your project knowledge base has the current versions of these four files (the ones that change session to session):
+
+TaxReturn_PlanningReference.md
+sachintaxcare_pro.html
+sachintaxcare_field_manifest.md
+test_ui_fields.js
+
+Step 2 — First message of every new session, say exactly:
+
+"Read TaxReturn_PlanningReference.md from project context. Run the sync audit from Page 9C and the UI field test. Tell me any divergences before we begin."
+This forces Claude to: read the reference, check versions, and not assume anything is current before touching code.
+
+Step 3 — Upload the files needed for that session's work as chat attachments. 
+Even though they're in the project, Claude needs the actual file on disk (in uploads/) to run tests, edit code, and write outputs. The project copy gives Claude the content to read; the chat upload gives Claude a file it can actually operate on.
+
+Step 4 — End of session, download any changed files from outputs/ and replace them in the project before closing the chat.
+The single biggest protection against drift: always end a session by updating the project files before closing, and always start by asking Claude to verify the sync audit before doing any work.
