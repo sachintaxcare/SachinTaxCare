@@ -1,6 +1,6 @@
 # SachinTaxCare — Tax Return Planning Reference
 *Last updated: 2026-05-24 · **Version V17** · All dollar values from `PARAMS_2025` / `PARAMS_2026` in engine.*
-*IRS source authority: irs.gov/forms-instructions only (per Rules 15, 16, 9A, 9G). No taxpayer data to web without approval.*
+*IRS source authority: irs.gov/forms-instructions only (per Rules 15, 16, 9A, 9G). No taxpayer data to web without approval (Rule 16). Rules 1–28 on Page 5.*
 
 ---
 
@@ -382,8 +382,8 @@ Do NOT skip Lines 6-9. Source: f8995.pdf; i8995.pdf Line 6; IRC §199A(e)(4); FE
 ### Rule 4 — EITC uses IRS $50-band table algorithm (not formula)
 The IRS EIC Table uses discrete $50 bands. Credit is computed at `band = (int(lookup) // 50) * 50`, not at exact income. Formula approximations differ by $1–$100 per return. `requires_table_lookup` is always False — the band algorithm is filing-grade. Source: p1040.pdf pp.16+; IRC §32; Rev. Proc. 2024-40 §3.07.
 
-### Rule 5 — safe_init() silently drops field name mismatches
-Any field name difference between UI JSON and engine dataclass is dropped without error. The bridge audit (Page 9F) is the only safeguard. Every new form field must match the exact engine dataclass field name.
+### Rule 5 — safe_init() silently drops field name mismatches; every new field must be in all three places
+Any field name difference between UI JSON and engine dataclass is dropped without error. The bridge audit (Page 9F) is the only safeguard. Every new form field must match the exact engine dataclass field name. **Any new UI field must be added simultaneously to:** `buildSchema()`, `populateFromSchema()`, and `safe_init()` bridge — all three, every time. *(Consolidates former Rule 21.)* 
 
 ### Rule 6 — Form 2441 Line 6 deemed earned income
 When MFJ spouse has $0 earned income but is a full-time student OR disabled, deemed income = $250/month (1 qualifying person) or $500/month (2+ persons) × months qualified. Source: f2441.pdf Line 6; IRC §21(d)(2).
@@ -417,6 +417,34 @@ All tax forms, instructions, and publications used in this project must come fro
 
 ### Rule 16 — No taxpayer information sent to web without express approval
 No data from any TaxpayerSchema, computed result, or intake form may be transmitted to any external URL, API, or web service without the user's explicit approval in the chat. This includes web search queries that could contain PII. All IRS lookups must be read-only fetches of public IRS documents — never POST requests containing taxpayer data.
+
+### Rule 17 — OBBBA senior deduction auto-populate
+Enter taxpayer DOB in Taxpayer panel; UI auto-fills `tp-age-senior`. Engine applies $6,000 deduction per person ≥ 65 at year-end. MFS ineligible. MAGI phaseout: $75k single / $150k MFJ. Source: P.L. 119-21 §70103; OBBBA §70103; PARAMS_2025[`senior_deduction_amount`].
+
+### Rule 18 — Cancelled debt (Form 1099-C)
+`box2_discharged` → bridge → `box2_amount_discharged`. `is_excluded=False` → taxable on Sch 1 Line 8c. Form 982 required if insolvency/bankruptcy exclusion applies. Source: IRC §61(a)(12); IRC §108; i1099c.pdf.
+
+### Rule 19 — SSA withholding → Line 25b
+SSA-1099 `box6_vol_wh` → bridge → `box6_voluntary_wh` → `l25b_ssa_wh`. Never put SSA withholding on Line 25a (W-2 only). Source: f1040.pdf Line 25b; i1040.pdf.
+
+### Rule 20 — Import/export round-trip integrity; spouse SSN dual-path
+`buildSchema()` (export) and `populateFromSchema()` (import) must use identical key names. Verified by `test_ui_fields.js` 64-key round-trip. Spouse SSN stored in `schema.spouse.ssn` AND `schema.spouse_ssn` (top-level) for backward compatibility; travels as `TaxpayerSchema.spouse_ssn` through the engine, emits in `computed`, passes through `map_result()`, available to workpaper as `r.spouse_ssn`. *(Consolidates former Rule 23.)* 
+
+### Rule 21 — EITC investment income limit (IRC §32(i))
+Investment income for the §32(i) limit includes: interest + ordinary dividends + net capital gains + net positive rental income + passive K-1 ordinary income. 2025 limit: $11,600. Exceeding this limit disqualifies the entire EITC. Source: IRC §32(i)(1); p596.pdf.
+
+### Rule 22 — Form 8606 separate per spouse
+IRS requires a SEPARATE Form 8606 per spouse. Each spouse's pro-rata is computed independently on their OWN IRA balances. Never aggregate both spouses into one Form 8606. Source: i8606.pdf "Who Must File"; IRC §408(d)(2).
+
+### Rule 23 — Alimony decree modification
+Pre-2019 decree modified after 12/31/2018 WITH explicit §71 inapplicability clause → treated as post-2018 (no deduction, no income). Modification date controls, not original decree date. Source: IRC §11051(c); IRS Pub 504.
+
+### Rule 24 — Home office simplified method cap
+Simplified method ($5/sqft, max 300 sqft) cannot exceed gross income from business use of home. Cannot create a loss — any excess is carried forward. Source: Rev. Proc. 2013-13 §4.07; IRC §280A(c)(5).
+
+### Rule 25 — NOL carryforward 80% limit
+Post-TCJA NOL carryforward limited to 80% of taxable income per year. Indefinite carryforward. No carryback except farming losses. Field: `nol_carryforward_prior_year`. Source: IRC §172(a)(2); IRS Pub 536.
+
 
 ---
 
