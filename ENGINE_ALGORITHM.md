@@ -1,858 +1,499 @@
 # SachinTaxCare — Engine Algorithm & Code Flow
-*Authoritative description of how the engine computes a 2025/2026 federal + CA return*
-*Tax years 2025 & 2026 · Engine v12-fork · 145/145 tests passing · Updated 2026-05-11*
+*Authoritative description of how the engine computes a TY 2025/2026 federal + CA return*
+*Engine V17.1 · 42 compute functions · 40 dataclasses · 1,606 IRS citations · Updated 2026-05-24*
 
 ---
 
-## ⚠ OBBBA TY 2025 Algorithm Changes (P.L. 119-21, signed July 4, 2025)
-
-The One Big Beautiful Bill Act changed the following computation parameters and added new steps:
-
-| Change | Old value | New value | Engine location |
-|---|---|---|---|
-| Std ded single/MFS | $15,000 | **$15,750** | `PARAMS_2025["std_deduction"]` |
-| Std ded HOH | $22,500 | **$23,625** | `PARAMS_2025["std_deduction"]` |
-| Std ded MFJ/QSS | $30,000 | **$31,500** | `PARAMS_2025["std_deduction"]` |
-| CTC per child | $2,000 | **$2,200** | `PARAMS_2025["ctc_per_child"]` |
-| SALT cap (default) | $10,000 | **$40,000** | `PARAMS_2025["salt_cap_default"]` |
-| SALT cap (MFS) | $5,000 | **$20,000** | `PARAMS_2025["salt_cap_mfs"]` |
-| Charitable floor | 0% | **0.5% AGI** (itemizers) | `PARAMS_2025["charitable_agi_floor_pct"]` |
-
-New above-line deductions (all in `OBBBA Above-Line Deductions` block, between NOL and Step 4):
-
-| Deduction | Cap | Phase-out threshold | Engine function |
-|---|---|---|---|
-| Senior Bonus ($6k/person, age 65+) | $6k per person | MAGI $75k/$150k | `compute_senior_deduction()` |
-| Qualified tips | $25,000 | MAGI $150k/$300k | `compute_tip_deduction()` |
-| FLSA overtime | $12,500 / $25,000 MFJ | MAGI $150k/$300k | `compute_overtime_deduction()` |
-| Auto loan interest (new US vehicle) | $10,000 | MAGI $100k/$200k | `compute_auto_loan_deduction()` |
-
-Source: Rev. Proc. 2025-32; irs.gov/newsroom/one-big-beautiful-bill-provisions
-
----
-
-## Overview
-
-The entire computation is a single pure function:
+## Entry point
 
 ```python
 result = sachintaxcare_engine.run(schema: TaxpayerSchema) -> dict
 ```
 
-- Input: one `TaxpayerSchema` dataclass instance (42 nested dataclasses)
-- Output: one dict with keys `computed`, `warnings`, `steps`, `schema`
-- No side effects, no database, no network calls
-- Same input always produces same output
+- **Input**: one `TaxpayerSchema` dataclass (40 nested dataclasses, 84 top-level fields, 515+ total fields)
+- **Output**: `{"computed": {...155+ keys}, "warnings": [...], "steps": {...}, "schema": {...}}`
+- **Pure function**: no side effects, no DB, no network, no global state
+- Same input always produces identical output
 
-`result["computed"]` contains every Form 1040 line value. `result["warnings"]` contains every IRS-sourced advisory message. The caller (Flask `/compute` route) serializes `result["computed"]` as JSON and returns it to the browser.
+`result["computed"]` contains every Form 1040 line. `result["warnings"]` contains IRS-sourced advisory messages. The Flask server serializes `result["computed"]` as JSON and returns it to the browser.
+
+---
+
+## Design principles
+
+1. **IRS source on every formula line** — `# Source: f1040.pdf L11; IRC §63`
+2. **Whole-dollar rounding at each step** — `rnd() = round()` after every arithmetic operation, never accumulate fractions
+3. **Never interpolate lookup tables** — always read the exact IRS table row (EIC, Pub 575 SM, Form 2441 rate table)
+4. **40 dataclasses, one per IRS form** — each field maps to a specific IRS box number in the docstring
+5. **Computation order is fixed** — mandated by IRS Credit Limit Worksheet circular dependency
+
+```python
+def rnd(v): return round(v)
+# Correct:  wages = rnd(sum(w.box1_wages for w in schema.w2s))
+# Wrong:    wages = sum(w.box1_wages for w in schema.w2s)  # fractions accumulate
+```
+
+---
+
+## PARAMS_2025 and PARAMS_2026
+
+All dollar constants and rates are stored in two dicts, never hardcoded in compute functions:
+
+```python
+PARAMS_2025 = {
+    "std_deduction":   {"single": 15750, "mfj": 31500, "hoh": 23625, "mfs": 15750, "qss": 31500},
+    "ctc_per_child":   2200,
+    "actc_cap_per_child": 1700,
+    "salt_cap_default": 40000,
+    "salt_cap_mfs":    20000,
+    "ss_wage_base_2025": 176100,
+    "standard_mileage_rate_2025": 0.70,
+    "eitc": {...},          # per filing status × child count
+    "tax_brackets_single": [...],
+    "qdcgt_0pct_single": 47025,
+    ...  # 128 keys total
+}
+
+PARAMS_2026 = {
+    "std_deduction":   {"single": 16100, "mfj": 32200, ...},
+    "ctc_per_child":   2300,
+    "qbi_min_deduction": 400,
+    "qbi_min":         400,   # alias — both keys must exist
+    ...  # 153 keys total
+}
+```
+
+The engine selects `p = PARAMS_2025 if schema.tax_year == 2025 else PARAMS_2026` at the start of `run()`.
+
+---
+
+## All 40 dataclasses
+
+| Dataclass | Fields | IRS source |
+|---|---|---|
+| `TaxpayerSchema` | 84 | Master schema — all forms and top-level fields |
+| `W2` | 33 | fw2.pdf — all 20 boxes |
+| `Form1099INT` | 20 | f1099int.pdf |
+| `Form1099DIV` | 19 | f1099div.pdf — Box 5 §199A divs critical for QBI |
+| `Form1099R` | 34 | f1099r.pdf — all 19 boxes + routing flags |
+| `Form1099NEC` | 7 | f1099nec.pdf |
+| `Form1099B` | 12 | f1099b.pdf |
+| `Form1099G` | 7 | f1099g.pdf |
+| `Form1099C` | 10 | f1099c.pdf — `box2_amount_discharged`, `is_excluded` |
+| `Form1099MISC_Prize` | 3 | f1099misc.pdf Box 3 |
+| `FormSSA1099` | 13 | SSA-1099 — `box6_voluntary_wh` critical for L25b |
+| `FormW2G` | 5 | fw2g.pdf |
+| `SimplifiedMethodData` | 9 | p575.pdf Worksheet A |
+| `Form1098T` | 16 | f1098t.pdf — `box8_half_time`, `aoc_drug_conviction` gates |
+| `Form1098E` | 4 | f1098e.pdf |
+| `Form1095A` | 8 | f1095a.pdf |
+| `Form1095AMonth` | 3 | f1095a.pdf monthly rows |
+| `Form5329Exception` | 6 | f5329.pdf Part I Line 2 |
+| `Form8606Data` | 12 | f8606.pdf — nondeductible IRA basis |
+| `Form8889Data` | 12 | f8889.pdf — HSA |
+| `Form8880Data` | 3 | f8880.pdf — saver's credit |
+| `Form8582Data` | 2 | f8582.pdf — passive activity |
+| `Form8615Data` | 7 | f8615.pdf — kiddie tax |
+| `Form6251Data` | 6 | f6251.pdf — AMT preferences |
+| `Form4972Data` | 7 | f4972.pdf — lump-sum distribution |
+| `Form4797SaleData` | 12 | f4797.pdf — §1231/§1245/§1250 |
+| `Form1116Data` | 10 | f1116.pdf — foreign tax credit |
+| `Form982Data` | 4 | f982.pdf — cancellation of debt |
+| `Form2441Provider` | 4 | f2441.pdf — care provider |
+| `Form2210Data` | 5 | f2210.pdf — underpayment |
+| `ScheduleC` | 47 | f1040sc.pdf — business income/expenses |
+| `ScheduleE` | 24 | f1040se.pdf — rental |
+| `ScheduleK1` | 34 | f1065sk1.pdf / f1120sk1.pdf |
+| `ScheduleAData` | 16 | f1040sa.pdf |
+| `CaliforniaData` | 16 | FTB 540 |
+| `AlimonyData` | 5 | Pub 504 |
+| `EstimatedTaxPayments` | 15 | f1040es.pdf (4 quarters + prior overpayment) |
+| `DeceasedSpouse` | 3 | f1040.pdf |
+| `SSALumpSumPriorYear` | 9 | p915.pdf Worksheet 2 |
+| `Dependent` | 9 | f1040.pdf — CTC/ODC/HOH |
+
+---
+
+## All 42 compute functions
+
+```
+compute_tax()                    — income tax via bracket schedule or QDCGT worksheet
+compute_qdcgt_tax()              — QDCGT/qualified dividends worksheet; §1250/collectibles rates
+compute_senior_deduction()       — OBBBA §70103 ($6k, age 65+, MAGI phase-out)
+compute_tip_deduction()          — OBBBA §70201 ($25k cap, occupation required, phase-out)
+compute_overtime_deduction()     — OBBBA §70202 ($12.5k/$25k MFJ, FLSA §207 required)
+compute_auto_loan_deduction()    — OBBBA §70301 ($10k cap, new US vehicle, phase-out)
+compute_simplified_method()      — Pub 575 Worksheet A (Simplified Method for annuities)
+compute_ss_lump_sum_election()   — Pub 915 Worksheet 2 (lump-sum prior-year election)
+compute_ss_taxable()             — Pub 915 Worksheet 1 (SS provisional income → 0/50/85%)
+compute_aoc()                    — Form 8863 AOC ($2,500; 40% refundable; 4-year limit; drug gate)
+compute_llc()                    — Form 8863 LLC ($2,000 non-refundable; phase-out)
+compute_eitc()                   — §32 EITC ($50-band IRS table algorithm; investment income gate)
+compute_student_loan_deduction() — IRC §221 ($2,500; MAGI phase-out)
+compute_schedule_c_se()          — Schedule C all 20 expense lines + SE tax; home office cap
+compute_qbi_deduction()          — Form 8995 §199A (Lines 1–15 incl. REIT/PTP Lines 6–9)
+compute_se_health_insurance()    — Schedule 1 Line 17 (SE health ins. deduction)
+compute_se_retirement()          — Schedule 1 Line 16 (SEP/SIMPLE/solo 401k)
+compute_cogs()                   — Schedule C Part III COGS
+compute_ira_deduction()          — Pub 590-A (deductible IRA; covered/noncovered phase-outs)
+compute_form_8889()              — Form 8889 (HSA contribution/distribution)
+compute_niit()                   — Form 8960 (3.8% NIIT on NII above threshold)
+compute_additional_medicare_tax() — Form 8959 (0.9% AdMedTax on wages/SE above threshold)
+compute_form_2210_safe_harbor()  — Form 2210 (underpayment safe harbor; Line 38)
+compute_form_982()               — Form 982 (COD exclusion; insolvency/bankruptcy)
+compute_k1_income()              — K-1 all income types (ordinary, rental, §179, §199A, cap gain)
+compute_caleitc()                — CA CalEITC + YCTC (FTB Schedule EITC)
+compute_california_540()         — CA Form 540 (CA-specific conformity, OBBBA addbacks)
+compute_schedule_b()             — Schedule B (interest/dividend totals; foreign account flags)
+compute_schedule_e_8582()        — Schedule E Part I + Form 8582 (passive activity loss limits)
+compute_form_6251()              — Form 6251 AMT (preferences, AMTI, exemption, 26%/28% rates)
+compute_form_8615()              — Form 8615 Kiddie Tax (unearned income > threshold)
+compute_form_4797()              — Form 4797 (§1231 gain/loss; §1245 recapture; §1250 recapture)
+compute_nol_detection()          — IRC §172 NOL detection and 80% carryforward limit
+compute_f8962()                  — Form 8962 (ACA PTC; monthly Lines 12–23; APTC reconciliation)
+compute_f5329_exceptions()       — Form 5329 Parts I–X (exception codes 01–12; IRA-only/plan-only)
+compute_f1116()                  — Form 1116 FTC (de minimis ≤$300; proportionate share limit)
+compute_schedule_a()             — Schedule A (SALT $40k cap; mortgage $750k limit; charitable 60%)
+compute_form_8949_schd()         — Form 8949/Schedule D (ST/LT; §1250 25%; collectibles 28%)
+compute_form_8606()              — Form 8606 Parts I/II (nondeductible IRA pro-rata; Roth conversion)
+compute_form_4972()              — Form 4972 (lump-sum; 10-year and 20% capital gain treatments)
+```
 
 ---
 
 ## The 14-step computation order
 
-The order is mandated by the IRS Credit Limit Worksheet (CLW) circular dependency. It cannot be changed without breaking credit calculations. Each step feeds values into later steps.
+**This order is fixed.** It is mandated by the IRS Credit Limit Worksheet (CLW) circular dependency. Changing it breaks credit calculations.
 
 ```
-Step 1:  Income aggregation
-Step 2:  Above-line adjustments (partial)
-Step 3:  AGI · SS taxability
-Step 4:  Deduction (standard vs itemized)
-Step 5:  QBI deduction · Income tax · AMT · Kiddie Tax
-Step 6:  Form 2441 — child/dep care (FIRST — sets CLW baseline)
-Step 7:  Form 8863 — education credits (SECOND)
-Step 8:  Form 8880 — saver's credit (THIRD)
-Step 9:  Schedule 8812 — CTC/ACTC/ODC (FOURTH)
-Step 10: Schedule 3 Part I — FTC, care, education, saver, ODC
-Step 11: EITC
-Step 12: Form 8962 — Premium Tax Credit
-Step 13: Form 5329 · Schedule 2 · Schedule 3 Part II
-Step 14: Form 1040 totals
+Step 1:   Income aggregation
+          W-2, 1099-INT, 1099-DIV, 1099-NEC, Schedule C/SE,
+          1099-R, Form 8606, SSA-1099, Form 8949/Schedule D,
+          Form 4797, Schedule B, Schedule E/Form 8582,
+          Schedule K-1, Form 4972, Form 982, gambling, unemployment,
+          alimony, state refund, allocated tips, cancelled debt
+
+Step 2:   Above-line adjustments (partial — before AGI)
+          Teacher ($300), early withdrawal penalty (Sch 1 L18),
+          SE tax deduction (½ SE tax → Sch 1 L15),
+          SE health insurance (Sch 1 L17),
+          SE retirement (Sch 1 L16),
+          IRA deduction (Pub 590-A phase-outs),
+          HSA (Form 8889),
+          Alimony paid (pre-2019 decrees only)
+
+Step 3:   AGI and SS taxability
+          student loan deduction (requires pre-SS AGI for phase-out)
+          total_adjustments = Σ(above-line items — QBI NOT included)
+          agi_pre_ss = total_income_pre_ss − total_adjustments
+          SS taxability (Pub 915 Worksheet 1 or lump-sum election)
+          NOL deduction (IRC §172 — adjusts agi directly)
+          agi = total_income − total_adjustments
+
+          ── OBBBA BELOW-LINE DEDUCTIONS (L13b — do NOT reduce AGI) ──
+          MAGI = agi  (used for all OBBBA phase-out tests)
+          adj_senior = compute_senior_deduction(...)
+          adj_tips   = compute_tip_deduction(...)
+          adj_overtime = compute_overtime_deduction(...)
+          adj_auto   = compute_auto_loan_deduction(...)
+          obbba_total = adj_senior + adj_tips + adj_overtime + adj_auto
+
+Step 4:   Deduction and taxable income
+          std_ded = PARAMS[fs] + age/blind add-on
+          Schedule A (if itemizing)
+          deduction_used = max(std_ded, itemized)
+          taxable = max(0, agi − deduction_used)
+          taxable = max(0, taxable − obbba_total)    ← Line 13b
+          taxable = max(0, taxable − adj_qbi)        ← Line 13a (QBI)
+
+Step 5:   Income tax · AMT · Kiddie Tax
+          income_tax = compute_qdcgt_tax(taxable, ...)   ← QDCGT worksheet if qualified income
+          Form 6251 AMT (computed against AMTI, not taxable income)
+          Form 8615 Kiddie Tax (replaces income_tax if applicable)
+          Form 4972 lump-sum additional tax
+          NIIT (Form 8960)
+          Additional Medicare Tax (Form 8959)
+
+Step 6:   Form 2441 — child/dependent care (FIRST in CLW)
+          Care credit reduces income_tax. Sets CLW L2 baseline.
+          Form 2441 Line 6 deemed income: disabled/student spouse
+          Employer dep care exclusion (W-2 Box 10) reduces cap
+
+Step 7:   Form 8863 — education credits (SECOND in CLW)
+          AOC: $2,500 (40% refundable); 3 hard gates
+          LLC: $2,000 (non-refundable); phase-out
+          Goes to Sch 3 L3 → sch3_l8
+
+Step 8:   Form 8880 — saver's credit (THIRD in CLW)
+          Rate table by filing status + AGI
+          Goes to Sch 3 L4 → sch3_l8
+
+Step 9:   Schedule 8812 — CTC / ACTC / ODC (FOURTH in CLW)
+          CTC: $2,200/child, phase-out at $200k/$400k
+          ACTC: 15% × (earned − $2,500), cap $1,700/child
+          ODC: $500/other dependent (ALWAYS through 8812, never Sch 3)
+          CLW applies credits in order: care → edu → saver → CTC
+
+Step 10:  Schedule 3 Part I — nonrefundable credits
+          Form 1116 FTC (computed here — reduces tax_after)
+          sch3_l8 = care + edu + saver + ODC + FTC
+          tax_after = max(0, income_tax − l14_ctc − sch3_l8)
+
+Step 11:  EITC
+          compute_eitc() — $50-band IRS table algorithm
+          Investment income gate: >$11,600 disqualifies (Rule 21)
+          Goes to Line 27a
+
+Step 12:  Form 8962 — Premium Tax Credit
+          ACA marketplace reconciliation
+          Net PTC → Sch 3 L9 → L31
+
+Step 13:  Form 5329 · Schedule 2 · Schedule 3 Part II
+          Form 5329: early distribution penalty (after exception codes)
+          Schedule 2: SE tax + AMT + NIIT + AdMedTax + 5329 + 4972
+          sch2_l17 = total other taxes → Line 23
+
+Step 14:  Form 1040 totals
+          l24_total_tax = tax_after + sch2_l17
+          l25a = W-2 Box 2 ONLY
+          l25b = 1099-R + SSA + INT + DIV + NEC + B + W-2G + 1099-G backup WH
+          l26  = estimated tax payments + prior year overpayment
+          l27a = EITC  l28 = ACTC  l29 = AOC refundable  l31 = net PTC
+          l33  = l25d + l26 + l27a + l28 + l29 + l31
+          l34_refund = max(0, l33 − l24)
+          l37_owe    = max(0, l24 − l33)
+          Form 2210 underpayment → Line 38 (NOT part of Line 24)
+          California Form 540 (CA does not conform to OBBBA — addbacks required)
 ```
 
 ---
 
-## Step 1 — Income aggregation
+## Step-by-step detail
 
-**Source**: `f1040.pdf` Lines 1–8; all 1099 instructions
+### Step 1A — W-2
 
-The engine aggregates every income source into variables. All values are rounded after each operation using `rnd() = round()`.
-
-### W-2 wages
-
-```
-wages          = Σ(w2.box1_wages for all W-2s)             → Line 1z
-fed_wh         = Σ(w2.box2_fed_wh)                         → Line 25a ONLY
-allocated_tips = Σ(w2.box8_allocated_tips)                  → Schedule 1 Line 8
-employer_dep_care = Σ(w2.box10_dependent_care)              → Form 2441 Line 12
-covered_by_ret_plan = ANY(w2.box13_retirement_plan)         → IRA deduction phase-out test
+```python
+wages             = Σ(w2.box1_wages)                  → Line 1z
+fed_wh            = Σ(w2.box2_fed_wh)                 → Line 25a ONLY (nothing else)
+allocated_tips    = Σ(w2.box8_allocated_tips)          → Schedule 1 Line 8
+employer_dep_care = Σ(w2.box10_dependent_care)         → Form 2441 Line 12
+covered_by_plan   = ANY(w2.box13_retirement_plan)      → IRA phase-out test
+w2_ss_wages       = Σ(w2.box3_ss_wages)               → SE SS wage base cap
+w2_code_w         = Σ(w2.box12_code_w)                → HSA employer contributions
 ```
 
-### 1099-INT interest
+### Step 1B — 1099-INT / Schedule B
 
-```
-interest         = Σ(box1_interest)                         → Schedule B → Line 2b
-early_wdwl       = Σ(box2_early_withdrawal)                 → Schedule 1 Line 18 (NOT Line 8)
-us_bond_interest = Σ(box3_us_savings_bond)                  → Line 2b (state-exempt)
-int_backup_wh    = Σ(box4_fed_wh)                           → Line 25b (backup WH)
-tax_exempt_int   = Σ(box8_tax_exempt_interest)              → Line 2a + SS provisional income
-```
-
-### 1099-DIV dividends
-
-If per-payer `form_1099divs` list is populated, it takes precedence over legacy flat fields:
-
-```
-dividends         = Σ(box1a_ordinary_div)                   → Schedule B → Line 3b
-dividends_qual    = Σ(box1b_qualified_div)                  → Line 3a (QDCGT rates)
-div_cap_gain_dist = Σ(box2a_cap_gain_dist)                  → Schedule D Line 13
-div_backup_wh     = Σ(box4_fed_wh)                          → Line 25b
-div_exempt_int    = Σ(box11_exempt_interest)                 → Line 2a + SS provisional income
-tax_exempt_int   += div_exempt_int                           (added to INT tax-exempt total)
+```python
+interest          = Σ(box1_interest)                  → Schedule B → Line 2b
+adj_early_wdwl    = Σ(box2_early_withdrawal_penalty)  → Schedule 1 Line 18 (NOT Line 8)
+us_bond_interest  = Σ(box3_us_savings_bond)           → included in Line 2b (state-exempt)
+int_backup_wh     = Σ(box4_fed_wh)                    → Line 25b (backup WH)
+tax_exempt_int    = Σ(box8_tax_exempt_interest)       → Line 2a + SS provisional income
 ```
 
-### 1099-NEC + Schedule C
+### Step 1C — 1099-DIV
 
-1099-NEC Box 1 is NOT prize income — it routes directly to Schedule C gross income.
-
+```python
+dividends         = Σ(box1a_ordinary_div)             → Schedule B → Line 3b
+dividends_qual    = Σ(box1b_qualified_div)            → Line 3a (QDCGT 0/15/20% rates)
+div_cap_gain_dist = Σ(box2a_total_cap_gain)           → Schedule D Line 13
+div_backup_wh     = Σ(box4_fed_wh)                   → Line 25b
+sec199a_divs      = Σ(box5_sec199a_div)              → Form 8995 Line 6 (REIT component)
 ```
-nec_backup_wh = Σ(form_1099necs.box4_fed_wh)               → Line 25b
 
-compute_schedule_c_se(schedule_cs, PARAMS_2025, w2_ss_wages):
+### Step 1D — 1099-NEC + Schedule C
+
+```python
+# 1099-NEC Box 1 routes to Schedule C gross income (NOT prize income)
+compute_schedule_c_se(schedule_cs, PARAMS, w2_ss_wages):
   for each ScheduleC:
-    cogs = inventory_beginning + purchases + cost_of_labor +
-           materials_supplies_cogs + other_cogs − inventory_ending
-    meals_deductible = meals × 0.50                          (50% limitation)
-    home_office = min(home_office_sq_ft, 300) × 5           (Rev. Proc. 2013-13)
-    net_profit = gross_receipts − returns − cogs − all_expenses − home_office
-    net_earnings_se = net_profit × 0.9235                   (Schedule SE)
-    available_ss_base = max(0, ss_wage_base_2025 − w2_ss_wages)  ← CRITICAL CAP
-    se_ss_taxable = min(net_earnings_se, available_ss_base)
-    se_tax = se_ss_taxable × 0.124 + net_earnings_se × 0.029
-  se_tax_deduction = se_tax × 0.50                           → Schedule 1 Line 15
-  se_net_profit = Σ(all_net_profits)                         → Schedule 1 Line 3
+    cogs = inventory_beg + purchases + labor + materials − inventory_end
+    meals_deductible = meals × 0.50          # 50% limitation IRC §274
+    home_office = min(sq_ft, 300) × 5        # Rev. Proc. 2013-13; cannot create loss
+    home_office = min(home_office, gross_income_from_business_use)
+    net_profit = gross − returns − cogs − expenses − home_office
+    if net_profit > 0:
+      net_earnings_se = net_profit × 0.9235
+      available_ss = max(0, ss_wage_base − w2_ss_wages)  # critical cap
+      se_ss_taxable = min(net_earnings_se, available_ss)
+      se_tax = se_ss_taxable × 0.124 + net_earnings_se × 0.029
+  se_tax_deduction = se_tax × 0.50           → Schedule 1 Line 15
+  se_net_profit = Σ(net_profits)             → Schedule 1 Line 3 (Line 8 in some versions)
 ```
 
-### 1099-R pension / IRA distributions
+### Step 1E — 1099-R (pension/IRA distributions)
 
-The IRA/SEP/SIMPLE checkbox on Box 7 is the authoritative routing determinant — not the Box 7 code:
-
-```
+```python
+# Routing: box7_ira_sep_simple is authoritative (not box7_code)
 for each Form1099R:
-  if box7_code in ("G", "H"):  SKIP (direct rollover — not taxable)
-  if box7_code == "Q":          SKIP (qualified Roth — not taxable)
-
-  taxable = box2a_taxable  (if box2b_not_determined: taxable = 0, issue warning)
-  taxable -= box6_nua      (NUA excluded from ordinary income → LTCG when sold)
-  box3_cap_gain_total += box3_capital_gain  (for Form 4972)
-
-  # ⚠ GATE: simplified method only applies when box9b_employee_contribs > 0
-  # If schema sends box9b_employee_contrib (no trailing 's'), bridge must map it.
-  # Without this, gate fails silently and full gross amount is taxable.
+  if box7_code in ("G","H"): SKIP  # direct rollover
+  if box7_code == "Q":       SKIP  # qualified Roth
+  taxable = box2a_taxable  (box2b_not_determined → 0 + warning)
+  taxable -= box6_nua              # NUA excluded → LTCG when sold
   if simplified_method and box9b_employee_contribs > 0:
-    taxable = compute_simplified_method(sm, taxable)
-    [Pub 575 Worksheet A — exact age/combined-age table row]
-
-  if box7_code == "1":  penalty_1099r += taxable × 0.10   (Code 1 = early dist)
-  if box7_code == "S":  penalty_1099r += taxable × 0.25   (Code S = SIMPLE < 2yr)
-
-  if box7_ira_sep_simple:  f1099r_taxable_ira     += taxable → Line 4b
-  else:                     f1099r_taxable_pension  += taxable → Line 5b
-
-l4a = f1099r_gross_ira    l4b = f1099r_taxable_ira      → Lines 4a/4b
-l5a = f1099r_gross_pension l5b = f1099r_taxable_pension  → Lines 5a/5b
+    taxable = compute_simplified_method(sm, taxable)  # Pub 575 Worksheet A
+  if box7_code == "1":  penalty += taxable × 0.10  # early dist
+  if box7_code == "S":  penalty += taxable × 0.25  # SIMPLE < 2yr
+  if box7_ira_sep_simple: l4b += taxable  else: l5b += taxable
 ```
 
-### Form 8606 — nondeductible IRA basis
+### Step 1F — Form 8606 (nondeductible IRA basis)
 
-Adjusts l4b to remove the nontaxable portion of IRA distributions:
-
-```
-compute_form_8606(f8606, f1099r_taxable_ira):
-  l3 = nonded_contrib_this_year + basis_prior_year
-  l6_total = trad_ira_value_dec31 + trad_ira_distributions
-  l8_nontaxable = l3 / l6_total × trad_ira_distributions   (pro-rata)
-  l14_new_basis = l3 − l8_nontaxable + nonded_contrib_this_year
-  if conversion_amount > 0:
-    l18_conv_taxable = conversion_amount × (1 − l8_nontaxable / trad_ira_distributions)
-  l4b = max(0, l4b − l8_nontaxable + l18_conv_taxable + roth_taxable)
+```python
+# Per spouse — NEVER aggregate (Rule 22)
+l3 = nonded_contrib_this_year + basis_prior_year
+l6 = trad_ira_value_dec31 + distributions
+l8_nontaxable = l3 / l6 × distributions   # pro-rata rule
+l4b = max(0, l4b − l8_nontaxable)         # adjusts Line 4b
 ```
 
-### SSA-1099 (computed after pre-SS AGI is known — see Step 3)
+### Step 1G — SSA-1099
 
-```
-ss_net    = form_ssa1099.box5_net_benefits → Line 6a (always shown)
-ss_box6_wh = form_ssa1099.box6_voluntary_wh → Line 25b
+```python
+ss_net   = box5_net_benefits               → Line 6a
+ss_wh    = box6_voluntary_wh              → Line 25b  (bridge: box6_vol_wh → box6_voluntary_wh)
+# SS taxability computed in Step 3 (requires pre-SS AGI first)
 ```
 
-### Capital gains — Form 8949 / Schedule D
+### Step 1H — Capital gains (Form 8949 / Schedule D)
 
-```
+```python
 compute_form_8949_schd(form_1099bs):
-  for each Form1099B:
-    gain = proceeds − cost_basis + accrued_discount − wash_sale_loss_disallowed
-    route to: short-term (Box A/B) or long-term (Box D/E/F)
-  net_lt = Σ(long-term gains) − Σ(long-term losses)
-  net_st = Σ(short-term gains) − Σ(short-term losses)
-  cap_loss_deductible = max(−3000, min(0, net_lt + net_st))  → Line 7
-  cap_gain_taxable = max(0, net_lt + net_st)                  → Line 7
+  short_term_gain/loss = Σ(proceeds − cost for ST sales)
+  long_term_gain/loss  = Σ(proceeds − cost for LT sales)
+  sec1250_unrecap_gain  → taxed at max 25%  (unrecaptured §1250 depreciation)
+  collectibles_gain     → taxed at max 28%
+  net_ltcg = long_term_net + cap_gain_distributions (1099-DIV Box 2a)
+  # Both sec1250 and collectibles reduce pool for 0/15/20% QDCGT rates
 ```
 
-### Form 4797 — Sales of business property
+### Step 3 — AGI critical path
 
-```
-compute_form_4797(form_4797s):
-  for each Form4797SaleData:
-    total_gain = gross_proceeds − (original_cost − depreciation_taken)
-    if 1250_residential:
-      ordinary_recapture = 0                    (MACRS straight-line → no §1250 recapture)
-      unrec_1250 = min(depreciation_taken, total_gain)  (25% rate via QDCGT worksheet)
-    if 1245_equipment:
-      ordinary_recapture = min(depreciation_taken, total_gain)  (all depr = ordinary)
-    sec1231_gain = total_gain − ordinary_recapture
-    if prior_sec1231_losses_5yr > 0:
-      reclassify up to prior_sec1231_losses_5yr as ordinary (lookback rule IRC §1231(c))
+```python
+# OBBBA positioning is critical — these are NOT adjustments
+total_adjustments = teacher + adj_early_wdwl + se_tax_ded +
+                    se_health + se_retirement + ira_ded + hsa_ded +
+                    alimony_paid + adj_student_loan
+# QBI is NOT here. OBBBA is NOT here. Both are below-the-line.
 
-  ordinary_income_recapture → Schedule 1 Line 4 (ordinary income)
-  sec1231_gain_net > 0 → added to cap_gain_income (LTCG treatment)
-  sec1231_gain_net < 0 → ordinary deduction
-  unrec_sec1250_gain    → QDCGT worksheet Line 19 (25% rate)
-```
-
-### Schedule E Part I + Form 8582 — rental real estate
-
-Run twice: once with AGI=0 (placeholder before AGI known), then again with final AGI.
-
-```
-compute_schedule_e_8582(schedule_es, agi, filing_status, form_8582_override):
-  for each ScheduleE:
-    if days_personal_use > max(14, 0.10 × days_rented):  §280A vacation rules
-      allocate_expenses by (days_rented / total_days)
-      loss FULLY disallowed even if active participant
-    net_income = rents_received − Σ(all expenses including depreciation)
-
-  passive_losses = Σ(net_income where net_income < 0 and not real_estate_pro)
-  passive_incomes = Σ(net_income where net_income > 0)
-  prior_unallowed = form_8582.prior_year_unallowed_losses (Worksheet 7)
-
-  if is_real_estate_professional:  losses are non-passive (bypasses §469)
-  else if active_participant:
-    phase_out_start = 100000 (50000 if mfs_lived_apart)
-    max_allowance   = 25000  (12500 if mfs_lived_apart)
-    allowance = max(0, max_allowance − 0.50 × max(0, agi − phase_out_start))
-    allowed_loss = min(total_passive_loss + prior_unallowed, allowance)
-  else:
-    allowed_loss = min(passive_losses, passive_incomes)  (only offset passive income)
-
-  net_rental = passive_incomes − allowed_loss              → Schedule 1 Line 5
-```
-
-### Schedule K-1 pass-through income
-
-```
-compute_k1_income(schedule_k1s):
-  for each ScheduleK1:
-    if material_participation:  ordinary = non-passive (not Form 8582 limited)
-    else:                       ordinary = passive (Form 8582 applies)
-    k1_ordinary  += box1_ordinary_income    → Schedule E Part II
-    k1_rental    += box2_net_rental         → Schedule E Part I (passive)
-    k1_interest  += box5_interest           → Schedule B → Line 2b
-    k1_ord_div   += box6a_ordinary_div      → Schedule B → Line 3b
-    k1_qual_div  += box6b_qualified_div     → QDCGT
-    k1_stcg      += box8_stcg              → Schedule D
-    k1_ltcg      += box9_ltcg             → Schedule D
-    k1_se        += box14a_se_income        → Schedule SE
-    k1_sec199a   += box17_sec199a           → Form 8995
-```
-
-### Other income items
-
-```
-gambling_income = Σ(w2g.box1_winnings)                      → Schedule 1 Line 8b
-gambling_wh     = Σ(w2g.box4_fed_wh)                        → Line 25b
-unemployment    = Σ(f1099g.box1_unemployment)               → Schedule 1 Line 7 (CA-exempt)
-state_refund_taxable = Σ(f1099g.box2_state_refund           → Schedule 1 Line 1
-                         where f1099g.prior_year_itemized)   (tax benefit rule IRC §111)
-cancelled_debt  = Σ(f1099c.box2 where not is_excluded)       → Schedule 1 Line 8c
-prize_income    = Σ(f1099misc_prize.box3_other_income)       → Schedule 1 Line 8b
-alimony_received = al.alimony_received (if decree_pre_2019)  → Schedule 1 Line 2a
-alimony_paid     = al.alimony_paid     (if decree_pre_2019)  → Schedule 1 Line 19a (adj)
-```
-
-### Total income assembled
-
-```
-additional_income = l4b + l5b + cancelled_debt + prize_income + se_net_profit +
-                    rental_net + gambling_income + unemployment + state_refund_taxable +
-                    alimony_received + k1_ordinary + k1_rental + k1_se + f4797_ordinary_recapture
-
-interest       += k1_interest         (K-1 interest joins Schedule B)
-dividends      += k1_ord_div
-dividends_qual += k1_qual_div
-
-qdcgt_income = dividends_qual + max(0, net_ltcg_with_k1) +
-               max(0, div_cap_gain_dist) + f4797_unrec_1250
-
-total_income_pre_ss = wages + interest + us_bond_interest + dividends +
-                       additional_income + net_cap_gain
-```
-
----
-
-## Step 2 — Above-line adjustments (partial — before SS)
-
-```
-teacher_adj     = min(teacher_expense, 300)           → Schedule 1 Line 11
-adj_early_wdwl  = early_wdwl                          → Schedule 1 Line 18
-adj_other       = other_adjustments                   → Schedule 1 Line 24z
-
-compute_se_retirement(contributions, se_net_profit, se_tax_deduction):
-  ceiling per plan type:
-    SEP-IRA:    min(contributions, 0.25 × net_SE, 70000)   → Schedule 1 Line 16
-    SIMPLE IRA: min(contributions, net_SE, 16500+employer)
-    Solo 401k:  elective + 25% employer, ≤ 70000
-  adj_se_retirement = capped amount
-
-compute_se_health_insurance(premiums, se_net_profit, se_tax_ded, adj_se_retirement):
-  ceiling = net_SE_profit − se_tax_deduction − adj_se_retirement
-  adj_se_health = min(premiums, ceiling)               → Schedule 1 Line 17
-
-compute_ira_deduction(contrib, age, magi, filing_status, covered_by_plan, spouse_covered):
-  limit = 7000 if age < 50 else 8000
-  if not covered_by_plan and not spouse_covered:
-    deductible = min(contrib, limit)                   (no phase-out)
-  elif covered_by_plan:
-    phase_out_range by filing_status:
-      single:  79000–89000 · mfj-covered: 126000–146000
-    deductible = min(contrib, limit) × phase_out_factor
-  elif not covered but spouse_covered:
-    phase_out: 236000–246000 mfj
-  adj_ira_deduction = deductible                       → Schedule 1 Line 20
-
-compute_form_8889(hsa, filing_status, w2_code_w):
-  limit = 4300 (self) or 8550 (family) + 1000 if age ≥ 55
-  limit -= employer_contrib_from_w2_code_w
-  deductible = min(contributions_taxpayer, limit)      → Schedule 1 Line 13
-  if total_distributions > qualified_medical:
-    taxable = total_distributions − qualified_medical  → Schedule 1 Line 8f
-    if not age_65_or_disabled: penalty = taxable × 0.20  → Schedule 2 Line 17c
-
-compute_student_loan_deduction(interest_paid, magi, filing_status):
-  limit = 2500
-  phase_out_range: 75000–90000 single / 155000–185000 mfj
-  (mfs: disallowed entirely)
-  deduction = min(interest_paid, limit) × phase_out_factor  → Schedule 1 Line 21
-
-total_adjustments_before_sl = teacher_adj + adj_early_wdwl + adj_other +
-                               se_tax_deduction + adj_se_retirement +
-                               adj_se_health + adj_ira_deduction + adj_hsa + adj_alimony_paid
-total_adjustments = total_adjustments_before_sl + adj_student_loan
-```
-
----
-
-## Step 3 — AGI and SS taxability
-
-```
-agi_pre_ss = total_income_pre_ss − total_adjustments
-
-# SS taxability — Pub 915 Worksheet 1
-compute_ss_taxable(net_benefits, agi_before_ss, filing_status,
-                   tax_exempt_interest, mfs_lived_apart):
-  combined_income = agi_before_ss + tax_exempt_interest + net_benefits × 0.50
-  base_amount:
-    single/hoh/qss: 25000   upper: 34000
-    mfj:            32000   upper: 44000
-    mfs (apart):    25000   upper: 34000   ← MFS lived-apart exception
-    mfs (together):     0   upper:  0  (85% always taxable)
-  if combined_income ≤ base:       l6b = 0
-  elif combined_income ≤ upper:    l6b = min(0.50 × (combined − base), 0.50 × net_benefits)
-  else:                            l6b = min(0.85 × net_benefits,
-                                             0.85 × (combined − upper) + 0.50 × (upper − base))
-  l6b = rnd(l6b)
-
-# Lump-sum election — Pub 915 Worksheets 2 & 4 (if box3 includes prior years)
-compute_ss_lump_sum_election(net_benefits_2025, ..., prior_years):
-  w1_taxable = compute_ss_taxable(...)   ← standard method
-  for each prior year in lump_sum_prior_years:
-    recompute taxable SS as if lump-sum amount had been received in that prior year
-    additional_taxable_for_that_year = Worksheet 2 result
-  w4_total = Σ(additional_taxable per prior year) + current_year_portion
-  final_taxable_ss = min(w1_taxable, w4_total)  ← use whichever is lower
-  if election_beneficial: check Form 1040 Line 6c
-
-total_income = total_income_pre_ss + l6b
 agi = total_income − total_adjustments
 
-# Form 8582 re-run with final AGI (rental passive phase-out needs actual AGI)
-if schedule_es:
-  sched_e_result = compute_schedule_e_8582(schedule_es, agi=agi, ...)
-  adjust total_income and agi by delta
+# OBBBA MAGI = agi (then apply below-the-line in Step 4)
 ```
 
----
-
-## Step 3B — OBBBA Above-Line Deductions (NEW — P.L. 119-21)
-
-Applied after AGI is finalized (Step 3), before deduction step (Step 4). MAGI = AGI at this point.
+### Step 4 — Taxable income (Form 1040 Lines 11–15)
 
 ```
-# Senior Bonus Deduction — OBBBA §70103 (TY 2025–2028)
-compute_senior_deduction(taxpayer_age, spouse_age, magi, filing_status):
-  if filing_status == "mfs": return 0   # ineligible
-  threshold = 75000 (single/hoh/qss) or 150000 (mfj)
-  qualifying = 6000 × (1 if taxpayer_age ≥ 65 else 0)
-             + 6000 × (1 if mfj and spouse_age ≥ 65 else 0)
-  return max(0, qualifying − max(0, magi − threshold))   # $1 : $1 phase-out
-
-# Qualified Tip Deduction — OBBBA §70201 (TY 2025–2028)
-compute_tip_deduction(qualified_tips, magi, filing_status):
-  threshold = 150000 (single/hoh/qss) or 300000 (mfj)
-  capped = min(qualified_tips, 25000)
-  return max(0, capped − max(0, magi − threshold))       # $1 : $1 phase-out
-
-# Overtime Pay Deduction — OBBBA §70202 (TY 2025–2028)
-compute_overtime_deduction(overtime_pay, magi, filing_status):
-  if filing_status == "mfs": return 0   # ineligible
-  max_cap = 12500 (single/hoh/qss) or 25000 (mfj)
-  threshold = 150000 (single/hoh/qss) or 300000 (mfj)
-  capped = min(overtime_pay, max_cap)
-  return max(0, capped − max(0, magi − threshold))       # $1 : $1 phase-out
-
-# Auto Loan Interest Deduction — OBBBA §70301 (TY 2025–2028)
-compute_auto_loan_deduction(interest_paid, magi, filing_status,
-                             loan_originated_after_2024, vehicle_new_us_assembled):
-  if not loan_originated_after_2024 or not vehicle_new_us_assembled: return 0
-  threshold = 100000 (single/hoh/qss) or 200000 (mfj)
-  capped = min(interest_paid, 10000)
-  return max(0, capped − max(0, magi − threshold))       # $1 : $1 phase-out
-
-obbba_total = adj_senior + adj_tips + adj_overtime + adj_auto
-agi = agi − obbba_total
+L11  AGI (from Step 3)
+L12  Standard deduction (or itemized — whichever is greater)
+     Standard add-ons: +$2,000 per 65+/blind if single/HOH; +$1,600 per MFJ
+L13a QBI §199A (Form 8995 Line 15) — below-the-line, does NOT affect AGI
+L13b OBBBA Schedule 1-A (senior + tips + OT + auto) — below-the-line
+L14  = L12 + L13a + L13b
+L15  Taxable income = L11 − L14
 ```
 
-Source: Rev. Proc. 2025-32; irs.gov/newsroom/one-big-beautiful-bill-provisions
+### Form 8995 QBI (Step 4 continuation)
 
----
-
-## Steps 4–5 — Deduction, QBI, and income tax
-
-### Step 4 — Deduction
-
+```python
+compute_qbi_deduction(se_net_profit, w2_wages, ubia, reit_ptp_income, taxable_income, fs, p):
+  # Line 1: QBI = se_net_profit − ½SE tax − SE health − SE retirement
+  l2_total_qbi = l1_qbi_from_business + prior_year_carryover
+  l3_qbi_component = l2_total_qbi × 0.20
+  l6_reit_ptp = sec199a_divs + k1_sec199a_income   # 1099-DIV Box 5 + K-1 §199A
+  l9_reit_component = l6_reit_ptp × 0.20
+  l10_combined = l3_qbi_component + l9_reit_component
+  # TI limit: 20% × ordinary taxable income
+  l11_ti_limit = (taxable_income − qdcgt_income) × 0.20
+  l15_deduction = min(l10_combined, l11_ti_limit)
+  # TY 2026 minimum: if QBI ≥ $1,000 and deduction < $400, floor to $400
+  if p.get("qbi_min", 0) > 0 and l2_total_qbi >= 1000 and l15_deduction < p["qbi_min"]:
+      l15_deduction = p["qbi_min"]
+  # Above-threshold (>$197,300 single / >$394,600 MFJ): W-2 wage limitation applies
 ```
-std_deduction = PARAMS_2025["std_deduction"][filing_status]
-  # OBBBA §70102 amounts (updated from Rev. Proc. 2024-40):
-  single/mfs: $15,750   mfj/qss: $31,500   hoh: $23,625
 
-blind_addon = 2000 (single/hoh age 65+ or blind) or 1600 (mfj/mfs per qualifying person)
-std_deduction += Σ(blind/65+ add-ons)
+### Form 5329 exception codes (Step 13)
 
-compute_schedule_a(sched_a, agi, filing_status):
-  medical_floor    = max(0, medical_dental_total − agi × 0.075)  → Line 4
+```python
+PLAN_ONLY_CODES = {"01", "06"}   # 01=age-55 separation; 06=QDRO — invalid for IRAs
+IRA_ONLY_CODES  = {"07", "08", "09"}  # employer plan exclusions; IRA-only
+LIFETIME_CAPS   = {"09": 10000}  # first home $10k lifetime cap
 
-  # SALT — OBBBA §70106 (NEW: $40k cap, phase-down above $500k AGI)
-  salt_raw         = state_income_tax + real_estate_tax + personal_property_tax
-  salt_cap_base    = 40000 (default) or 20000 (MFS)
-  phasedown_thresh = 500000 (default) or 250000 (MFS)
-  if agi > phasedown_thresh:
-    salt_cap = max(10000, salt_cap_base − ceil((agi − thresh) / 1000) × 50)
+for each Form5329Exception:
+  if code in PLAN_ONLY_CODES and is_ira:
+      valid = False    # plan-only exception on IRA → penalty applies
+  elif code in IRA_ONLY_CODES and not is_ira:
+      valid = False    # IRA-only exception on employer plan → penalty applies
   else:
-    salt_cap = salt_cap_base
-  salt_deductible  = min(salt_raw, salt_cap)                    → Line 5e
-
-  # Mortgage interest — OBBBA makes $750k limit permanent
-  mortgage_limit   = 1000000 if grandfathered else 750000
-  mort_deductible  = mortgage_interest × min(1, mortgage_limit / outstanding_balance)
-
-  # Charitable — OBBBA: 0.5% AGI floor before 60% cap (itemizers)
-  charitable_floor = agi × 0.005                                # OBBBA new
-  cash_above_floor = max(0, cash_charitable − charitable_floor)
-  charitable_limit = 0.60 × agi (cash), 0.50 × agi (non-cash)
-  itemized_total   = medical_floor + salt_deductible + mort_deductible +
-                     mortgage_points + investment_interest +
-                     min(cash_above_floor + noncash_charitable + carryover, limit) +
-                     casualty_theft_loss + other_misc                → Line 17
-  # Misc itemized deductions: permanently disallowed per OBBBA §70501
-
-deduction_used = max(std_deduction, itemized_total if use_itemized else std_deduction)
-taxable = max(0, agi − deduction_used)
+      valid = True
+      allowed = min(amount, LIFETIME_CAPS.get(code, amount))
+      l2_exceptions += allowed
+l3_subject_to_penalty = l1_total − l2_exceptions
+l4_penalty = l3_subject_to_penalty × 0.10   # Code 1 standard rate
 ```
 
-### Step 5 — QBI deduction, income tax, AMT, Kiddie Tax
+### Schedule 2 — other taxes (Step 14)
 
 ```
-# QBI §199A — Form 8995 simplified method (below threshold)
-compute_qbi_deduction(schedule_cs, se_tax_ded, se_health_ded, se_retirement_ded,
-                      taxable_income, qdcgt_income, filing_status):
-  threshold = 197300 (single) / 394600 (mfj)  [WARN: Form 8995-A needed above threshold]
-  ordinary_ti = taxable_income − qdcgt_income
-  for each ScheduleC:
-    qbi = net_profit − se_tax_ded − se_health_ded − se_retirement_ded
-    if sstb and agi > threshold: qbi = 0 (full SSTB phase-out above threshold)
-  total_qbi = Σ(max(0, qbi) for all SCs)
-  l12 = min(total_qbi × 0.20, ordinary_ti × 0.20)    → Line 13
-  taxable = max(0, taxable − adj_qbi)
-
-# Income tax — always uses QDCGT worksheet if qualified div or LTCG > 0
-compute_qdcgt_tax(taxable, qdcgt_income, filing_status):
-  if qdcgt_income == 0:
-    return compute_tax(taxable, filing_status)   ← regular brackets
-  ordinary_ti = max(0, taxable − qdcgt_income)
-  tax_on_ordinary = compute_tax(ordinary_ti, filing_status)
-  # QDCGT threshold amounts (2025):
-  rate0_threshold:  single=47025  mfj/qss=94050  hoh=63000  mfs=47025   [TY 2025 PARAMS_2025]
-  rate15_threshold: single=518900 mfj/qss=583750 hoh=551350 mfs=518900   [TY 2025 PARAMS_2025]
-  qdcgt_in_0pct_band  = max(0, min(taxable, rate0_threshold) − ordinary_ti)
-  qdcgt_in_15pct_band = max(0, min(taxable, rate15_threshold) − max(ordinary_ti, rate0_threshold))
-  qdcgt_in_20pct_band = max(0, qdcgt_income − qdcgt_in_0pct_band − qdcgt_in_15pct_band)
-  qdcgt_tax = qdcgt_in_0pct_band × 0 + qdcgt_in_15pct_band × 0.15 +
-              qdcgt_in_20pct_band × 0.20
-  income_tax = rnd(tax_on_ordinary + qdcgt_tax)
-
-# HOH uses distinct brackets — not same as single
-compute_tax(taxable, filing_status):
-  brackets = PARAMS_2025["tax_brackets_" + {mfj:mfj, qss:mfj, single:single,
-                                             mfs:single, hoh:hoh}[filing_status]]
-  tax = 0; prev = 0
-  for (ceiling, rate) in brackets:
-    band = min(taxable, ceiling) − prev
-    tax += max(0, band) × rate
-    if taxable ≤ ceiling: break
-    prev = ceiling
-  return rnd(tax)
-
-# Form 6251 — AMT
-compute_form_6251(taxable, agi, regular_tax, qdcgt_income, filing_status,
-                  deduction_type, salt_itemized, form_6251_data, ...):
-  l1   = taxable
-  l2a  = std_deduction if deduction_type == "standard" else 0    (addback)
-  l2b  = salt_itemized if deduction_type == "itemized" else 0     (SALT addback)
-  l2j  = form_6251_data.iso_bargain_element if form_6251_data else 0
-  l3   = Σ(box12_private_activity for all 1099-DIVs and 1099-INTs)  (AMT pref item)
-  amti = l1 + l2a + l2b + l2j + l3 + other_adjustments
-  exemption = {single: 88100, mfj/qss: 137000, mfs: 68500, hoh: 88100}[fs]
-  phase_out_start = {single: 626350, mfj: 1252700, mfs: 626350, hoh: 626350}[fs]
-  exemption = max(0, exemption − 0.25 × max(0, amti − phase_out_start))
-  amti_after_exemption = max(0, amti − exemption)
-  tmt = 26% × min(amti_after_exemption, 232600) + 28% × max(0, amti_after_exemption − 232600)
-  [QDCGT §55(b)(3) rates applied on AMTI same as regular QDCGT computation]
-  l9_amt = max(0, tmt − regular_tax)                             → Schedule 2 Line 1
-
-# Form 8615 — Kiddie Tax (if child with unearned income)
-compute_form_8615(f8615, child_taxable_income, child_qdcgt_income):
-  applies = (unearned_income > 2700 and
-            (child_age < 18 or
-             (child_age in [18,19,20,21,22,23] and child_is_full_time_student)))
-  if not applies: return (no kiddie tax)
-  net_unearned = max(0, unearned_income − 2700)
-  l6_child_taxable = child_taxable_income
-  l7_parent_taxable = f8615.parent_taxable_income
-  l8 = l7_parent_taxable + net_unearned
-  l9 = compute_tax(l8, parent_filing_status)
-  l10 = compute_tax(l7_parent_taxable, parent_filing_status)
-  l11 = l9 − l10   (parent's marginal rate on child's NUI)
-  l13 = compute_qdcgt_tax(child_taxable_income, child_qdcgt_income, child's_fs)
-  income_tax = max(l11, l13)   (replaces normal bracket calc for the child)
+Sch 2 L4  = SE tax                  (Schedule SE)
+Sch 2 L6  = Form 4972 additional    (lump-sum tax)
+Sch 2 L8  = Form 5329 penalty       (early distribution after exceptions)
+Sch 2 L11 = Additional Medicare Tax (Form 8959)
+Sch 2 L12 = NIIT                    (Form 8960)
+Sch 2 L17 = total → Form 1040 Line 23 (NOT Line 24 directly)
 ```
 
----
-
-## Steps 6–9 — Credits (CLW order, mandatory)
-
-The Credit Limit Worksheet (CLW) is a running subtraction:
+### Form 1040 Lines 16–24 (exact per f1040.pdf)
 
 ```
-CLW baseline = income_tax   ← only regular tax, not SE/AMT/penalty
-
-Step 6 — Form 2441 (FIRST):
-  care_cap = 3000 (1 qualifying child) or 6000 (2+)
-  care_exp = min(Σ(care_providers.expenses), care_cap)
-  care_exp -= min(employer_dep_care, 5000)   (§129 exclusion)
-  care_exp = min(care_exp, earned_income_taxpayer)  (earned income test)
-  f2441_decimal = get_f2441_decimal(agi)    ← lookup table f2441.pdf Line 8
-  care_credit = min(care_exp × f2441_decimal, CLW_remaining)
-  CLW_remaining -= care_credit             → Schedule 3 Line 2
-
-Step 7 — Form 8863 (SECOND):
-  for each Form1098T:
-    net_exp = max(0, box1_payments − box5_scholarships)
-    if credit_type == "aoc" and first_four_years:
-      aoc = 100% × first_2000 + 25% × next_2000  → max $2,500
-      aoc_refundable  = aoc × 0.40               → Line 29 (NEVER into CLW)
-      aoc_nonref      = aoc × 0.60               → Schedule 3 Line 3
-      apply MAGI phase-out: $80k–$90k single / $160k–$180k mfj
-    else (llc):
-      llc = 20% × min(net_exp, 10000)  → max $2,000, non-refundable
-      apply MAGI phase-out: same ranges as AOC
-  edu_nonref_applied = min(Σ(aoc_nonref + llc), CLW_remaining)
-  CLW_remaining -= edu_nonref_applied       → Schedule 3 Line 3
-
-Step 8 — Form 8880 (THIRD):
-  saver_l3 = IRA_contributions + elective_deferrals
-  saver_l5 = max(0, saver_l3 − disqualifying_dist)
-  saver_l6 = min(saver_l5, 2000)
-  saver_rate = get_saver_rate(agi, filing_status)  ← 3-column table f8880.pdf
-  saver_l10 = saver_l6 × saver_rate
-  *** saver_l4 = 0 (CLW circular dependency — Form 8880 L4 not yet known) ***
-  saver_l12 = min(saver_l10, CLW_remaining)
-  CLW_remaining -= saver_l12               → Schedule 3 Line 4
-
-Step 9 — Schedule 8812 (FOURTH):
-  ctc_total = num_ctc_kids × 2000
-  odc_total = num_odc_deps × 500
-  po_threshold = 400000 (mfj) or 200000 (all others)
-  po_reduction = ceil((agi − po_threshold) / 1000) × 50 if agi > threshold
-  l12 = max(0, ctc_total − po_reduction)
-  l14_ctc = min(l12, CLW_remaining)        → Line 19 (non-refundable CTC)
-  odc_credit = min(odc_total, CLW_remaining − l14_ctc)  → Schedule 3 Line 6d
-
-  # ACTC — refundable, after non-refundable CTC
-  l16a = l12 − l14_ctc
-  l16b = num_ctc_kids × 1700
-  l17 = min(l16a, l16b)
-  earned_for_actc = wages + max(0, se_net_profit) + allocated_tips
-  l20 = max(0, earned_for_actc − 2500) × 0.15
-  actc = min(l17, l20)                     → Line 28 (refundable)
-  [actc = 0 if mfs and lived_with_spouse]
+L16  Income tax (from QDCGT worksheet or rate schedule)
+L17  AMT (Form 6251 — if applicable)
+L18  Add L16 + L17
+L19  Child tax credit / ODC — Schedule 8812 Line 14
+L20  Schedule 3 Line 8 (nonrefundable: care + edu + saver + FTC)
+L21  Add L19 + L20
+L22  Subtract L21 from L18 (tax after credits — if zero or less, -0-)
+L23  Other taxes — Schedule 2 Line 17 (SE + AMT + NIIT + AdMed + 5329 + 4972)
+L24  Add L22 + L23 = Total tax
 ```
 
----
-
-## Step 10 — Schedule 3 Part I and Form 1116 (Foreign Tax Credit)
+### Withholding routing (Step 14 — critical)
 
 ```
-compute_f1116(form_1116, agi, us_tax_before_credit, qdcgt_income, filing_status, amt_tax):
-  # Passive basket (most common — 1099-DIV Box 7 / 1099-INT Box 6)
-  limitation = (passive_foreign_income / agi) × us_tax_before_credit
-  allowable_passive = min(passive_foreign_taxes_paid, limitation)
-
-  # De minimis exception (no Form 1116 needed):
-  if total_foreign_taxes ≤ 300 (single) or 600 (mfj):
-    ftc_credit = total_foreign_taxes  → Schedule 3 Line 1 directly
-
-sch3_l1  = ftc_credit                          (FTC or de minimis)
-sch3_l2  = care_credit                         (Form 2441)
-sch3_l3  = edu_nonref_applied                  (Form 8863)
-sch3_l4  = saver_l12                           (Form 8880)
-sch3_l6d = odc_credit                          (ODC)
-sch3_l8  = sch3_l1 + sch3_l2 + sch3_l3 + sch3_l4 + sch3_l6d  → Line 20
-tax_after = max(0, income_tax − l14_ctc − sch3_l8)
+L25a = W-2 Box 2 ONLY — nothing else ever goes here
+L25b = 1099-R Box 4 + SSA-1099 Box 6 (box6_voluntary_wh) +
+       1099-INT Box 4 + 1099-DIV Box 4 + 1099-B Box 4 +
+       1099-NEC Box 4 + 1099-G Box 4 + W-2G Box 4
+L25d = L25a + L25b
+L26  = Q1+Q2+Q3+Q4 estimated + prior year overpayment applied
+L27a = EITC
+L28  = ACTC (Schedule 8812 refundable)
+L29  = AOC 40% refundable (Form 8863) — already inside L32
+L31  = Net PTC (Form 8962 Line 26 → Schedule 3 Line 9)
+L33  = L25d + L26 + L27a + L28 + L29 + L31
+L34  = max(0, L33 − L24)  → refund
+L37  = max(0, L24 − L33)  → amount owed
+L38  = Form 2210 underpayment penalty (separate — NOT part of L24)
 ```
 
----
+### California Form 540 (Step 14 continuation)
 
-## Step 11 — EITC
-
-```
-compute_eitc(earned_income, agi, num_children, filing_status,
-             investment_income, exact_eitc_from_table):
-  if exact_eitc_from_table > 0: return exact_eitc_from_table   (user-confirmed IRS table value)
-  if investment_income > 11600: return 0                         (IRC §32(i) disqualification)
-  if filing_status == "mfs":    return 0                         (mfs always disqualified)
-  income_for_eitc = max(earned_income, agi)   ← use LARGER per IRS instructions
-  *** QSS uses single/qss column ($23,350 phaseout) — NOT mfj column ***
-  params = PARAMS_2025["eitc"][fs_key][num_children]  (capped at 3 children)
-  if income_for_eitc ≤ params["phaseout_start"]:
-    eitc = min(income_for_eitc × phase_in_rate, params["max"])
-  else:
-    eitc = max(0, params["max"] − (income_for_eitc − params["phaseout_start"]) × params["phaseout_rate"])
-  WARNING: "Verify with exact IRS EIC Table — engine formula approximates"
-```
-
----
-
-## Step 12 — Form 8962 Premium Tax Credit
-
-```
-compute_f8962(agi, family_size, form_1095a):
-  fpl = PARAMS_2025["fpl_2024"][family_size]
-  magi_pct = agi / fpl × 100
-
-  if monthly data uniform (all 12 months same): use Line 11 annual method
-  else: use Lines 12–23 monthly method
-    for each month with coverage:
-      slcsp_month = col_b
-      fpl_pct = agi / (fpl / 12) — monthly FPL
-      contribution_rate = Table 2 row lookup [TRUNCATE FPL% to whole number, exact row]
-      contribution_amount = agi/12 × contribution_rate
-      premium = col_a_month; slcsp = col_b_month; aptc = col_c_month
-      monthly_ptc = max(0, slcsp − contribution_amount)
-      monthly_net = monthly_ptc − aptc
-    l26_net_ptc  = max(0, Σ(monthly_net))   → Schedule 3 Line 9 → Line 31
-    l27_excess_aptc = max(0, −Σ(monthly_net)) → Schedule 2 Line 2
-```
-
----
-
-## Step 13 — Form 5329, Schedule 2, Schedule 3 Part II
-
-```
-# Form 5329 exception codes override raw penalty
-compute_f5329_exceptions(form_1099rs, form_5329_exceptions, agi):
-  for each exception claim:
-    validate plan_type vs exception_code:
-      code 02 (age 55): employer plans ONLY — not IRA
-      code 06 (QDRO): employer plans ONLY — not IRA
-      codes 07/08/09: IRA only — not employer plans
-      code 09: cap at $10,000 lifetime
-      code 11: cap at $5,000 per child
-    exception_amount = min(claimed, validated_amount)
-  l4_penalty = max(0, total_taxable_early_dist − Σ(exception_amounts)) × rate
-
-# Schedule 2 assembly
-sch2_l1_amt           = amt_tax               (Form 6251)
-sch2_l2_excess_aptc   = excess_aptc           (Form 8962 Line 27) ← NOT Line 8
-sch2_l4_se_tax        = se_tax                (Schedule SE)
-sch2_l6_4972_tax      = form_4972_additional_tax  (lump-sum)
-sch2_l8_5329_penalty  = penalty_1099r         (after exceptions)
-sch2_l11_addl_med     = addl_med_tax          (Form 8959)
-sch2_l12_niit         = niit_tax              (Form 8960)
-sch2_l17_total = Σ(all above)                 → Line 17
-
-# NIIT — Form 8960
-compute_niit(agi, nii, filing_status):
-  threshold = {single/hoh/mfs: 200000, mfj/qss: 250000}[fs]
-  nii = interest + dividends + max(0, rental_net) + max(0, k1_rental) + max(0, net_cap_gain)
-  niit = 0.038 × min(nii, max(0, agi − threshold))
-
-# Additional Medicare Tax — Form 8959
-compute_additional_medicare_tax(total_wages_se, agi, filing_status, employer_wh):
-  threshold = {single/hoh/mfs: 200000, mfj/qss: 250000}[fs]
-  tax = 0.009 × max(0, agi − threshold)
-  net = max(0, tax − employer_wh)              → Schedule 2 Line 11
-
-# Schedule 3 Part II
-sch3_l9  = ptc_net     (Form 8962 net PTC)    → Line 31
-```
-
----
-
-## Step 14 — Form 1040 totals
-
-```
-# Withholding — CRITICAL ASSIGNMENT
-l25a_w2_wh    = Σ(w2.box2_fed_wh)               ← W-2 Box 2 ONLY — nothing else here
-l25b_total    = f1099r_wh                ← 1099-R Box 4 fed WH
-              + ss_box6_wh                 ← SSA-1099 Box 6 voluntary WH (box6_voluntary_wh, NOT box6_vol_wh)
-              + int_backup_wh + div_backup_wh
-              + 1099b_backup_wh + nec_backup_wh + gambling_wh + unemp_wh
-l25d_total_wh = l25a_w2_wh + l25b_total
-
-# Estimated payments
-l26 = q1 + q2 + q3 + q4 + prior_year_overpayment
-
-# Refundable credits
-l27a = eitc             (Schedule EIC)
-l28  = actc             (Schedule 8812 refundable)
-l29  = edu_ref_aoc      (AOC 40% refundable — NOT in l32)
-l31  = sch3_l9          (net PTC)
-
-# Line 32 = EXACTLY these items — nothing else
-l32 = l27a + l28 + l29 + l31   ← (l29_aoc separate, already in sum; l27a, l28, l31 only)
-
-l33_total_pmts = l25d_total_wh + l26 + l32
-l24_total_tax  = tax_after + sch2_l17_total    ← tax_after already has CLW credits applied
-l34_refund = max(0, l33_total_pmts − l24_total_tax)
-l37_owe    = max(0, l24_total_tax − l33_total_pmts)
-
-# Form 2210 underpayment penalty — Line 38 NOT in Line 24
-compute_form_2210_safe_harbor(l24_total_tax, l33_total_pmts, prior_year_tax, prior_year_agi):
-  safe_harbor_multiplier = 1.10 if prior_year_agi > 150000 else 1.00
-  safe_harbor_amount = prior_year_tax × safe_harbor_multiplier
-  safe_harbor_met = (l33_total_pmts ≥ safe_harbor_amount or
-                     l33_total_pmts ≥ l24_total_tax × 0.90 or
-                     l24_total_tax − l33_total_pmts < 1000)
-  if not safe_harbor_met:
-    underpay_penalty = (l24_total_tax − l33_total_pmts) × 0.08  (annual rate approx)
-l38_underpayment = underpay_penalty               → Line 38 (separate from Line 24)
-effective_owe    = l37_owe + l38_underpayment
-effective_refund = max(0, l34_refund − l38_underpayment)
-
-# California Form 540
-compute_california_540(fed_agi, filing_status, ...):
-  ca_agi = fed_agi
-  ca_agi -= ss_benefits           (R&TC §17083 — CA-exempt)
-  ca_agi -= unemployment_income   (R&TC §17083 — CA-exempt)
-  ca_agi += hsa_deduction         (CA does not conform to IRC §223 — addback required)
+```python
+compute_california_540(agi, obbba_total_federal, ...):
+  ca_agi = agi
+  ca_agi -= ss_benefits                    # R&TC §17083 — CA-exempt
+  ca_agi -= unemployment_income            # R&TC §17083 — CA-exempt
+  ca_agi += hsa_deduction                  # CA does not conform IRC §223
+  ca_agi += obbba_total_federal            # CA does NOT conform to OBBBA — addback all 4
   ca_agi -= ca_other_subtractions
   ca_std = {single/mfs: 5540, mfj/hoh/qss: 11080}[fs]
-  ca_deduction = max(ca_std, ca_itemized_total if use_ca_itemized else 0)
-  ca_taxable = max(0, ca_agi − ca_deduction − personal_exemption_credits)
-  ca_tax = ca_brackets(ca_taxable, fs)
-  if ca_taxable > 1000000: ca_tax += (ca_taxable − 1000000) × 0.01  (Prop 63 surtax)
-  ca_credits = SDI_credit + renter_credit(60 or 120 if paid_rent_over_half_year)
-  ca_net_tax = max(0, ca_tax − ca_credits)
-```
-
----
-
-## UI code flow
-
-### Mode A — Engine mode
-
-```
-User fills intake panels
-  → clicks "⚙ Compute Return"
-  → go('compute') called
-  → buildPreComputeSummary() renders input review card
-
-User clicks "Run Engine"
-  → computeReturn() called
-  → buildSchema() runs:
-       for each intake panel, read every DOM input by id
-       construct TaxpayerSchema-equivalent JSON object
-       S.w2s.map(id => { box1: n('w2-box1-'+id), ... })
-       S.scs.map(id => { gross_receipts: n('sc-receipts-'+id), ... })
-       ... (all 325 fields)
-  → fetch('POST /compute', JSON.stringify(schema))
-  → Flask: engine.run(TaxpayerSchema(**data))
-  → result["computed"] returned as JSON
-  → renderResult(schema, result) called:
-       renders summary grid (AGI, taxable income, tax, refund/owe)
-       renders Form 1040 line table
-       renders warnings list
-
-Export/Import JSON:
-  → exportJSON() → buildSchema() → JSON.stringify → browser download
-  → importJSON() → FileReader → populateFromSchema(sc):
-       clears all dynamic rows and resets all index counters
-       calls addW2(), addDep(), etc. for each item in array
-       sets each UI field via sv(id, value)
-       bridges schema key names to UI field ids (e.g. institution → t-inst-)
-```
-
-### Server bridge layer (sachintaxcare_server.py)
-
-`safe_init()` maps JSON keys → engine dataclass fields by exact name match. Any key with a different name is **silently discarded**. The bridge layer in `deserialize_schema()` translates all known mismatches before `safe_init()` runs:
-
-```
-Schema/UI key              → Engine field              → Dataclass
-box2_discharged            → box2_amount_discharged    → Form1099C
-exclusion_applies          → is_excluded               → Form1099C
-box6_vol_wh                → box6_voluntary_wh         → FormSSA1099
-age_at_start               → age_at_annuity_start      → SimplifiedMethodData
-joint_age_at_start         → joint_age_at_annuity_start → SimplifiedMethodData
-prior_tax_free_recovered   → prior_year_tax_free_recovered → SimplifiedMethodData
-start_after_nov_1996       → annuity_start_after_nov_18_1996 → SimplifiedMethodData
-box9b_employee_contrib     → box9b_employee_contribs   → Form1099R
-form_1099miscs[].box3      → Form1099MISC_Prize        → list (new bridge)
-```
-
-Startup: `python3 sachintaxcare_server.py` runs `sachintaxcare_test.py` (77 assertions) before Flask binds.
-
-### Mode B — Claude mode
-
-```
-User fills intake panels
-  → clicks "✦ Generate Return"
-  → sendToClaude() called
-  → buildPrompt() runs:
-       same DOM traversal as buildSchema()
-       serializes every field to human-readable text lines:
-         "W2#0: Employer=Acme EIN=12-3456789 Box1=85000 Box2=14200 ..."
-         "SchedC#0: Name=Consulting GrossReceipts=65000 Meals=2000(50%limit) ..."
-       assembles 20 sections × standing rules header = ~3,000 word prompt
-  → sendPrompt(prompt)   ← global function injected by claude.ai host
-  → Claude AI receives prompt, fetches IRS PDFs, computes return, generates output
+  ca_taxable = max(0, ca_agi − ca_deduction − personal_exemption)
+  ca_tax = ca_rate_schedule(ca_taxable, fs)
+  if ca_taxable > 1_000_000:
+      ca_tax += (ca_taxable − 1_000_000) × 0.01   # Prop 63 surtax
+  ca_credits = ca_sdi_credit + renter_credit
+  # CalEITC: compute_caleitc() — CA version; lower income limits than federal
 ```
 
 ---
@@ -860,57 +501,104 @@ User fills intake panels
 ## Data flow summary
 
 ```
-TaxpayerSchema (42 dataclasses, 325 fields)
+TaxpayerSchema (40 dataclasses, 515+ fields)
     ↓
-run(schema) → 14 sequential computation steps
+run(schema) → 14 sequential steps
     ↓
 result["computed"] = {
-    "agi":              85000,
-    "taxable_income":   54500,
-    "income_tax":       6120,
-    "sch2":             {"l1_amt": 0, "l4_se_tax": 4200, ...},
-    "sch3":             {"l2_care": 0, "l3_edu": 0, "l8_total": 800},
-    "l19_ctc":          2000,
-    "l27a_eitc":        0,
-    "l28_actc":         1700,
-    "l29_aoc":          0,
-    "l24_total_tax":    10320,
-    "l25d_wh":          14200,
-    "l26_estimated":    0,
-    "l33_total_pmts":   14200,
-    "l34_refund":       3880,
-    "l37_owe":          0,
-    "l38_underpay":     0,
-    "ca_computed":      {"ca_agi": 80000, "ca_tax": 3200, ...}
+    # Income
+    "wages": 85000,  "interest": 1200,  "dividends": 500,
+    "se_net_profit": 42000,  "agi": 98500,
+
+    # 1040 lines
+    "taxable_income": 56750,  "income_tax": 7890,
+    "l13a_qbi": 6400,  "l13b_obbba": 3200,
+    "l19_ctc": 2200,  "l24_total_tax": 9120,
+
+    # Schedules
+    "sch2": {"l4_se_tax": 5930, "l8_5329": 200, "l12_niit": 0, "l17_total": 6130},
+    "sch3": {"l2_care": 480, "l3_edu": 0, "l4_saver": 0, "l8_total": 480},
+    "s8812": {"ctc_total": 2200, "odc_total": 0, "l27_actc": 1700},
+    "qbi_detail": {"l3_qbi_comp": 6400, "l6_reit_ptp": 64, "l9_reit_comp": 13, "l15": 6400},
+    "f5329": {"l1_total": 2000, "l2_exceptions": 2000, "l4_penalty": 0},
+
+    # Payments and result
+    "l25a_w2_wh": 14200,  "l25b_other_wh": 400,  "l27a_eitc": 0,
+    "l28_actc": 1700,  "l34_refund": 7180,  "l37_owe": 0,
+
+    # California
+    "ca_computed": {"ca_agi": 101700, "ca_taxable": 84450, "ca_tax": 5200, ...},
+
+    # Metadata
+    "effective_rate": 0.093,  "marginal_rate": 0.22,
+    "obbba_total_deductions": 3200,  "obbba_senior_deduction": 6000,
+    ...  # 155+ keys total
 }
 
 result["warnings"] = [
-    "EITC formula approximation — verify with IRS EIC Table p1040.pdf",
-    "SSA-1099: $12,600 of $22,000 SS benefits taxable. Source: Pub 915 Wk 1.",
+    "SS benefits: $14,280 taxable of $25,200 gross. Source: Pub 915 Worksheet 1.",
+    "QBI rental safe harbor: 250-hour requirement not confirmed. See Reg. §1.199A-4.",
     ...
 ]
 ```
 
 ---
 
-## Rounding rule
-
-Every arithmetic result is immediately rounded using `rnd() = round()`. Rounding cascades: each step produces whole-dollar inputs to the next step. Never accumulate fractions and round at the end.
+## map_result() — pass-through rule
 
 ```python
-def rnd(v): return round(v)
-
-# Correct:
-wages = rnd(sum(w.box1_wages for w in schema.w2s))
-se_tax = rnd(se_ss_taxable * 0.124 + net_earnings_se * 0.029)
-
-# Wrong — do not do this:
-wages = sum(w.box1_wages for w in schema.w2s)  # fractions accumulate
+def map_result(engine_result: dict) -> dict:
+    c = engine_result.get("computed", {})
+    out = dict(c)          # ALL engine keys automatically included
+    # Only add: derived values and legacy aliases
+    out["effective_rate"] = round(c["income_tax"] / c["agi"], 4) if c["agi"] else 0
+    out["l21_add_l19_l20"] = c.get("l19_ctc", 0) + c.get("sch3", {}).get("l8_total", 0)
+    # ... other aliases
+    return out
+# NEVER enumerate individual engine keys in map_result(). dict(c) covers everything.
 ```
-
-Source: IRC §6102; IRS rounding convention throughout all form instructions.
 
 ---
 
-*End of algorithm document · Engine v12-fork · Updated 2026-05-16*
-*Run `python3 sachintaxcare_test.py` (77 PASS) and `python3 test_vita_irs.py` (145 PASS) to verify.*
+## IRS source PDFs (https://www.irs.gov/forms-instructions)
+
+| Form / Pub | IRS URL | Used for |
+|---|---|---|
+| Form 1040 + Sch 1/2/3 | `f1040.pdf`, `f1040s1.pdf`, `f1040s2.pdf`, `f1040s3.pdf` | Core return lines |
+| Schedule A | `f1040sa.pdf` | Itemized deductions |
+| Schedule B | `f1040sb.pdf` | Interest and dividends |
+| Schedule C | `f1040sc.pdf` | Business income |
+| Schedule D | `f1040sd.pdf` | Capital gains |
+| Schedule E | `f1040se.pdf` | Rental income |
+| Schedule SE | `f1040sse.pdf` | Self-employment tax |
+| Schedule 8812 | `f1040s8.pdf` | CTC/ACTC/ODC |
+| Form 8863 | `f8863.pdf` | Education credits |
+| Form 8880 | `f8880.pdf` | Saver's credit |
+| Form 8962 | `f8962.pdf` | Premium tax credit |
+| Form 8995 | `f8995.pdf` | QBI (below threshold) |
+| Form 6251 | `f6251.pdf` | AMT |
+| Form 8606 | `f8606.pdf` | Nondeductible IRA |
+| Form 8889 | `f8889.pdf` | HSA |
+| Form 8582 | `f8582.pdf` | Passive activity |
+| Form 5329 | `f5329.pdf` | Early distributions |
+| Form 1116 | `f1116.pdf` | Foreign tax credit |
+| Form 4797 | `f4797.pdf` | Sale of business property |
+| Form 4972 | `f4972.pdf` | Lump-sum distribution |
+| Form 8615 | `f8615.pdf` | Kiddie tax |
+| Form 8960 | `f8960.pdf` | NIIT |
+| Form 8959 | `f8959.pdf` | Additional Medicare |
+| Form 2210 | `f2210.pdf` | Underpayment penalty |
+| Form 982 | `f982.pdf` | Cancellation of debt |
+| Pub 915 | `p915.pdf` | SS taxability worksheets |
+| Pub 575 | `p575.pdf` | Simplified Method table |
+| Pub 590-A | `p590a.pdf` | IRA deduction worksheets |
+| Pub 596 | `p596.pdf` | EITC investment income |
+| Pub 936 | `p936.pdf` | Mortgage interest limit |
+| Pub 504 | `p504.pdf` | Alimony TCJA rules |
+| Pub 463 | `p463.pdf` | Mileage rates |
+| CA Form 540 | `ftb.ca.gov/forms/2025/2025-540.pdf` | California return |
+
+---
+
+*End of Engine Algorithm · V17.1 · 2026-05-24*
+*Verify: `python3 sachintaxcare_test.py` (584/584) · `python3 test_vita_irs.py` (145/145)*

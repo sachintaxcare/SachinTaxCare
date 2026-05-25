@@ -1,47 +1,65 @@
 # SachinTaxCare — Implementation Guide
 *How to rebuild this project from scratch in one focused effort*
-*Current state: Engine v12-fork · UI v1.0+OBBBA · 145/145 tests passing · TY 2025 + TY 2026*
-*Last updated: 2026-05-16*
-
----
-
-## ⚠ OBBBA Update (P.L. 119-21, signed July 4, 2025)
-
-**Critical**: The One Big Beautiful Bill Act changed TY 2025 tax parameters. All six project files were updated 2026-05-10. Key changes:
-
-1. **Standard deductions**: Single $15,750 / HOH $23,625 / MFJ $31,500 (engine `PARAMS_2025`)
-2. **CTC**: $2,200/child (up from $2,000; engine `PARAMS_2025["ctc_per_child"]`)
-3. **SALT cap**: $40,000 (up from $10,000; phase-down above $500k AGI; `compute_schedule_a()`)
-4. **Four new above-line deductions**: Senior Bonus ($6k/person age 65+), Tip ($25k cap), Overtime ($12.5k/$25k cap), Auto Loan Interest ($10k cap) — all in `TaxpayerSchema` + new compute functions
-5. **Charitable floor**: 0.5% AGI floor before 60% cap for itemizers (`compute_schedule_a()`)
-6. **Tests**: 18 new OBBBA tests in Section 32 of `test_vita_irs.py`; all prior tests updated
-
-Source: Rev. Proc. 2025-32; irs.gov/newsroom/one-big-beautiful-bill-provisions
+*Engine V17.1 · TY 2025 + TY 2026 · 584/584 tests · 145/145 VITA · Updated 2026-05-24*
 
 ---
 
 ## What this document is
 
-This is a complete blueprint for rebuilding SachinTaxCare without reading any prior session history. It covers architecture, every file, every design decision already made, the exact IRS rules the engine enforces, known limitations, and what to build next. A competent engineer reading this document plus the five source files listed below should be able to fully understand, extend, and maintain the project.
+Complete blueprint for rebuilding SachinTaxCare without reading any prior session history. Covers every file, every architectural decision, the IRS rules the engine enforces, and every known pitfall. A competent engineer reading this document plus the source files listed below should be able to fully understand, extend, and maintain the project.
 
 ---
 
-## The five files
+## ⚠ OBBBA (P.L. 119-21, signed July 4, 2025)
 
-| File | Lines | Role |
-|---|---|---|
-| `sachintaxcare_engine.py` | 7,513 | Python computation engine — TY 2025 + TY 2026 |
-| `sachintaxcare_pro.html` | **3,911** | Single-file web UI — intake form + dual output modes + import/export |
-| `sachintaxcare_server.py` | **563** | Flask server + bridge layer + startup test runner |
-| `sachintaxcare_workpaper.html` | **896** | IRS Form 1040-faithful CPA workpaper (4-page layout) |
-| `sachintaxcare_test.py` | **632** | Regression + bridge audit test suite — **77/77 PASS** |
-| `sachintaxcare_pdf.py` | 367 | PDF output layer — reportlab Form 1040 summary |
-| `sachintaxcare_report.py` | 965 | JSON report layer — CPA/EA verification workpaper |
-| `test_vita_irs.py` | 2,547 | IRS/VITA known-answer test harness — **145/145 cases**, 0 failures |
-| `test_ui_fields.js` | **588** | UI field completeness test — **388 PASS · 0 FAIL · 15 SKIP** |
-| `sachintaxcare_field_manifest.md` | **851** | Single source of truth for every form field |
+Critical mid-year law change. All parameters updated. Key changes for TY 2025:
 
-The project has no database, no user accounts, no external API dependencies (beyond optional Anthropic API for Claude mode), and no build step. Everything runs locally.
+| Item | Old | New | Engine location |
+|---|---|---|---|
+| Std ded single/MFS | $15,000 | **$15,750** | `PARAMS_2025["std_deduction"]` |
+| Std ded HOH | $22,500 | **$23,625** | `PARAMS_2025["std_deduction"]` |
+| Std ded MFJ/QSS | $30,000 | **$31,500** | `PARAMS_2025["std_deduction"]` |
+| CTC per child | $2,000 | **$2,200** | `PARAMS_2025["ctc_per_child"]` |
+| SALT cap | $10,000 | **$40,000** | `PARAMS_2025["salt_cap_default"]` |
+| SALT cap MFS | $5,000 | **$20,000** | `PARAMS_2025["salt_cap_mfs"]` |
+| Charitable floor | 0% | **0.5% AGI** | `PARAMS_2025["charitable_agi_floor_pct"]` |
+| AMT exemption | sunsets | **permanent** | `PARAMS_2025` |
+| QBI threshold | sunsets | **permanent** | `PARAMS_2025` |
+
+New OBBBA Schedule 1-A deductions (Form 1040 Line 13b — **below-the-line, do NOT reduce AGI**):
+
+| Deduction | Cap | Phase-out MAGI | Engine function |
+|---|---|---|---|
+| Senior Bonus ($6k/person age 65+) | $6k/person | $75k single / $150k MFJ | `compute_senior_deduction()` |
+| Qualified tips | $25,000 | $150k single / $300k MFJ | `compute_tip_deduction()` |
+| FLSA overtime (§207) | $12,500 / $25,000 MFJ | $150k single / $300k MFJ | `compute_overtime_deduction()` |
+| Auto loan interest (new US vehicle) | $10,000 | $100k single / $200k MFJ | `compute_auto_loan_deduction()` |
+
+Source: P.L. 119-21 §70102–70301; Rev. Proc. 2025-32; IRS IR-2026-28.
+
+---
+
+## File registry
+
+| File | Lines | Version | Role |
+|---|---|---|---|
+| `sachintaxcare_engine.py` | **8,752** | V17.1 | Python computation engine — TY 2025 + TY 2026 |
+| `sachintaxcare_pro.html` | **4,629** | v7 | Single-file web UI — 18 panels, dual modes, import/export |
+| `sachintaxcare_server.py` | **761** | v16 | Flask server + bridge layer |
+| `sachintaxcare_workpaper.html` | **1,670** | v8 | 18-page CPA workpaper |
+| `sachintaxcare_test.py` | **2,527** | v4.1 | Regression suite — **584 PASS · 0 FAIL · 4 WARN** |
+| `test_vita_irs.py` | **2,551** | v12.1 | IRS/VITA known-answer tests — **145/145** |
+| `test_ui_fields.js` | **815** | v2.0 | UI field completeness — **404 PASS · 0 FAIL** |
+| `sachintaxcare_pdf.py` | **367** | v1.0 | PDF output (reportlab) |
+| `sachintaxcare_report.py` | **965** | v11 | JSON verification report |
+| `test_report.py` | **415** | v1 | Report verification tests |
+| `sachintaxcare_field_manifest.md` | **855** | v1.3 | Field registry — every form field |
+| `ENGINE_ALGORITHM.md` | — | V17.1 | Engine computation flow (this session) |
+| `IMPLEMENTATION_GUIDE.md` | — | V17.1 | This document |
+| `README_server.md` | **122** | v1 | Server setup and API reference |
+| `requirements.txt` | 2 | — | `flask>=3.0.0`, `flask-cors>=4.0.0` |
+
+**No database. No user accounts. No build step. No external API required.** Everything runs locally with `pip install -r requirements.txt`.
 
 ---
 
@@ -50,551 +68,263 @@ The project has no database, no user accounts, no external API dependencies (bey
 ```
 Browser (sachintaxcare_pro.html)
     │
-    ├── Mode A: Engine mode
-    │       └── POST /compute  ──→  Flask server (your app.py)
-    │                                    └── sachintaxcare_engine.run(TaxpayerSchema)
-    │                                             └── returns dict with computed lines
+    ├── Mode A: Engine mode (default)
+    │       └── buildSchema() → POST /compute
+    │                               └── sachintaxcare_server.py
+    │                                       └── deserialize_schema(json)
+    │                                               └── sachintaxcare_engine.run(TaxpayerSchema)
+    │                                                       └── returns dict[computed + warnings]
+    │                               └── map_result(engine_result) → flat JSON → renderResult()
     │
-    └── Mode B: Claude mode
-            └── buildPrompt()  ──→  sendPrompt()  ──→  Claude AI (chat window)
-                                    (only works inside claude.ai)
+    └── Mode B: Claude mode (claude.ai only)
+            └── buildPrompt() → sendPrompt() → Claude AI chat window
 ```
 
-**Flask server** (`sachintaxcare_server.py`, 563 lines): serves the UI and bridges schema JSON to the engine.
-
-Routes: `GET /` → `sachintaxcare_pro.html` · `GET /workpaper` → `sachintaxcare_workpaper.html` · `POST /compute` → engine.
-
-**Bridge layer** (`deserialize_schema()`): `safe_init()` maps JSON keys → engine dataclass fields by exact name. Any mismatched key is silently dropped. The bridge explicitly translates all known mismatches:
-```
-box2_discharged → Form1099C.box2_amount_discharged
-exclusion_applies → Form1099C.is_excluded  
-box6_vol_wh → FormSSA1099.box6_voluntary_wh
-age_at_start → SimplifiedMethodData.age_at_annuity_start
-box9b_employee_contrib → Form1099R.box9b_employee_contribs
-form_1099miscs[].box3 → Form1099MISC_Prize (new list)
-```
-
-**Startup tests**: `python3 sachintaxcare_server.py` runs `sachintaxcare_test.py` (77 assertions) before Flask binds. Any bridge or regression failure prints immediately.
-
-**Key constraint**: `sachintaxcare_engine.py` is pure Python with no Flask import. It takes a `TaxpayerSchema` dataclass and returns a plain dict. Keep it that way — it makes testing trivial and the engine reusable in any context.
+**Key constraint**: `sachintaxcare_engine.py` is pure Python with zero Flask imports. Input = `TaxpayerSchema` dataclass. Output = plain dict. Never change this — it keeps the engine trivially testable and reusable in any context.
 
 ---
 
-## Export / Import JSON (session persistence)
+## 18 UI intake panels
 
-The topbar has **Export JSON** and **Import JSON** buttons:
+| Panel id | Content |
+|---|---|
+| `taxpayer` | Name, SSN, DOB, address, filing status, occupation |
+| `spouse` | Spouse name, SSN, DOB |
+| `dependents` | Dependent array — name, DOB, relationship, CTC/ODC |
+| `w2` | W-2 array — all 20 box fields per employer |
+| `1099s` | 1099-INT, 1099-DIV, 1099-R, SSA-1099, 1099-NEC, 1099-C, 1099-B, W-2G, 1099-G, 1099-MISC |
+| `se` | Schedule C array — gross, expenses, home office, mileage |
+| `rental` | Schedule E array — rental properties |
+| `k1` | Schedule K-1 array — pass-through entities |
+| `capgains` | Form 8949 / Schedule D |
+| `adj` | Above-line adjustments — IRA, teacher, student loan, alimony, OBBBA |
+| `scheda` | Schedule A — itemized deductions |
+| `credits` | Education (Form 8863), care (Form 2441), retirement savings (Form 8880), HSA (Form 8889) |
+| `f1116` | Foreign tax credit (Form 1116) |
+| `retirement` | IRA/pension — Form 8606, simplified method, Form 5329 exceptions |
+| `advanced` | AMT (Form 6251), NIIT, additional Medicare, Form 4972, Form 4797, Form 8615 |
+| `ca540` | California Form 540 |
+| `taxref` | Estimated tax payments, Form 8962 / ACA, prior year data |
+| `compute` | Review + compute button |
 
-- **Export**: `exportJSON()` → calls `buildSchema()` → downloads `sachintaxcare_schema_2025.json`
-- **Import**: `importJSON(event)` → reads file → calls `populateFromSchema(sc)`:
-  - Clears all dynamic rows and resets all index counters to zero
-  - For each array (W-2s, dependents, 1099s, etc.) calls the corresponding `addXxx()` function then sets field values
-  - Bridges schema key names to UI field ids (e.g., `institution` → `t-inst-`, `student_is` → `t-who-`)
+---
+
+## Flask server routes
+
+| Route | Handler |
+|---|---|
+| `GET /` | Serves `sachintaxcare_pro.html` |
+| `GET /workpaper` | Serves `sachintaxcare_workpaper.html` |
+| `POST /compute` | `deserialize_schema(json)` → `engine.run()` → `map_result()` → JSON |
+| `GET /health` | `{"status": "ok", "engine": "V17.1"}` |
+
+---
+
+## Bridge layer (`deserialize_schema` in sachintaxcare_server.py)
+
+`_safe_init()` maps JSON keys → engine dataclass fields by **exact name match**. Any mismatched key is **silently discarded** — this is a constant source of bugs. The bridge explicitly translates all known mismatches before `_safe_init()` runs:
+
+| UI / schema key | Engine dataclass field | Dataclass |
+|---|---|---|
+| `box2_discharged` | `box2_amount_discharged` | `Form1099C` |
+| `exclusion_applies` | `is_excluded` | `Form1099C` |
+| `box6_vol_wh` | `box6_voluntary_wh` | `FormSSA1099` |
+| `box9b_employee_contrib` | `box9b_employee_contribs` | `Form1099R` |
+| `age_at_start` | `age_at_annuity_start` | `SimplifiedMethodData` |
+| `joint_age_at_start` | `joint_age_at_annuity_start` | `SimplifiedMethodData` |
+| `prior_tax_free_recovered` | `prior_year_tax_free_recovered` | `SimplifiedMethodData` |
+| `start_after_nov_1996` | `annuity_start_after_nov_18_1996` | `SimplifiedMethodData` |
+| `box10_dep_care` | `box10_dependent_care` | `W2` |
+| `box15_state_id` | `box15_state_employer_id` | `W2` |
+| `box5_medicare_wages` | `box5_med_wages` | `W2` |
+| `box6_medicare_wh` | `box6_med_wh` | `W2` |
+| `box6_foreign_tax_paid` | `box6_foreign_tax` | `Form1099INT` |
+| `sdi_withheld` | `ca_sdi_withheld` | `CaliforniaData` |
+| `other_subtractions` | `ca_other_subtractions` | `CaliforniaData` |
+| `form_1099miscs[].box3` | `Form1099MISC_Prize` list | (constructed) |
+| `prize_income` (legacy flat) | `Form1099MISC_Prize` list | (constructed) |
+| `spouse.ssn/first/last/dob` | `spouse_ssn/first/last/dob` | `TaxpayerSchema` |
+| `box8_at_least_half_time` | `box8_half_time` | `Form1098T` |
+
+**Rule**: every new UI field must be verified in `test_ui_fields.js` and every new bridge mapping must appear in the bridge audit section of `sachintaxcare_test.py`.
+
+---
+
+## Export / Import JSON
+
+- **Export**: `exportJSON()` → `buildSchema()` → downloads `sachintaxcare_schema_2025.json`
+- **Import**: `importJSON()` → `FileReader` → `populateFromSchema(sc)`:
+  - Clears all dynamic rows, resets all index counters to zero
+  - Calls `addW2()`, `addDep()`, etc. for each array item, then sets field values
+  - Bridges schema key names to UI field ids
   - Calls `go('taxpayer')` to navigate to first panel
 
-**Roundtrip guarantee**: every field in `buildSchema()` must have a corresponding entry in `populateFromSchema()` using the same JSON key. Any divergence causes silent data loss. The `sachintaxcare_test.py` Layer 1 bridge audit checks this.
-
-## Regression and bridge tests (sachintaxcare_test.py)
-
-```
-python3 sachintaxcare_test.py    # 77 PASS · 0 FAIL
-```
-
-Three layers:
-1. **Bridge Audit** — asserts each schema↔engine field-name mismatch is documented as a bridge case; verifies engine dataclass fields still exist
-2. **Pipeline Regression** — 8 known-schema scenarios run through full bridge→engine→computed pipeline; asserts specific dollar values
-3. **Engine Unit** — PARAMS_2025 constants verified against IRS publication values
-
-Add a test whenever: (a) a new bridge mapping is added to the server, (b) a real return reveals a miscalculation, or (c) a new field is added to the engine.
-
-## Workpaper (sachintaxcare_workpaper.html)
-
-IRS Form 1040-faithful 4-page layout:
-- Page 1: Taxpayer info, filing status checkboxes, dependents, income lines
-- Page 2: Tax, credits, payments, refund/owe, rate summary, signature block  
-- Page 3: Schedule 1, Schedule SE, QBI, Schedule A
-- Page 4: CPA/EA warnings, pre-filing checklist
-
-Reads `localStorage['sachintaxcare_result']` written by the compute flow. Opened via `GET /workpaper` Flask route. Print/save via browser print (`@page { size: letter }`).
-
-## Engine architecture
-
-
-### Design principles
-1. **No side effects** — `run()` is a pure function. Same input always gives same output.
-2. **IRS source on every line** — every computation cites the exact PDF from `irs.gov/pub/irs-pdf/`.
-3. **Never interpolate lookup tables** — always read the exact IRS table row.
-4. **Whole-dollar rounding at each step** — `rnd()` wraps `round()`, applied after every arithmetic operation, not just at output.
-5. **Data classes for every form** — 42 `@dataclass` classes, one per IRS form or schedule. Each field maps to a specific IRS box number documented in the class docstring.
-
-### Computation order (enforced — do not reorder)
-
-The 14-step order is mandated by IRS credit-limit worksheet (CLW) circular dependency rules:
-
-```
-Step 1:  Income aggregation
-         W-2 Box 1 → Line 1z
-         1099-INT Box 1 → Schedule B → Line 2b
-         1099-DIV → Schedule B → Lines 3a/3b
-         1099-R → Lines 4a/4b (IRA) or 5a/5b (pension)
-         SSA-1099 → Lines 6a/6b (Pub 915 Worksheet 1 or lump-sum election)
-         Schedule C → Schedule SE → Schedule 1 Line 3
-         Schedule E Part I → Form 8582 → Schedule 1 Line 5
-         Schedule E Part II (K-1) → Schedule 1 Line 5
-         1099-G → Schedule 1 Lines 1/7
-         Gambling, prizes, alimony → Schedule 1 Line 8
-         Capital gains → Schedule D → Line 7
-
-Step 2:  Above-line adjustments (Schedule 1 Part II)
-         SE tax deduction (50%) → Line 15
-         SE health insurance → Line 17
-         SE retirement → Line 16
-         HSA → Line 13
-         IRA deduction (with phase-out) → Line 20
-         Student loan interest → Line 21
-         Teacher expense (max $300) → Line 11
-
-Step 3:  AGI = Line 9
-
-Step 3B: OBBBA Above-Line Deductions (NEW — P.L. 119-21)
-         Senior Bonus ($6k/person age 65+), Tip ($25k cap), Overtime ($12.5k/$25k),
-         Auto Loan Interest ($10k). All phase out above MAGI thresholds.
-         Applied after AGI finalized; further reduce AGI before Step 4.
-
-Step 4:  Deduction — greater of standard or Schedule A
-         Standard (OBBBA): $15,750 single/MFS / $31,500 MFJ/QSS / $23,625 HOH
-         Add-on: $2,000 blind/65+ (single/HOH) / $1,600 (MFJ/MFS per person)
-         SALT cap (OBBBA): $40,000 default / $20,000 MFS; phase-down above $500k AGI
-         Charitable (OBBBA): 0.5% AGI floor before 60% cap (itemizers)
-
-Step 5:  QBI deduction → Line 13 (Form 8995)
-         min(20% × QBI per business, 20% × ordinary taxable income)
-         *** Above $197,300/$394,600: Form 8995-A needed — engine warns, does not compute ***
-
-Step 6:  Taxable income → income tax
-         Regular brackets OR QDCGT Worksheet (when qualified div or LTCG > 0)
-         HOH uses distinct brackets — NOT same as single
-
-Step 7:  Form 2441 (FIRST credit — sets CLW baseline)
-         Employer dep care (W-2 Box 10) reduces qualified expense base
-         Earned income test: limited to lower-earning spouse
-         Schedule 3 Line 2
-
-Step 8:  Form 8863 (SECOND — education credits)
-         AOC: 100% first $2,000 + 25% next $2,000 = max $2,500; 40% refundable → Line 29
-         LLC: 20% of up to $10,000 = max $2,000; non-refundable → Schedule 3 Line 3
-         MAGI phase-out: $80k–$90k single / $160k–$180k MFJ
-         Schedule 3 Line 3 (also adds to CLW for steps 9–10)
-
-Step 9:  Form 8880 (THIRD — saver's credit)
-         L4 = 0 (circular dependency: CLW result not yet known)
-         Three-column table: Single/MFS/QSS vs HOH vs MFJ
-         Schedule 3 Line 4
-
-Step 10: Schedule 8812 / CTC (FOURTH)
-         CTC: $2,200 per qualifying child under 17 (OBBBA §70104; valid SSN required)
-         Phase-out: $200,000 single / $400,000 MFJ (permanent per OBBBA)
-         ACTC refundable: 15% × (earned income − $2,500), cap $1,700/child → Line 28
-         CLW uses Schedule 3 total through step 9
-         Line 19 (non-refundable) + Line 28 (refundable ACTC)
-
-Step 11: EITC (Schedule EIC)
-         *** Engine formula approximates — exact IRS EIC Table required before filing ***
-         Use LARGER of earned income or AGI
-         Investment income disqualifies if > $11,600
-         QSS uses Single/QSS column (not MFJ column)
-
-Step 12: Form 8962 Premium Tax Credit (ACA)
-         Monthly method (Lines 12–23) if mid-year coverage change
-         Annual method (Line 11) if same plan all 12 months
-         Excess APTC repayment → Schedule 2 Line 2
-         Net PTC → Schedule 3 Line 9 → Line 31
-
-Step 13: Additional taxes (Schedule 2)
-         AMT (Form 6251) → Schedule 2 Line 1
-         SE tax → Schedule 2 Line 4
-         Form 5329 early distribution penalty → Schedule 2 Line 8
-         Additional Medicare 0.9% → Schedule 2 Line 11
-         NIIT 3.8% → Schedule 2 Line 12
-
-Step 14: Totals
-         Line 24 = income tax + Schedule 2 Line 17
-         Line 25a = W-2 Box 2 ONLY
-         Line 25b = all other withholding (1099-R, SSA, INT, DIV, NEC, W-2G, G)
-         Line 25d = Line 25a + Line 25b
-         Line 26 = estimated payments + prior-year overpayment
-         Line 32 = Lines 27a+28+29+30+31 ONLY (no other items)
-         Line 33 = Line 25d + Line 26 + Line 32
-         Line 37 = amount owed (if Line 24 > Line 33)
-         Line 34 = refund (if Line 33 > Line 24)
-         Line 38 = Form 2210 underpayment penalty (SEPARATE — not in Line 24)
-```
-
-### Critical rules that have caused bugs before
-
-These rules were discovered through test failures and must be preserved:
-
-**Withholding line assignment**
-```
-Line 25a = W-2 Box 2 ONLY — never mix in any other form
-Line 25b = 1099-R Box 4 + SSA Box 6 + 1099-INT Box 4 + 1099-DIV Box 4
-           + 1099-NEC Box 4 + W-2G Box 4 + 1099-G Box 4
-```
-Source: `f1040.pdf` Lines 25a–25b; `i1040gi.pdf`
-
-**QSS is not uniformly MFJ** — QSS uses MFJ rates for tax table and standard deduction, but uses Single/QSS column for EITC ($23,350 phaseout vs $30,470 MFJ), Schedule 8812 Line 9 ($200k vs $400k), Form 8880, SS base ($25k vs $32k), NIIT ($200k vs $250k), and Additional Medicare ($200k vs $250k).
-
-**HOH uses distinct tax brackets** — not same as Single. HOH 10% band: $0–$17,000. HOH 12% band: $17,001–$64,850. Source: Rev. Proc. 2024-40.
-
-**SE SS wage base cap** — when taxpayer has both W-2 wages and SE income, available SS base for SE = max(0, $176,100 − W-2 Box 3 wages). Without this, taxpayer double-pays SS on combined wages above $176,100. Source: `f1040sse.pdf` Line 8a.
-
-**Line 38 is not Line 24** — Form 2210 underpayment penalty goes to Line 38, not into Line 24 (total tax). These are separate lines.
-
-**SSA-1099 MFS lived-apart** — MFS taxpayer who lived apart from spouse all year uses $25,000 base (same as single), not $0 (which is the MFS default). Source: `p915.pdf` base amount table.
-
-**1099-R routing** — the IRA/SEP/SIMPLE checkbox on Box 7 (not the Box 7 code) is the authoritative determinant of whether the distribution goes to Lines 4a/4b (IRA) or Lines 5a/5b (pension). Code G/H = direct rollover = not taxable regardless of checkbox.
-
-**CLW circular dependency** — Form 8880 Line 4 must be 0 during computation because the Schedule 3 total it references hasn't been computed yet at that step. This is not a bug; it matches the IRS circular worksheet design.
+**Round-trip rule**: every field in `buildSchema()` must appear identically in `populateFromSchema()`. Verified by `test_ui_fields.js` 64-key round-trip audit.
 
 ---
 
-## UI architecture
+## Workpaper (`sachintaxcare_workpaper.html`)
 
-### Single file, no build step
+18-page IRS Form 1040-faithful CPA workpaper:
 
-`sachintaxcare_pro.html` is a self-contained 2,837-line file. No npm, no webpack, no React. Plain HTML/CSS/JS with IBM Plex fonts from Google Fonts.
+| Pages | Content |
+|---|---|
+| 1–2 | Form 1040 — Taxpayer info, income, AGI |
+| 3–4 | Form 1040 — Tax, credits, payments, refund/owe |
+| 5 | Schedule 1 — Additional income and adjustments |
+| 6 | Schedule 2 — Other taxes (SE, AMT, 5329, NIIT) |
+| 7 | Schedule 3 — Credits (education, care, FTC, saver) |
+| 8 | Schedule A — Itemized deductions |
+| 9 | Schedule B — Interest and dividends |
+| 10 | Schedule C — Business income |
+| 11 | Schedule SE — Self-employment tax |
+| 12 | Schedule D — Capital gains |
+| 13 | Schedule E — Rental income |
+| 14 | Form 8995 — QBI deduction |
+| 15 | Schedule 8812 — CTC/ACTC/ODC |
+| 16 | Form 5329 — Early distributions |
+| 17 | California Form 540 |
+| 18 | CPA warnings + pre-filing checklist |
 
-### Layout
-
-```
-┌─────────────────┬──────────────────────────────────────┐
-│ Sidebar (260px) │ Topbar (52px sticky)                 │
-│                 ├──────────────────────────────────────┤
-│  Mode toggle    │ Content panel (active panel shown)   │
-│  Nav items      │                                      │
-│  (17 sections)  │  Each panel = one tax topic          │
-│                 │  One panel visible at a time         │
-│  Sidebar rules  │  Panels are divs with display:none   │
-└─────────────────┴──────────────────────────────────────┘
-```
-
-### Dual output modes
-
-The mode toggle (sidebar, topbar badge) switches between:
-
-**Engine mode** — calls `buildSchema()` → serializes all form data to a JSON object → `POST /compute` → Flask → `engine.run()` → renders result table in the same page. Does not leave the page.
-
-**Claude mode** — calls `buildPrompt()` → builds a ~3,000 word natural-language tax prompt using all form data → `sendPrompt()` → sends to Claude AI in the enclosing claude.ai chat window. Only works when the HTML is served as an artifact inside claude.ai. Falls back gracefully (shows prompt for copy) when run standalone.
-
-### State management
-
-```javascript
-const S = {
-  fs: 'single',                    // filing status string
-  deps: [],                         // dependent row IDs
-  w2s: [], ints: [], divs: [],     // 1099 row IDs
-  rs: [], scs: [], sales: [],
-  cares: [], t1098s: [], sches: [], k1s: [], lumps: [],
-  currentPanel: 'taxpayer',
-  lastResult: null,
-};
-```
-
-All repeating rows (W-2s, 1099s, etc.) are added as DOM elements with ids like `w2-box1-0`, `w2-box1-1`. `buildSchema()` and `buildPrompt()` both collect them via `S.w2s.map(id => ...)` or `document.querySelectorAll('[id^="necse-row-"]')`. The state arrays track which row IDs exist so they can be iterated; the actual data lives in the DOM inputs.
-
-### Navigation
-
-`go(panelId)` hides all panels, shows the target panel, updates the nav active state, updates topbar title and progress bar, and calls `buildPreComputeSummary()` when navigating to the compute panel.
-
-17 panels in order:
-`taxpayer` → `spouse` → `dependents` → `w2` → `1099s` → `se` → `rental` → `k1` → `capgains` → `other-inc` → `adj` → `scheda` → `credits` → `retirement` → `advanced` → `ca540` → `compute`
+Reads result from `localStorage['sachintaxcare_result']` (written by `renderResult()` after `/compute`). Opened via `GET /workpaper`. Print → `window.print()` → browser PDF.
 
 ---
 
-## Field manifest and test script
+## Test suite architecture
 
-### The contract
-
-`sachintaxcare_field_manifest.md` is the single source of truth for every field in the project. It maps:
-- Every IRS form box → HTML element id → engine dataclass field → IRS form line → source PDF
-
-**The rule**: any session that adds a field to the engine **must** add a row to the manifest before touching the UI. Any session that adds the UI field changes the status from ❌ to ✅.
-
-Current counts: 325 ✅ (in UI) · 26 ❌ (known gaps, not in UI) · 3 ⚠ (captured, not computed)
-
-### Running tests
-
-```bash
-# Engine tests (Python)
-python3 test_vita_irs.py
-# Expected: 59 PASS, 0 FAIL
-
-# UI field tests (Node.js)
-node test_ui_fields.js sachintaxcare_pro.html
-# Expected: 325 PASS, 0 FAIL, 22 SKIP (known gaps), 2 WARN
+```
+python3 sachintaxcare_test.py    → 584 PASS · 0 FAIL · 4 WARN
+python3 test_vita_irs.py         → 145/145 PASS
+node test_ui_fields.js sachintaxcare_pro.html  → 404 PASS · 0 FAIL
 ```
 
-Both tests must pass before any session is considered complete.
+### `sachintaxcare_test.py` layers
 
----
+| Layer | What it tests |
+|---|---|
+| LAYER 1 — Bridge Audit | Schema↔engine field-name mapping; all known bridge cases documented |
+| LAYER 1B — Dataclass Registry | Every engine dataclass field exists in the manifest |
+| LAYER 2 — Pipeline Regression | 8+ known-schema scenarios through full bridge→engine→result; asserts dollar values |
+| LAYER 2B — TY 2026 Pipeline | Same scenarios with `tax_year=2026` parameters |
+| LAYER 3 — Engine Unit | PARAMS_2025 constants verified against IRS publication values |
+| LAYER 3B — PARAMS Sync | PARAMS_2025 + PARAMS_2026 vs TaxReturn_PlanningReference.md Page 3 |
+| FILE REGISTRY | Line counts of all source files vs registered values |
+| QCD Regression | QCD (IRC §408(d)(8)) Code Y exclusion and cap |
 
-## Known limitations (as of v11-fork + OBBBA, 2026-05-10)
+### `test_vita_irs.py` sections (145 known-answer cases)
 
-These are documented limitations in the current engine, not bugs:
+Sections 1–25 cover W-2 only through complex multi-form returns. Section 32 covers all OBBBA deductions. Section 33 covers OBBBA phase-outs. Section 34 covers CA CalEITC/YCTC. Every assertion cites the exact IRS source (`f1040.pdf`, `i8863.pdf`, etc.).
 
-| Item | Impact | Fix complexity |
-|---|---|---|
-| EITC uses formula approximation | Off by $0–$100 for most cases | Medium — embed exact IRS EIC table |
-| Form 8995-A not built | QBI deduction wrong for income > $197k single / $394k MFJ | High — per-business W-2 wages + UBIA calculation |
-| K-1 basis / at-risk limits not enforced | K-1 losses may be overstated | High — Form 6198, §704(d) outside basis |
-| Form 2210 uses annual rate | Penalty estimate may be higher than actual | Medium — quarter-by-quarter calculation |
-| IRA MAGI proxy | Off by small amount when student loan or SE income present | Low — add back student loan + ½ SE tax |
-| 1099-DIV Box 2b §1250 / Box 2d collectibles captured not computed | Rate capped at 25%/28% not enforced | Medium |
-| CA Schedule CA partial | CalEITC, Young Child Tax Credit, community property not built | High |
-| Form 5329 SEPP Code 01 not validated | Engine accepts claimed amount without computing annuity | Medium |
+### `test_ui_fields.js`
 
----
-
-## What to build next (priority order)
-
-### P1 — PDF output layer (🔴 High — user-facing)
-
-All computed values exist in `result["computed"]`. Need a rendering layer.
-
-**Recommended path**: reportlab (Python) generating IRS-look-alike PDFs.
-
-```python
-# Engine already returns this structure:
-result["computed"] = {
-    "agi": 85000,
-    "taxable_income": 54000,
-    "income_tax": 6120,
-    "l19_ctc": 4000,
-    "l34_refund": 1240,
-    # ... all 1040 lines
-}
-```
-
-Build `sachintaxcare_pdf.py` (file already exists in project, check current state) that takes `result["computed"]` and generates a formatted PDF. One session.
-
-### P2 — JSON export (🔴 High)
-
-Serialize `result["computed"]` to structured JSON:
-
-```json
-{
-  "federal": {
-    "form_1040": { "line_1z": 85000, "line_11": 85000, "line_34": 1240 },
-    "schedule_c": [{ "business": "Consulting", "net_profit": 45000 }],
-    "schedule_a": { "mortgage_interest": 12000, "state_taxes": 8500 }
-  },
-  "state": { "ca_540": { "ca_taxable_income": 80000, "ca_tax": 3200 } },
-  "warnings": ["EITC formula approximation — verify with IRS EIC Table"]
-}
-```
-
-Add a Flask route `/export` and a download button in the UI. One session.
-
-### P3 — Form 8995-A (🔴 High — affects high-income SE filers)
-
-Triggered when taxable income > $197,300 single / $394,600 MFJ.
-
-What needs to be built in the engine:
-- Per-business W-2 wages (already captured in `ScheduleC.w2_wages`)
-- Per-business UBIA (already captured in `ScheduleC.ubia_qualified_property`)
-- W-2 wage limitation: min(50% of W-2 wages, QBI deduction) or (25% W-2 wages + 2.5% UBIA)
-- SSTB phase-out for specified service trades (law, accounting, health, consulting, etc.)
-
-Source: `f8995a.pdf`; Reg. §1.199A-1 through -6.
-
-### P4 — CA Schedule CA + CalEITC (🔴 High — CA-specific)
-
-What needs to be built:
-- `compute_caleitc()` — separate from federal, much lower income thresholds
-- Young Child Tax Credit: $1,117 per child under 6 for CalEITC-eligible filers
-- CA Schedule CA full line-by-line income adjustments (conformity differences from federal)
-- Community property rules: MFS filers in CA must split community income 50/50
-
-Sources: `ftb.ca.gov/forms/2025/2025-3514.pdf` (CalEITC); `ftb.ca.gov/forms/2025/2025-540-ca.pdf`
-
-### P5 — EITC exact table (🟡 Medium)
-
-Replace the formula approximation with the exact IRS EIC Table lookup. The table is in `p1040.pdf` pages 16+. Embed as a Python dict keyed by (filing_status, num_children, income_band). Engine already has a flag `exact_eitc_from_table` that overrides the formula when the user provides the confirmed value from the IRS table.
-
-### P6 — Multi-state skeleton (🟠 Lower)
-
-After CA is complete, build a generic state return framework that handles income routing and bracket calculation. NY, FL (no income tax — trivial), WA (no income tax — trivial), NJ. Each state gets a `compute_state_xxx()` function following the CA pattern.
-
-### P7 — UI panel completion tracking (🟢 Deferred)
-
-CSS is already written (`.nav-item.done` with gold checkmark `::after`). Add completion logic to `go()`:
-
-```javascript
-function isPanelComplete(panelId) {
-  // Check required fields for each panel
-  // Return true when minimum required fields are filled
-}
-// In go():
-if (isPanelComplete(S.currentPanel)) {
-  document.getElementById('nav-' + S.currentPanel).classList.add('done');
-}
-```
-
----
-
-## IRS source document index
-
-Always fetch from `irs.gov/pub/irs-pdf/` — never use secondary sources.
-
-| Document | URL fragment | Used for |
-|---|---|---|
-| Form 1040 | `f1040.pdf` | Main return line numbers |
-| Form 1040 Instructions | `i1040gi.pdf` | Line-by-line guidance, tax table |
-| Schedule 1 | `f1040s1.pdf` | Additional income and adjustments |
-| Schedule 2 | `f1040s2.pdf` | Additional taxes |
-| Schedule 3 | `f1040s3.pdf` | Additional credits |
-| Schedule A | `f1040sa.pdf` + `i1040sa.pdf` | Itemized deductions |
-| Schedule B | `f1040sb.pdf` | Interest and dividends |
-| Schedule C | `f1040sc.pdf` + `i1040sc.pdf` | Business profit/loss |
-| Schedule D | `f1040sd.pdf` | Capital gains |
-| Schedule E | `f1040se.pdf` + `i1040se.pdf` | Supplemental income |
-| Schedule SE | `f1040sse.pdf` | SE tax |
-| Form 8949 | `f8949.pdf` | Capital asset sales |
-| Form 2441 | `f2441.pdf` + `i2441.pdf` | Child/dep care credit |
-| Form 8863 | `f8863.pdf` + `i8863.pdf` | Education credits |
-| Form 8880 | `f8880.pdf` | Saver's credit |
-| Schedule 8812 | `f1040s8.pdf` | CTC/ACTC |
-| Form 8962 | `f8962.pdf` + `i8962.pdf` | Premium tax credit |
-| Form 8995 | `f8995.pdf` | QBI deduction (below threshold) |
-| Form 8995-A | `f8995a.pdf` | QBI deduction (above threshold) — not yet built |
-| Form 6251 | `f6251.pdf` + `i6251.pdf` | AMT |
-| Form 8606 | `f8606.pdf` + `i8606.pdf` | Nondeductible IRA / Roth |
-| Form 8889 | `f8889.pdf` + `i8889.pdf` | HSA |
-| Form 8582 | `f8582.pdf` + `i8582.pdf` | Passive activity losses |
-| Form 5329 | `f5329.pdf` + `i5329.pdf` | Early distributions |
-| Form 1116 | `f1116.pdf` + `i1116.pdf` | Foreign tax credit |
-| Form 4797 | `f4797.pdf` + `i4797.pdf` | Sale of business property |
-| Form 4972 | `f4972.pdf` + `i4972.pdf` | Lump-sum distribution |
-| Form 8615 | `f8615.pdf` + `i8615.pdf` | Kiddie tax |
-| Form 8960 | `f8960.pdf` | NIIT |
-| Form 8959 | `f8959.pdf` | Additional Medicare Tax |
-| Form 2210 | `f2210.pdf` + `i2210.pdf` | Underpayment penalty |
-| Form W-2 | `fw2.pdf` + `iw2w3.pdf` | Wages |
-| Form 1099-INT | `f1099int.pdf` + `i1099int.pdf` | Interest |
-| Form 1099-DIV | `f1099div.pdf` + `i1099div.pdf` | Dividends |
-| Form 1099-R | `f1099r.pdf` + `i1099r.pdf` | Retirement distributions |
-| Form 1099-NEC | `f1099nec.pdf` + `i1099nec.pdf` | Nonemployee comp |
-| Form 1099-B | `f1099b.pdf` | Broker transactions |
-| Form 1099-G | `f1099g.pdf` + `i1099g.pdf` | Government payments |
-| Form 1099-C | `f1099c.pdf` | Cancellation of debt |
-| Form W-2G | `fw2g.pdf` + `iw2g.pdf` | Gambling winnings |
-| Pub 590-A | `p590a.pdf` | IRA contributions |
-| Pub 575 | `p575.pdf` | Simplified Method (annuities) |
-| Pub 915 | `p915.pdf` | Social Security taxability |
-| Rev. Proc. 2024-40 | IRS website | 2025 inflation adjustments |
-| CA Form 540 | `ftb.ca.gov/forms/2025/2025-540.pdf` | California return |
+Runs against the live HTML file. For every field id in `sachintaxcare_field_manifest.md`:
+- Confirms the id exists in the HTML DOM
+- Runs a 64-key `buildSchema()` → `populateFromSchema()` round-trip
+- Reports PASS / FAIL / SKIP (known gaps) / WARN (captured not computed)
 
 ---
 
 ## Session workflow for new features
 
-Every new feature session follows this checklist:
-
 ```
-1. Read sachintaxcare_field_manifest.md — understand current field coverage
-2. Fetch the relevant IRS PDF from irs.gov/pub/irs-pdf/ before writing any code
-3. Add new @dataclass fields to engine.py with IRS source citations in the docstring
-4. Add new rows to sachintaxcare_field_manifest.md with status ❌
-5. Write the compute_xxx() function in engine.py
-6. Wire the compute function into run() at the correct step in the 14-step order
-7. Add test cases to test_vita_irs.py with exact expected values from IRS publications
-8. Run python3 test_vita_irs.py — must show 0 FAIL before proceeding to UI
-9. Add the UI fields to sachintaxcare_pro.html
-10. Update manifest status from ❌ to ✅
-11. Run node test_ui_fields.js sachintaxcare_pro.html — must show 0 FAIL
-12. Update TaxReturn_PlanningReference.md with the session summary
+1.  Run all 6 session-start gates (Page 9A of TaxReturn_PlanningReference.md)
+2.  Fetch the relevant IRS PDF from https://www.irs.gov/forms-instructions (Rule 15)
+3.  Add new @dataclass fields to engine.py with IRS source citations in docstring
+4.  Add new rows to sachintaxcare_field_manifest.md (status ❌)
+5.  Write compute_xxx() in engine.py with # Source: citation on every formula line
+6.  Wire into run() at correct position in the 14-step order
+7.  Add test cases to test_vita_irs.py with exact IRS-cited expected values
+8.  python3 test_vita_irs.py → must be 0 FAIL before touching UI
+9.  Add UI fields to sachintaxcare_pro.html (all 3: buildSchema + populateFromSchema + bridge)
+10. Update manifest status ❌ → ✅
+11. node test_ui_fields.js sachintaxcare_pro.html → must be 0 FAIL
+12. python3 sachintaxcare_test.py → must be 0 FAIL
+13. Update TaxReturn_PlanningReference.md (changelog + file registry)
 ```
 
-**Hard rule**: no field goes into the engine without a test case. No test case uses secondary sources — only IRS publications with page and example citations.
+**Hard rules**: no engine field without a test case. No test case uses secondary sources. Every formula cites the IRS form PDF and IRC section. No taxpayer data sent to web (Rule 16).
 
 ---
 
-## 2025 tax parameters quick reference
-
-*Updated 2026-05-10 with OBBBA (P.L. 119-21) changes. Source: Rev. Proc. 2025-32.*
+## 2025 tax parameter quick reference
 
 | Parameter | Value | Source |
 |---|---|---|
-| Standard deduction single/MFS | **$15,750** (was $15,000) | Rev. Proc. 2025-32; OBBBA §70102 |
-| Standard deduction MFJ/QSS | **$31,500** | Rev. Proc. 2025-32; OBBBA §70102 |
-| Standard deduction HOH | **$23,625** (was $22,500) | Rev. Proc. 2025-32; OBBBA §70102 |
-| Blind/65+ add-on (single/HOH) | $2,000 | Rev. Proc. 2024-40 |
-| Blind/65+ add-on (MFJ per person) | $1,600 | Rev. Proc. 2024-40 |
-| CTC per qualifying child | **$2,200** (was $2,000) | OBBBA §70104; IRC §24(h)(2) as amended |
-| ACTC cap per child | $1,700 | Rev. Proc. 2024-40 (unchanged 2025) |
-| ACTC refundable rate | 15% × (earned − $2,500) | IRC §24(d) |
-| CTC phase-out (single) | Starts at $200,000 | IRC §24(b); permanent per OBBBA |
-| CTC phase-out (MFJ) | Starts at $400,000 | IRC §24(b); permanent per OBBBA |
-| ODC (other dependent credit) | $500 | IRC §24(h)(4); permanent per OBBBA |
-| SALT cap (default) | **$40,000** (was $10,000) | OBBBA §70106; IRC §164(b)(6) as amended |
-| SALT cap (MFS) | **$20,000** (was $5,000) | OBBBA §70106 |
-| SALT phase-down threshold | AGI $500,000 | OBBBA §70106 |
-| SALT phase-down rate | $50 per $1,000 AGI above threshold | OBBBA §70106 |
-| SALT floor (minimum cap) | $10,000 | OBBBA §70106 |
-| Charitable AGI floor (itemizers) | **0.5% of AGI** (new) | OBBBA; IRC §170 as amended |
-| Senior Bonus Deduction | **$6,000/qualifying person age 65+** (new) | OBBBA §70103 |
-| Senior Bonus phase-out | MAGI > $75k single / $150k MFJ | OBBBA §70103 |
-| Tip income deduction cap | **$25,000** (new) | OBBBA §70201 |
-| Tip income phase-out | MAGI > $150k single / $300k MFJ | OBBBA §70201 |
-| Overtime pay deduction cap | **$12,500 single / $25,000 MFJ** (new) | OBBBA §70202 |
-| Overtime phase-out | MAGI > $150k single / $300k MFJ | OBBBA §70202 |
-| Auto loan interest deduction cap | **$10,000/yr** (new) | OBBBA §70301 |
-| Auto loan phase-out | MAGI > $100k single / $200k MFJ | OBBBA §70301 |
+| Std ded single/MFS | **$15,750** | OBBBA §70102; Rev. Proc. 2025-32 |
+| Std ded MFJ/QSS | **$31,500** | OBBBA §70102 |
+| Std ded HOH | **$23,625** | OBBBA §70102 |
+| 65+/blind add-on (single/HOH) | $2,000 | Rev. Proc. 2024-40 |
+| 65+/blind add-on (MFJ per person) | $1,600 | Rev. Proc. 2024-40 |
+| CTC per qualifying child | **$2,200** | OBBBA §70104; IRC §24(h)(2) |
+| ACTC cap per child | $1,700 | Rev. Proc. 2024-40 |
+| ACTC rate | 15% × (earned − $2,500) | IRC §24(d) |
+| CTC phase-out single | $200,000 | IRC §24(b) |
+| CTC phase-out MFJ | $400,000 | IRC §24(b) |
+| ODC per other dependent | $500 | IRC §24(h)(4) |
+| SALT cap (default) | **$40,000** | OBBBA §70106 |
+| SALT cap MFS | **$20,000** | OBBBA §70106 |
+| SALT phase-down above | $500,000 AGI | OBBBA §70106 |
+| Charitable AGI floor | **0.5% AGI** | OBBBA; IRC §170 |
+| Senior Bonus Deduction | **$6,000/person ≥ 65** | OBBBA §70103 |
+| Tip deduction cap | **$25,000** | OBBBA §70201 |
+| Overtime deduction cap | **$12,500 / $25,000 MFJ** | OBBBA §70202 |
+| Auto loan interest cap | **$10,000/yr** | OBBBA §70301 |
 | SS wage base | $176,100 | SSA 2025 |
-| SE tax rate | 15.3% × 92.35% of net profit | IRC §1401 |
-| Additional Medicare threshold (single) | $200,000 | IRC §3103 |
-| Additional Medicare threshold (MFJ) | $250,000 | IRC §3103 |
-| NIIT threshold (single) | $200,000 | IRC §1411 |
-| NIIT threshold (MFJ) | $250,000 | IRC §1411 |
+| SE tax rate | 15.3% × 92.35% | IRC §1401 |
+| Standard mileage (business) | **70¢/mile** | IRS Notice 2025-5 |
+| Additional Medicare threshold single | $200,000 | IRC §3103 |
+| Additional Medicare threshold MFJ | $250,000 | IRC §3103 |
+| NIIT threshold single | $200,000 | IRC §1411 |
+| NIIT threshold MFJ | $250,000 | IRC §1411 |
 | NIIT rate | 3.8% | IRC §1411 |
-| AMT exemption (single) | $88,100 | Rev. Proc. 2024-40; permanent per OBBBA §70107 |
-| AMT exemption (MFJ) | $137,000 | Rev. Proc. 2024-40; permanent per OBBBA §70107 |
-| AMT phase-out starts (single) | $626,350 | Rev. Proc. 2024-40 |
-| AMT phase-out starts (MFJ) | $1,252,700 | Rev. Proc. 2024-40 |
-| QBI threshold (single) | $197,300 | Rev. Proc. 2024-40; permanent per OBBBA |
-| QBI threshold (MFJ) | $394,600 | Rev. Proc. 2024-40; permanent per OBBBA |
+| AMT exemption single | $88,100 | Rev. Proc. 2024-40; OBBBA §70107 |
+| AMT exemption MFJ | $137,000 | Rev. Proc. 2024-40; OBBBA §70107 |
+| QBI threshold single | $197,300 | Rev. Proc. 2024-40; OBBBA |
+| QBI threshold MFJ | $394,600 | Rev. Proc. 2024-40; OBBBA |
+| QBI minimum (TY 2026 only) | $400 | OBBBA §70XXX |
 | EITC investment income limit | $11,600 | Rev. Proc. 2024-40 |
-| HSA limit (self-only) | $4,300 | Rev. Proc. 2024-40 |
-| HSA limit (family) | $8,550 | Rev. Proc. 2024-40 |
+| HSA limit self-only | $4,300 | Rev. Proc. 2024-40 |
+| HSA limit family | $8,550 | Rev. Proc. 2024-40 |
 | HSA catch-up (55+) | $1,000 | IRC §223(b)(3) |
-| 401(k) elective deferral limit | $23,500 | IRS IR-2024-285 |
 | IRA contribution limit | $7,000 ($8,000 if 50+) | IRC §219(b)(5) |
-| SEP-IRA limit | min(25% net SE, $70,000) | IRC §404(h) |
-| Teacher expense max | $300 | IRC §62(a)(2)(D) |
-| CA standard deduction (single) | $5,540 | FTB 2025 |
-| CA standard deduction (MFJ) | $11,080 | FTB 2025 |
-| CA Mental Health surtax | 1% on CA taxable income > $1M | Prop 63 |
+| 401(k) elective deferral | $23,500 | IRS IR-2024-285 |
+| SEP-IRA | min(25% net SE, $70,000) | IRC §404(h) |
+| Teacher expense | $300 | IRC §62(a)(2)(D) |
+| Student loan int phase-out single | $80k–$95k | IRC §221 |
+| Student loan int phase-out MFJ | $165k–$195k | IRC §221 |
+| CA standard ded single | $5,540 | FTB 2025 |
+| CA standard ded MFJ | $11,080 | FTB 2025 |
+| CA Mental Health surtax | 1% on CA TI > $1M | Prop 63 |
 
 ---
 
-## Common implementation mistakes to avoid
+## Common mistakes — do not repeat
 
-These mistakes have been made in this project and corrected — don't repeat them:
+1. **OBBBA deductions reduce taxable income, not AGI.** They are Line 13b (below-the-line). Never add them to `total_adjustments`. Tests 32.2b/32.4b/32.13b verify this.
 
-1. **Putting W-2 Box 13 on the Spouse panel** — it belongs on the W-2 form itself. The engine derives `w2_box13_ret_plan` by scanning all spouse-tagged W-2 entries.
+2. **ODC never goes on Schedule 3 Line 6d.** ODC always routes through Schedule 8812 (`s8812.odc_total`). `sch3['l6d_odc']` is always $0. Rule 2.
 
-2. **Using a single `total-expenses` field for Schedule C** — Schedule C has 20 individual expense lines, each with different tax treatment (meals at 50%, home office via Rev. Proc. 2013-13, etc.). A single field loses all of this.
+3. **QBI (§199A) never goes on Schedule 1.** It is Form 1040 Line 13a, below-the-line. Never add to `total_adjustments`. Rule 1A.
 
-3. **Hardcoding `decree_pre_2019: True` for alimony** — post-2018 divorce agreements produce zero deduction/income. The UI must have an era dropdown.
+4. **IRA/pension distributions go on 1040 Lines 4b/5b, not Schedule 1.** Rule 1B.
 
-4. **Computing ODC as a manual dropdown** — ODC is deterministic from DOB + CTC status. If age ≥ 17 and not CTC-eligible, ODC = yes. Auto-compute it and show the result.
+5. **Form 5329 exception code 02 (SEPP) is valid for both IRAs and employer plans.** Code 01 (age-55 separation) is plan-only. Code 06 (QDRO) is plan-only. Codes 07/08/09 are IRA-only. See `PLAN_ONLY_CODES` and `IRA_ONLY_CODES` in engine.
 
-5. **Two files tracking the same data** — the widget and intake were built independently and drifted apart over 9 sessions. This is why the field manifest exists. One UI file, one manifest, one test script.
+6. **`qbi_min` alias required in PARAMS_2026.** The engine uses `qbi_min_deduction`; tests and 9C audit use `qbi_min`. Both keys must exist.
 
-6. **Not running the test harness after engine changes** — the 59 test cases catch regressions in credit ordering, withholding routing, and QSS/HOH distinctions that are easy to break.
+7. **Every new UI field must go into buildSchema + populateFromSchema + bridge simultaneously.** `_safe_init()` silently drops mismatched names — no error. Rule 5.
 
-7. **Using secondary tax sources** — TurboTax help pages and tax blogs sometimes contain errors or use simplified explanations. Every number must trace back to an IRS publication with a page number.
+8. **W-2 Box 13 belongs on the W-2 form, not the Spouse panel.** The engine derives `covered_by_ret_plan` by scanning all W-2s.
+
+9. **SSA withholding goes on Line 25b, never 25a.** Line 25a is W-2 Box 2 only. Rule 19.
+
+10. **Schedule C has 20 individual expense lines.** Never use a single `total-expenses` field — meals (50%), home office (simplified method cap), and COGS each have distinct rules.
+
+11. **Home office simplified method cannot create a loss.** Cap = gross income from business use. `min(sq_ft, 300) × $5` but further limited to gross income. Rule 24.
+
+12. **Never use secondary tax sources.** TurboTax, tax blogs, cached PDFs. Forms and instructions from `https://www.irs.gov/forms-instructions` only. Rule 15.
 
 ---
 
-*End of implementation guide · v1.0 · 2025-05-10*
-*For current test status: `python3 test_vita_irs.py` and `node test_ui_fields.js sachintaxcare_pro.html`*
+*End of Implementation Guide · V17.1 · 2026-05-24*
+*Gates: `python3 sachintaxcare_test.py` (584/584) · `python3 test_vita_irs.py` (145/145) · `node test_ui_fields.js sachintaxcare_pro.html` (404/404)*

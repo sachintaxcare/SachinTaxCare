@@ -26,8 +26,8 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 | `sachintaxcare_report.py` | 965 | v11 | JSON verification report |
 | `test_report.py` | 415 | v1 | Report verification tests |
 | `sachintaxcare_field_manifest.md` | 855 | v1.3 | Field registry |
-| `IMPLEMENTATION_GUIDE.md` | 600 | v12-fork | How to rebuild from scratch |
-| `ENGINE_ALGORITHM.md` | 916 | v12-fork | Engine computation flow |
+| `IMPLEMENTATION_GUIDE.md` | 330 | V17.1 | How to rebuild from scratch |
+| `ENGINE_ALGORITHM.md` | 604 | V17.1 | Engine computation flow |
 | `sachintaxcare_schema_2025.json` | 276 | v1 | JSON schema reference |
 
 **Session start gate:** `python3 sachintaxcare_test.py` → **584 PASS · 0 FAIL · 4 WARN**
