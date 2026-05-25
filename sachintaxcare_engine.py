@@ -1570,6 +1570,21 @@ class CaliforniaData:
     # Source: R&TC §17144; FTB Notice 2024-4
     ca_loan_forgiveness_excluded: float = 0
 
+    # Alimony addback (CA TY 2025 transition) — Sch CA Part I Sec B Line 2a / Sec C Line 19a
+    # Required when alimony agreement executed 1/1/2019 – 12/31/2025.
+    # For payor: federal deduction = $0 → CA requires income addback.
+    # For recipient: federal income = $0 → CA requires inclusion.
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html "Alimony"; R&TC §17076
+    ca_alimony_addback: float = 0
+
+    # NOL carryforward suspension addback
+    # CA suspended NOL deduction 2024–2026 for modified AGI ≥ $1M.
+    # Enter the federal NOL deduction amount (from Form 1040 / Sch 1 Line 8a) that
+    # must be added back on the CA return.
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html "Net Operating Loss Suspension"
+    #         R&TC §17276.24; FTB 3805V
+    ca_nol_addback: float = 0
+
 
 @dataclass
 class Form5329Exception:
@@ -1979,19 +1994,44 @@ PARAMS_2025 = {
     "safe_harbor_pct_prior_110":        1.10,    # 110% of prior year tax if AGI > $150k
     "safe_harbor_agi_threshold":       150000,   # above → use 110%
     # California — Source: ftb.ca.gov/forms/
-    "ca_std_ded_single":                5540,    # 2025 CA standard deduction
-    "ca_personal_exempt_credit":        144,     # Single/MFS
-    "ca_personal_exempt_mfj_qss":       288,     # MFJ/QSS
+    # ── CALIFORNIA 2025 PARAMETERS — FETCH_VERIFIED 2026-05-24 ────────────────
+    # Source: ftb.ca.gov/forms/2025/2025-540.pdf (Form 540 Line 18 std ded values)
+    # Source: ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf (Schedules X, Y, Z)
+    # CORRECTED from 2024 values (5540/11080) — Form 540 line 18 explicitly states:
+    #   Single/MFS: $5,706 | MFJ/HOH/QSS: $11,412
+    "ca_std_ded_single":                5706,    # 2025 — Single/MFS. Source: 2025-540.pdf Line 18
+    "ca_std_ded_mfj":                   11412,   # 2025 — MFJ/HOH/QSS. Source: 2025-540.pdf Line 18
+    "ca_std_ded_hoh":                   11412,   # 2025 — HOH same as MFJ. Source: 2025-540.pdf Line 18
+    "ca_std_ded_qss":                   11412,   # 2025 — QSS same as MFJ. Source: 2025-540.pdf Line 18
+    "ca_std_ded_mfs":                   5706,    # 2025 — MFS same as single. Source: 2025-540.pdf Line 18
+    "ca_personal_exempt_credit":        144,     # Single/MFS personal exemption credit
+    "ca_personal_exempt_mfj_qss":       288,     # MFJ/QSS personal exemption credit
+    "ca_personal_exempt_hoh":           144,     # HOH — same as single per R&TC §17054
     "ca_dependent_exempt_credit":       433,     # per dependent
-    "ca_young_child_tax_credit":        1189,    # 2025 YCTC per return (was $1,117 in earlier years) — Source: ftb.ca.gov/file/personal/credits/young-child-tax-credit.html
+    "ca_young_child_tax_credit":        1189,    # 2025 YCTC per return — Source: ftb.ca.gov/file/personal/credits/young-child-tax-credit.html
+    # Schedule X — Single or MFS
+    # Source: ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf Schedule X
+    # FETCH_VERIFIED 2026-05-24: corrected from 2024 values (first bracket was $10,756 → now $11,079)
     "ca_brackets_single_2025": [
-        (10756,  0.01),  (25499, 0.02), (40245, 0.04),  (54996, 0.06),
-        (68350, 0.08),  (349137, 0.093),(418961,0.103),(698274, 0.113),
+        (11079,  0.01),  (26264, 0.02), (41452, 0.04),  (57542, 0.06),
+        (72724,  0.08),  (371479, 0.093),(445771,0.103),(742953, 0.113),
         (float('inf'), 0.123),
     ],
+    # Schedule Y — MFJ or QSS
+    # Source: ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf Schedule Y
+    # FETCH_VERIFIED 2026-05-24: corrected from 2024 values (first bracket was $21,512 → now $22,158)
     "ca_brackets_mfj_2025": [
-        (21512,  0.01),  (50998, 0.02), (80490, 0.04), (109992, 0.06),
-        (136700, 0.08), (698274, 0.093),(837922,0.103),(1000000,0.113),
+        (22158,  0.01),  (52528, 0.02), (82904, 0.04), (115084, 0.06),
+        (145448, 0.08),  (742958, 0.093),(891542,0.103),(1485906, 0.113),
+        (float('inf'), 0.123),
+    ],
+    # Schedule Z — Head of Household (separate CA schedule — NOT same as single/MFJ)
+    # Source: ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf Schedule Z
+    # FETCH_VERIFIED 2026-05-24: HOH bracket was MISSING from engine — engine was using single
+    # brackets for HOH which understated tax at lower incomes (HOH has wider lower brackets)
+    "ca_brackets_hoh_2025": [
+        (22173,  0.01),  (52530, 0.02), (67716, 0.04), (83805, 0.06),
+        (98990,  0.08),  (505208, 0.093),(606248,0.103),(1010416, 0.113),
         (float('inf'), 0.123),
     ],
     "ca_surtax_millionaire":   0.01,   # 1% surcharge on CA taxable income > $1M
@@ -3916,32 +3956,55 @@ def compute_additional_medicare_tax(wages_se: float, magi: float,
 
 
 def compute_form_2210_safe_harbor(current_year_tax: float, total_payments: float,
-                                   prior_year_tax: float, prior_year_agi: float) -> dict:
+                                   prior_year_tax: float, prior_year_agi: float,
+                                   q1_payment: float = 0, q2_payment: float = 0,
+                                   q3_payment: float = 0, q4_payment: float = 0,
+                                   prior_year_overpayment: float = 0) -> dict:
     """
-    Form 2210 — Safe Harbor Underpayment Test (2025) — simplified method.
-    Source: irs.gov/pub/irs-pdf/f2210.pdf; IRC §6654; IRS Pub 505 Ch.4
+    Form 2210 — Underpayment of Estimated Tax by Individuals (2025)
+    Source: irs.gov/pub/irs-pdf/i2210.pdf  FETCH_VERIFIED 2026-05-24
+            irs.gov/pub/irs-pdf/f2210.pdf; IRC §6654; IRS Pub 505 Ch.4
 
-    Three safe harbors (f2210.pdf Part II):
-      (a) Net owed (Line 9) < $1,000  — always testable
-      (b) Payments >= 100%/110% of prior year tax  — REQUIRES prior_year_tax > 0
-          Skipped when prior_year_tax = 0 (unknown) to prevent false-pass.
+    Three safe harbors (i2210.pdf Part II):
+      (a) Net owed (after withholding) < $1,000  — always testable  [i2210.pdf Line 9]
+      (b) Payments >= 100%/110% of prior year tax — REQUIRES prior_year_tax > 0
+          110% applies when prior year AGI > $150,000 ($75,000 MFS)
+          Source: i2210.pdf; IRC §6654(d)(1)(B)(ii)
       (c) Payments >= 90% of current year tax  — always testable
+          Source: i2210.pdf; IRC §6654(d)(1)(B)(i)
+
+    Quarterly installment penalty calculation (i2210.pdf Part III, Section B):
+      Per i2210.pdf: "The penalty is figured separately for each installment due date."
+      2025 installment due dates:
+        Q1: April 15, 2025  (Jan 1 – Mar 31)
+        Q2: June 15, 2025   (Apr 1 – May 31)
+        Q3: September 15, 2025 (Jun 1 – Aug 31)
+        Q4: January 15, 2026   (Sep 1 – Dec 31)
+      Required per-installment payment = 25% of annual required payment
+      Underpayment rate 2025: 8% annual = 8/365 per day
+      Source: irs.gov/pub/irs-pdf/i2210.pdf Part III, Section B; IRC §6654(b)(2); §6621
 
     EA Review fix (2026-05-19): prior_year_tax=0 no longer grants harbor (b).
-    When prior year is unknown, only harbors (a) and (c) are evaluated.
-    Source: IRC §6654(d)(1)(B); f2210.pdf Part II Lines 4-9; IRS Pub 505 Ch.4
+    P3 (2026-05-24): Added per-installment quarterly penalty calculation.
     """
-    p           = PARAMS_2025
+    p        = PARAMS_2025
+    annual_rate = p["underpayment_penalty_rate_2025"]   # 8% for 2025
+    daily_rate  = annual_rate / 365.0                   # ~0.02192% per day
+
+    # Total payments = withholding + estimated payments + prior-year overpayment
+    # (Withholding is treated as paid evenly; estimated payments by actual date)
     req_current = rnd(current_year_tax * p["safe_harbor_pct_current"])  # 90%
     net_owed    = max(0, rnd(current_year_tax - total_payments))
 
-    # Harbor (a): net owed < $1,000 — no penalty regardless of prior year
+    # Harbor (a): net owed < $1,000 — IRC §6654(e)(1)
     if net_owed < 1000:
         return {"safe_harbor_met": True,
-                "reason": f"(a) net owed ${net_owed:,} < $1,000",
-                "penalty": 0, "req_prior": None, "req_current": req_current}
+                "reason": f"(a) net owed ${net_owed:,} < $1,000 (IRC §6654(e)(1))",
+                "penalty": 0, "req_prior": None, "req_current": req_current,
+                "quarterly_detail": None}
 
-    # Harbor (b): only when prior year data is actually provided (not $0 / blank)
+    # Harbor (b): 100% / 110% of prior year tax — IRC §6654(d)(1)(B)
+    req_prior = None
     if prior_year_tax > 0:
         multiplier = (p["safe_harbor_pct_prior_110"]
                       if prior_year_agi > p["safe_harbor_agi_threshold"] else 1.0)
@@ -3949,45 +4012,95 @@ def compute_form_2210_safe_harbor(current_year_tax: float, total_payments: float
         if total_payments >= req_prior:
             return {"safe_harbor_met": True,
                     "reason": (f"(b) payments ${total_payments:,} >= "
-                               f"{int(multiplier*100)}% prior-year tax ${req_prior:,}"),
-                    "penalty": 0, "req_prior": req_prior, "req_current": req_current}
-        # Harbor (c): 90% of current year
-        if total_payments >= req_current:
-            return {"safe_harbor_met": True,
-                    "reason": (f"(c) payments ${total_payments:,} >= "
-                               f"90% current tax ${req_current:,}"),
-                    "penalty": 0, "req_prior": req_prior, "req_current": req_current}
-        shortfall = rnd(min(req_prior, req_current) - total_payments)
-        penalty   = rnd(shortfall * p["underpayment_penalty_rate_2025"])
-        reason    = (f"No safe harbor: payments ${total_payments:,} < "
-                     f"prior {int(multiplier*100)}% ${req_prior:,} "
-                     f"AND 90% current ${req_current:,}")
-        return {"safe_harbor_met": False, "reason": reason,
-                "penalty": penalty, "req_prior": req_prior, "req_current": req_current,
-                "warning": (f"Underpayment penalty (Form 2210): ~${penalty:,} -> Line 38. "
-                            f"{reason}. Rate 8% (2025). "
-                            "Actual IRS penalty is calculated quarterly (f2210.pdf Part IV); this annual estimate may understate if payments were late in Q1-Q3. "
-                            "Source: irs.gov/pub/irs-pdf/f2210.pdf; IRC §6654.")}
+                               f"{int(multiplier*100)}% prior-year tax ${req_prior:,} "
+                               f"(IRC §6654(d)(1)(B))"),
+                    "penalty": 0, "req_prior": req_prior, "req_current": req_current,
+                    "quarterly_detail": None}
 
-    # Prior year unknown: harbor (b) skipped — test harbor (c) only
+    # Harbor (c): 90% of current year tax — IRC §6654(d)(1)(B)(i)
     if total_payments >= req_current:
         return {"safe_harbor_met": True,
                 "reason": (f"(c) payments ${total_payments:,} >= "
-                           f"90% current tax ${req_current:,} "
-                           "(prior year not provided; harbor (b) not tested)"),
-                "penalty": 0, "req_prior": None, "req_current": req_current}
+                           f"90% current tax ${req_current:,} (IRC §6654(d)(1)(B)(i))"),
+                "penalty": 0, "req_prior": req_prior, "req_current": req_current,
+                "quarterly_detail": None}
 
-    # Neither (a) nor (c) met; prior unknown — estimate from 90% shortfall
-    shortfall_c = rnd(req_current - total_payments)
-    penalty_est = rnd(shortfall_c * p["underpayment_penalty_rate_2025"])
+    # ── Per-installment quarterly penalty (i2210.pdf Part III, Section B) ─────
+    # Required amount per installment = 25% × annual required payment
+    # Annual required = min(req_current, req_prior) if prior known; else req_current
+    annual_required = req_current if req_prior is None else min(req_current, req_prior)
+    per_q           = rnd(annual_required / 4)
+
+    # Days from installment due date to payment date
+    # If actual Q payment not provided, assume paid with return (4/15/2026 = 365 days late for Q1)
+    # Days underpaid per quarter (from due date to return date or payment date)
+    # Due dates 2025: Q1=Apr15, Q2=Jun15, Q3=Sep15, Q4=Jan15 2026
+    # Days from each due date to return filing (April 15, 2026):
+    #   Q1: Apr 15 2025 → Apr 15 2026 = 365 days
+    #   Q2: Jun 15 2025 → Apr 15 2026 = 304 days
+    #   Q3: Sep 15 2025 → Apr 15 2026 = 212 days
+    #   Q4: Jan 15 2026 → Apr 15 2026 = 90 days
+    # Source: i2210.pdf Table 2 "Chart of Total Days"
+    Q_DAYS = [365, 304, 212, 90]   # days Q1-Q4 if unpaid until return date
+    q_payments = [
+        q1_payment + prior_year_overpayment,   # Q1 gets prior-year overpayment credit
+        q2_payment,
+        q3_payment,
+        q4_payment,
+    ]
+
+    quarterly_detail = []
+    total_penalty = 0.0
+    cumulative_shortfall = 0.0
+
+    for i, (q_paid, days) in enumerate(zip(q_payments, Q_DAYS)):
+        required  = per_q
+        available = q_paid + max(0, -cumulative_shortfall)  # prior overpayment carries forward
+        shortfall = max(0, rnd(required - available))
+        # Per i2210.pdf: prior installment overpayment reduces next installment requirement
+        cumulative_shortfall = required - available
+        q_penalty = rnd(shortfall * daily_rate * days)
+        total_penalty += q_penalty
+        quarterly_detail.append({
+            "quarter": f"Q{i+1}",
+            "required": required,
+            "paid": q_paid,
+            "shortfall": shortfall,
+            "days": days,
+            "penalty": q_penalty,
+        })
+
+    total_penalty = rnd(total_penalty)
+
+    if total_penalty == 0:
+        return {"safe_harbor_met": True,
+                "reason": "Quarterly penalty calculation: no net shortfall across all installments",
+                "penalty": 0, "req_prior": req_prior, "req_current": req_current,
+                "quarterly_detail": quarterly_detail}
+
+    shortfall_desc = rnd(annual_required - total_payments)
+    prior_year_note = (
+        " Prior year tax not entered — safe harbor (b) (100%/110% of prior year tax) "
+        "cannot be evaluated. Enter Form 1040 Line 24 from your 2024 return for a more accurate result."
+        if prior_year_tax == 0 else ""
+    )
     return {"safe_harbor_met": False,
-            "reason": (f"Prior year unknown; payments ${total_payments:,} < "
-                       f"90% current ${req_current:,} — harbor (b) untestable"),
-            "penalty": penalty_est, "req_prior": None, "req_current": req_current,
-            "warning": (f"Form 2210: estimated penalty ~${penalty_est:,} -> Line 38. "
-                        "Prior year tax not entered — harbor (b) not tested. "
-                        "Enter Form 1040 Line 24 from your 2024 return for accurate result. "
-                        "Source: IRC §6654(d)(1)(B); f2210.pdf; IRS Pub 505 Ch.4.")}
+            "reason": (f"No safe harbor: payments ${total_payments:,} < "
+                       f"required ${annual_required:,}"),
+            "penalty": total_penalty,
+            "req_prior": req_prior,
+            "req_current": req_current,
+            "quarterly_detail": quarterly_detail,
+            "warning": (
+                f"Form 2210 underpayment penalty: ${total_penalty:,} → Line 38. "
+                f"Payments ${total_payments:,} vs required ${annual_required:,} "
+                f"(shortfall ${shortfall_desc:,}). "
+                f"Penalty calculated per-quarter per installment due date."
+                f"{prior_year_note} "
+                f"Rate: 8%/yr (daily = 8÷365%). Due dates: Q1=Apr 15, Q2=Jun 15, "
+                f"Q3=Sep 15 2025, Q4=Jan 15 2026. "
+                "Source: irs.gov/pub/irs-pdf/i2210.pdf Part III; IRC §6654(b)(2); §6621."
+            )}
 
 
 def compute_form_982(form_982: "Form982Data", total_discharged: float) -> dict:
@@ -4323,14 +4436,14 @@ def compute_california_540(
     cd = ca_data or CaliforniaData()
 
     # ── CA Schedule CA Part II — Additions to federal AGI ────────────────────
-    # Source: ftb.ca.gov/forms/2025/2025-schca.pdf Part II
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html  FETCH_VERIFIED 2026-05-24
 
     # HSA addback — CA IRC §223 nonconformity (always required)
     # Source: FTB Pub 1001; R&TC §17201; CA Schedule CA Part II Line 23
     ca_hsa_addback = hsa_deduction
 
     # OBBBA nonconformity addback — CA did NOT adopt P.L. 119-21
-    # Source: CA FTB Announcement 2025-4; CA Revenue and Taxation Code
+    # Source: CA FTB Announcement 2025-4; 2025-540-ca-instructions.html
     ca_obbba_addback = (cd.ca_obbba_addback_override
                         if cd.ca_obbba_addback_override > 0
                         else obbba_total_federal)
@@ -4339,14 +4452,31 @@ def compute_california_540(
     # Source: FTB Pub 1001; R&TC §17250; CA Schedule CA Part II Line 22
     ca_bonus_dep_addback = rnd(cd.ca_bonus_depreciation_addback)
 
+    # Alimony addback — TY 2025 transition rule (CA Sch CA Part I Sec B Line 2a / Sec C Line 19a)
+    # For agreements executed 1/1/2019 – 12/31/2025:
+    #   Federal: no deduction (payor) / no income (recipient) per TCJA §11051
+    #   CA: still required inclusion/deduction for TY 2025 (CA conforms to federal repeal
+    #       only for agreements executed after 12/31/2025)
+    #   → Payor: federal deduction = $0 → CA must add income back (Column C addition)
+    #   → Recipient: federal income = $0 → CA must include (Column C addition)
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html "Alimony" section; R&TC §17076
+    ca_alimony_addback = rnd(getattr(cd, 'ca_alimony_addback', 0) or 0)
+
+    # NOL suspension addback — CA suspended NOL carryforward deduction 2024–2026
+    # Applies when modified AGI ≥ $1M. Taxpayer must add back federal NOL deduction.
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html; R&TC §17276.24; FTB 3805V
+    ca_nol_addback = rnd(getattr(cd, 'ca_nol_addback', 0) or 0)
+
     ca_add = rnd(ca_hsa_addback + ca_obbba_addback + ca_bonus_dep_addback
-                 + cd.ca_other_additions)
+                 + ca_alimony_addback + ca_nol_addback + cd.ca_other_additions)
 
     # ── CA Schedule CA Part II — Subtractions from federal AGI ───────────────
-    # Source: ftb.ca.gov/forms/2025/2025-schca.pdf Part II
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html  FETCH_VERIFIED 2026-05-24
 
-    # Military pay exclusion — Source: R&TC §17140; FTB Pub 1032
-    ca_military_sub  = rnd(cd.ca_military_pay_exclusion)
+    # Military retirement exclusion — $20,000 cap for TY 2025–2029
+    # Source: ftb.ca.gov/forms/2025/2025-540-ca-instructions.html "Military Retirement Exclusion"
+    #         R&TC §17132.9 and §17132.10  FETCH_VERIFIED 2026-05-24
+    ca_military_sub = min(rnd(cd.ca_military_pay_exclusion), 20000)
     # Loan forgiveness / cancelled-debt exclusion — Source: R&TC §17144
     ca_loan_sub      = rnd(cd.ca_loan_forgiveness_excluded)
 
@@ -4362,7 +4492,7 @@ def compute_california_540(
             f"CA Schedule CA: OBBBA deductions ${ca_obbba_addback:,} added back — "
             "CA did not adopt P.L. 119-21 (OBBBA). Senior bonus, tips, overtime, and "
             "auto loan deductions are not allowed on the CA return. "
-            "Source: CA FTB Announcement 2025-4; R&TC."
+            "Source: CA FTB Announcement 2025-4; 2025-540-ca-instructions.html."
         )
     if ca_bonus_dep_addback > 0:
         warnings.append(
@@ -4370,14 +4500,31 @@ def compute_california_540(
             "CA does not conform to IRC §168(k). Use R&TC §24356 for CA depreciation. "
             "Source: FTB Pub 1001; R&TC §17250."
         )
+    if ca_alimony_addback > 0:
+        warnings.append(
+            f"CA Schedule CA: Alimony addback ${ca_alimony_addback:,} — "
+            "TY 2025 transition rule: agreements executed 1/1/2019–12/31/2025 require CA "
+            "income inclusion (recipient) or income addback (payor) even though federal "
+            "TCJA §11051 eliminated alimony deduction/inclusion. "
+            "Source: 2025-540-ca-instructions.html; R&TC §17076."
+        )
+    if ca_nol_addback > 0:
+        warnings.append(
+            f"CA Schedule CA: NOL suspension addback ${ca_nol_addback:,} — "
+            "CA suspended NOL carryforward 2024–2026 for modified AGI ≥ $1M. "
+            "Source: R&TC §17276.24; 2025-540-ca-instructions.html."
+        )
     if ca_military_sub > 0:
         warnings.append(
-            f"CA Schedule CA: Military pay ${ca_military_sub:,} subtracted — "
-            "CA-exempt if stationed outside CA all year. Source: R&TC §17140."
+            f"CA Schedule CA: Military retirement pay exclusion ${ca_military_sub:,} "
+            f"(capped at $20,000 for TY 2025–2029). "
+            "Source: R&TC §17132.9 and §17132.10; 2025-540-ca-instructions.html; FTB Pub 1032."
         )
 
     ca_std_key = f"ca_std_ded_{filing_status}"
     ca_std = p.get(ca_std_key, p["ca_std_ded_single"])
+    # Source: ftb.ca.gov/forms/2025/2025-540.pdf Line 18
+    # Single/MFS: $5,706 | MFJ/HOH/QSS: $11,412  (FETCH_VERIFIED 2026-05-24)
 
     # CA itemized: rebuild from federal Sch A without SALT cap, with full medical floor re-applied
     ca_itemized = 0
@@ -4399,8 +4546,15 @@ def compute_california_540(
     ca_ded_type  = "itemized" if use_itemized else "standard"
     ca_taxable   = max(0, rnd(ca_agi - ca_ded))
 
-    # CA income tax
-    brackets = p["ca_brackets_mfj_2025"] if filing_status in ("mfj", "qss") else p["ca_brackets_single_2025"]
+    # CA income tax — use filing-status-specific bracket schedule
+    # Schedule X: Single/MFS | Schedule Y: MFJ/QSS | Schedule Z: HOH (separate!)
+    # Source: ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf  FETCH_VERIFIED 2026-05-24
+    if filing_status in ("mfj", "qss"):
+        brackets = p["ca_brackets_mfj_2025"]
+    elif filing_status == "hoh":
+        brackets = p["ca_brackets_hoh_2025"]   # Schedule Z — was MISSING; engine was using single
+    else:
+        brackets = p["ca_brackets_single_2025"]  # single / mfs
     ca_tax = 0; prev = 0
     for (top, rate) in brackets:
         if ca_taxable <= prev: break
@@ -4411,7 +4565,13 @@ def compute_california_540(
     ca_tax_total = rnd(ca_tax + surtax)
 
     # Credits
-    pers_cr  = p["ca_personal_exempt_mfj_qss"] if filing_status in ("mfj", "qss") else p["ca_personal_exempt_credit"]
+    # HOH uses single personal exemption credit per R&TC §17054
+    if filing_status in ("mfj", "qss"):
+        pers_cr = p["ca_personal_exempt_mfj_qss"]
+    elif filing_status == "hoh":
+        pers_cr = p.get("ca_personal_exempt_hoh", p["ca_personal_exempt_credit"])
+    else:
+        pers_cr = p["ca_personal_exempt_credit"]
     dep_cr   = rnd(num_dependents * p["ca_dependent_exempt_credit"])
     sdi_cr   = rnd(ca_sdi_withheld + cd.ca_sdi_withheld)
     renter_cr = 0
@@ -5993,8 +6153,13 @@ def compute_schedule_a(sched_a: 'ScheduleAData', agi: float, fs: str) -> dict:
     # Line 8-9: Interest
     # Mortgage interest: $750,000 acquisition debt limit for post-12/15/2017 loans
     # $1,000,000 limit for loans taken before 12/16/2017 (grandfathered)
-    # Source: IRC §163(h)(3)(F)(i); IRS Pub 936; i1040sa.pdf Line 8a
-    mort_limit = 1_000_000 if sched_a.mortgage_is_grandfathered else 750_000
+    # $750,000 standard limit (post-12/15/2017); MFS = $375,000 (half of $750k)
+    # Source: IRC §163(h)(3)(B)(ii); IRC §163(h)(3)(F)(i); IRS Pub 936; i1040sa.pdf Line 8a
+    # FETCH_VERIFIED 2026-05-24: MFS limit confirmed as $375k per IRC §163(h)(3)(B)(ii)
+    if sched_a.mortgage_is_grandfathered:
+        mort_limit = 500_000 if fs == "mfs" else 1_000_000
+    else:
+        mort_limit = 375_000 if fs == "mfs" else 750_000
     outstanding = rnd(sched_a.mortgage_balance_outstanding)
     if outstanding > 0 and outstanding > mort_limit:
         limit_ratio = mort_limit / outstanding
@@ -7793,7 +7958,18 @@ def run(schema: TaxpayerSchema) -> dict:
                 "≥ 17. CTC requires child under 17 at Dec 31. Source: IRC §24(c)."
             )
 
-    care_cap_amt  = 3000 if len(ctc_children) == 1 else (6000 if len(ctc_children) >= 2 else 0)
+    # Form 2441 qualifying persons — must be under age 13 (IRC §21(b)(1)(A))
+    # CTC-eligible children may be over 13 (CTC goes to age 16) but care credit only for under-13
+    # Source: irs.gov/pub/irs-pdf/f2441.pdf Line 2; IRC §21(b)(1)(A); i2441.pdf
+    care_qualifying = [d for d in ctc_children if d.age is None or d.age < 13]
+    care_nonqualifying_over13 = [d for d in ctc_children if d.age is not None and d.age >= 13]
+    for dep in care_nonqualifying_over13:
+        result["warnings"].append(
+            f"Form 2441: {dep.first} {dep.last} (age {dep.age}) is NOT a qualifying person "
+            "for the child/dependent care credit — must be under age 13 at time of care. "
+            "Source: irs.gov/pub/irs-pdf/f2441.pdf Line 2; IRC §21(b)(1)(A)."
+        )
+    care_cap_amt  = 3000 if len(care_qualifying) == 1 else (6000 if len(care_qualifying) >= 2 else 0)
     care_exp_raw  = rnd(sum(pr.expenses for pr in schema.care_providers))
     care_exp_capped = rnd(min(care_exp_raw, care_cap_amt))
     employer_care_excl = rnd(min(employer_dep_care, 5000))
@@ -8301,92 +8477,32 @@ def run(schema: TaxpayerSchema) -> dict:
     underpay_result = {"penalty": 0, "safe_harbor_met": True, "reason": "No underpayment trigger"}
     underpay_penalty = 0
 
-    _net_owed          = max(0, rnd(l24_total_tax - l33_total_pmts))
-    _prior_known       = bool(schema.form_2210 and schema.form_2210.prior_year_tax > 0)
-    _prior_year_tax    = schema.form_2210.prior_year_tax if _prior_known else 0
-    _prior_year_agi    = schema.form_2210.prior_year_agi if _prior_known else 0
-    _p2210             = PARAMS_2025
-    _req_current       = rnd(l24_total_tax * _p2210["safe_harbor_pct_current"])  # 90%
-
-    # Safe harbor (a): net owed < $1,000  — always computable
-    if _net_owed < 1000:
-        underpay_result = {"penalty": 0, "safe_harbor_met": True,
-                           "reason": f"(a) net owed ${_net_owed:,} < $1,000",
-                           "req_current": _req_current, "req_prior": None}
-
-    # Safe harbor (b): payments ≥ 100%/110% of prior year tax  — ONLY when prior known
-    elif _prior_known:
-        _multiplier = (_p2210["safe_harbor_pct_prior_110"]
-                       if _prior_year_agi > _p2210["safe_harbor_agi_threshold"]
-                       else 1.0)
-        _req_prior  = rnd(_prior_year_tax * _multiplier)
-        if l33_total_pmts >= _req_prior:
-            underpay_result = {"penalty": 0, "safe_harbor_met": True,
-                               "reason": (f"(b) payments ${l33_total_pmts:,} ≥ "
-                                          f"{int(_multiplier*100)}% prior-year tax ${_req_prior:,}"),
-                               "req_prior": _req_prior, "req_current": _req_current}
-        elif l33_total_pmts >= _req_current:
-            underpay_result = {"penalty": 0, "safe_harbor_met": True,
-                               "reason": (f"(c) payments ${l33_total_pmts:,} ≥ "
-                                          f"90% current tax ${_req_current:,}"),
-                               "req_prior": _req_prior, "req_current": _req_current}
-        else:
-            _shortfall = rnd(min(_req_prior, _req_current) - l33_total_pmts)
-            _penalty   = rnd(_shortfall * _p2210["underpayment_penalty_rate_2025"])
-            underpay_result = {
-                "safe_harbor_met": False,
-                "reason": (f"No safe harbor: payments ${l33_total_pmts:,} < "
-                           f"prior {int(_multiplier*100)}% ${_req_prior:,} AND "
-                           f"90% current ${_req_current:,}"),
-                "penalty": _penalty, "req_prior": _req_prior, "req_current": _req_current,
-                "warning": (f"Underpayment penalty (Form 2210): ~${_penalty:,} → Line 38. "
-                            f"No safe harbor met. Rate 8% (2025). "
-                            "⚠ Actual penalty is quarterly; this is an annual estimate. "
-                            "Source: irs.gov/pub/irs-pdf/f2210.pdf; IRC §6654.")
-            }
-
-    # Prior year unknown: can only test safe harbor (c) — 90% of current year
-    else:
-        if l33_total_pmts >= _req_current:
-            underpay_result = {"penalty": 0, "safe_harbor_met": True,
-                               "reason": (f"(c) payments ${l33_total_pmts:,} ≥ "
-                                          f"90% current tax ${_req_current:,} — "
-                                          "prior year not entered so harbor (b) not tested"),
-                               "req_prior": None, "req_current": _req_current}
-        elif _net_owed >= 1000:
-            # Cannot confirm safe harbor — warn and estimate from 90% shortfall
-            _shortfall_c = rnd(_req_current - l33_total_pmts)
-            _penalty_est = rnd(_shortfall_c * _p2210["underpayment_penalty_rate_2025"])
-            underpay_result = {
-                "safe_harbor_met": False,
-                "reason": (f"Prior year tax not entered; payments ${l33_total_pmts:,} "
-                           f"< 90% current ${_req_current:,} — harbor (b) untestable"),
-                "penalty": _penalty_est,
-                "req_prior": None, "req_current": _req_current,
-                "warning": (f"⚠ Underpayment penalty (Form 2210): estimated ~${_penalty_est:,} → Line 38. "
-                            f"Prior year tax not entered — safe harbor (b) (100%/110% of prior year tax) "
-                            "CANNOT be verified. Penalty based on 90% current-year shortfall only. "
-                            "Enter prior year tax (Form 1040 Line 24) for accurate result. "
-                            "Source: IRC §6654(d)(1)(B); f2210.pdf Part II; IRS Pub 505 Ch.4.")
-            }
-
-    # Emit warning if prior year is missing AND there is meaningful balance due
-    if not _prior_known and _net_owed >= 1000:
-        result["warnings"].append(
-            f"⚠ Form 2210 — prior year tax not entered (Form 1040 Line 24 from your 2024 return). "
-            f"Net balance due ${_net_owed:,} exceeds $1,000 — an underpayment penalty may apply. "
-            "Safe harbor (b) (100%/110% of prior year tax) cannot be evaluated. "
-            "Enter prior year tax in the Estimated Tax panel to complete this analysis. "
-            "Source: IRC §6654(d)(1)(B); f2210.pdf; IRS Pub 505 Ch.4."
-        )
+    # Form 2210 — quarterly installment underpayment penalty
+    # Source: irs.gov/pub/irs-pdf/i2210.pdf Part III Section B  FETCH_VERIFIED 2026-05-24
+    # P3 (2026-05-24): Now uses per-installment quarterly calculation per i2210.pdf.
+    # "The penalty is figured separately for each installment due date." — i2210.pdf
+    _est_data = schema.estimated_tax_payments
+    underpay_result = compute_form_2210_safe_harbor(
+        current_year_tax      = l24_total_tax,
+        total_payments        = l33_total_pmts,
+        prior_year_tax        = (schema.form_2210.prior_year_tax
+                                 if schema.form_2210 and schema.form_2210.prior_year_tax > 0 else 0),
+        prior_year_agi        = (schema.form_2210.prior_year_agi
+                                 if schema.form_2210 else 0),
+        q1_payment            = (_est_data.q1 if _est_data else 0),
+        q2_payment            = (_est_data.q2 if _est_data else 0),
+        q3_payment            = (_est_data.q3 if _est_data else 0),
+        q4_payment            = (_est_data.q4 if _est_data else 0),
+        prior_year_overpayment= (_est_data.prior_year_overpayment_applied if _est_data else 0),
+    )
 
     underpay_penalty = underpay_result.get("penalty", 0)
     if underpay_result.get("warning"):
         result["warnings"].append(underpay_result["warning"])
     elif underpay_result["safe_harbor_met"] and (l24_total_tax > 0):
         result["warnings"].append(
-            f"Form 2210 safe harbor met: {underpay_result['reason']}. "
-            "Source: irs.gov/pub/irs-pdf/f2210.pdf"
+            f"Form 2210: safe harbor met — {underpay_result['reason']}. No underpayment penalty. "
+            "Source: irs.gov/pub/irs-pdf/i2210.pdf; IRC §6654."
         )
     # Adjust effective owe/refund for underpayment penalty
     l38_underpayment = underpay_penalty

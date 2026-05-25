@@ -1124,6 +1124,16 @@ select{cursor:pointer;}
             <div class="field"><div class="label">CA bonus depreciation addback ($)</div><input type="number" id="ca-bonus-dep" placeholder="0" title="CA does not conform to federal bonus depreciation — FTB 3885"/></div>
             <div class="field"><div class="label">CA lottery winnings ($)</div><input type="number" id="ca-lottery" placeholder="0" title="CA lottery winnings exempt from federal tax but taxable for CA — R&amp;TC §17154"/></div>
           </div>
+          <div class="g2" style="margin-top:8px">
+            <div class="field">
+              <div class="label">Alimony addback — agreement 1/1/2019–12/31/2025 ($) <span style="font-size:10px;color:var(--muted)">R&amp;TC §17076</span></div>
+              <input type="number" id="ca-alimony-add" placeholder="0" title="TY 2025 transition: CA still requires income inclusion/deduction for pre-2026 alimony agreements. Source: 2025-540-ca-instructions.html; R&TC §17076"/>
+            </div>
+            <div class="field">
+              <div class="label">NOL suspension addback ($) <span style="font-size:10px;color:var(--muted)">R&amp;TC §17276.24</span></div>
+              <input type="number" id="ca-nol-add" placeholder="0" title="CA suspended NOL carryforward 2024–2026 for modified AGI ≥ $1M. Enter federal NOL deduction amount to add back. Source: R&TC §17276.24"/>
+            </div>
+          </div>
           <div class="g2" style="margin-top:10px">
             <div class="field"><div class="label">CA military pay exclusion ($)</div><input type="number" id="ca-military-pay" placeholder="0" title="Active duty military pay excluded from CA tax — Mil &amp; Vet Code §402; FTB 3504"/></div>
             <div class="field"><div class="label">CA student loan forgiveness excluded ($)</div><input type="number" id="ca-loan-forgive" placeholder="0" title="CA AB 1577 — student loan forgiveness excluded from CA income"/></div>
@@ -3273,6 +3283,8 @@ function buildSchema() {
     use_ca_itemized: v('ca-use-itemized') === 'yes',
     ca_bonus_depreciation_addback: n('ca-bonus-dep'),
     ca_lottery_winnings: n('ca-lottery'),
+    ca_alimony_addback: n('ca-alimony-add'),
+    ca_nol_addback: n('ca-nol-add'),
     ca_military_pay_exclusion: n('ca-military-pay'),
     ca_loan_forgiveness_excluded: n('ca-loan-forgive'),
     ca_taxpayer_age: parseInt(n('ca-tp-age')) || 0,
@@ -3979,6 +3991,8 @@ function populateFromSchema(sc) {
     sv('ca-itemized', ca.ca_itemized_total || ca.ca_itemized_override || '');
     sv('ca-bonus-dep', ca.ca_bonus_depreciation_addback || '');
     sv('ca-lottery', ca.ca_lottery_winnings || '');
+    sv('ca-alimony-add', ca.ca_alimony_addback || '');
+    sv('ca-nol-add', ca.ca_nol_addback || '');
     sv('ca-military-pay', ca.ca_military_pay_exclusion || '');
     sv('ca-loan-forgive', ca.ca_loan_forgiveness_excluded || '');
     sv('ca-tp-age', ca.ca_taxpayer_age || '');

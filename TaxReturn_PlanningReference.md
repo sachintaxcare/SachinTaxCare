@@ -16,10 +16,10 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 | File | Lines | Version | Role |
 |---|---|---|---|
 | `sachintaxcare_engine.py` | **8781** | v17 — mileage 70¢, QBI L13a+L6 REIT, l4b routing, qdcgt fix, L21-L24 labels; +qbi_min alias | Computation engine (TY 2025 + TY 2026) |
-| `sachintaxcare_pro.html` | **4,783** | v7 — NEC inclusion, nec_included_in_gross, int-ein, 1098-E restore, L16-L24 panel | Primary UI — intake + results |
+| `sachintaxcare_pro.html` | **4,800** | v7 — NEC inclusion, nec_included_in_gross, int-ein, 1098-E restore, L16-L24 panel | Primary UI — intake + results |
 | `sachintaxcare_server.py` | **761** | v16 — map_result() pass-through | Flask server + bridge |
 | `sachintaxcare_workpaper.html` | **1,670** | v8 — 18 pages, try/catch, pre-declared sub-dicts, QBI L13a, Sch C summary | CPA workpaper |
-| `sachintaxcare_test.py` | **2,527** | v4.1 — 584 PASS · 0 FAIL · 4 WARN | Regression suite |
+| `sachintaxcare_test.py` | **2,528** | v4.1 — 584 PASS · 0 FAIL · 4 WARN | Regression suite |
 | `test_vita_irs.py` | 2,551 | v12-fork + 14.3/4.4/32.2b/32.4b/32.13b fixes | VITA known-answer tests — **145/145** |
 | `test_ui_fields.js` | 815 | v2.0 — 64 round-trip keys | UI field completeness — 64 keys |
 | `sachintaxcare_pdf.py` | 367 | v1.0 | PDF output (reportlab) |
