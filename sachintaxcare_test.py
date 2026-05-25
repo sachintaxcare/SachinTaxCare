@@ -1759,7 +1759,7 @@ import os
 
 FILE_REGISTRY = [
     ("sachintaxcare_engine.py",        8755,  100),
-    ("sachintaxcare_pro.html",         4630,   50),
+    ("sachintaxcare_pro.html",         4727,   50),
     ("sachintaxcare_server.py",         761,   50),
     ("sachintaxcare_workpaper.html",   1639,   50),
     ("sachintaxcare_test.py",          None,   None),   # self -- skip
@@ -1768,9 +1768,9 @@ FILE_REGISTRY = [
     ("test_vita_irs.py",              2547,   20),
     ("test_ui_fields.js",              815,   50),
     ("test_report.py",                 415,   30),
-    ("sachintaxcare_field_manifest.md", 855,   50),
-    ("IMPLEMENTATION_GUIDE.md",        600,   50),
-    ("ENGINE_ALGORITHM.md",            916,   50),
+    ("sachintaxcare_field_manifest.md", 1021,   50),
+    ("IMPLEMENTATION_GUIDE.md",        330,   50),
+    ("ENGINE_ALGORITHM.md",            604,   50),
     ("sachintaxcare_schema_2025.json", 276,   30),
 ]
 

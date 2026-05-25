@@ -945,6 +945,14 @@ select{cursor:pointer;}
             <div class="field"><div class="label">L7 — Total distributions from traditional IRA in 2025 (incl. conversions) ($)</div><input type="number" id="f8606-dist" placeholder="0"/></div>
           </div>
           <div class="sec-divider">Part II — Roth IRA conversions (if any)</div>
+          <div class="g2" style="margin-top:8px">
+            <div class="field"><div class="label">Backdoor Roth strategy?</div>
+              <select id="f8606-backdoor" title="Nondeductible traditional IRA contribution immediately converted to Roth — Notice 2014-54">
+                <option value="no">No</option>
+                <option value="yes">Yes — nondeductible contribution → immediate Roth conversion</option>
+              </select></div>
+            <div style=""></div>
+          </div>
           <div class="note note-blue"><span class="note-icon">ℹ</span><span>Pro-rata rule applies to conversions. If you have any pre-tax IRA balance, a portion of the conversion will be taxable. All traditional/SEP/SIMPLE IRA balances at Dec 31 are included in the denominator. Source: f8606.pdf Part II; IRC §408(d)(2).</span></div>
           <div class="g2">
             <div class="field"><div class="label">Amount converted from traditional IRA to Roth in 2025 ($)</div><input type="number" id="f8606-conversion" placeholder="0"/></div>
@@ -1081,7 +1089,33 @@ select{cursor:pointer;}
           </div>
           <div class="g2" style="margin-top:10px">
             <div class="field"><div class="label">Other CA subtractions (US bond interest, etc.) ($)</div><input type="number" id="ca-sub" placeholder="0"/></div>
-            <div class="field"><div class="label">CA itemized total (if different from federal — no SALT cap on CA) ($)</div><input type="number" id="ca-itemized" placeholder="0" title="Leave blank to use federal Sch A total without the $10k SALT cap"/></div>
+            <div class="field"><div class="label">CA other additions ($)</div><input type="number" id="ca-add" placeholder="0" title="CA additions: HSA deduction addback is auto-computed; enter any additional CA Schedule CA additions here"/></div>
+          </div>
+          <div class="g2" style="margin-top:10px">
+            <div class="field"><div class="label">Use CA itemized deductions?</div><select id="ca-use-itemized"><option value="no">No — use CA standard deduction</option><option value="yes">Yes — enter CA itemized total below</option></select></div>
+            <div class="field"><div class="label">CA itemized total (if itemizing on CA — no SALT cap) ($)</div><input type="number" id="ca-itemized" placeholder="0" title="CA has no SALT cap. Leave 0 if using CA standard deduction."/></div>
+          </div>
+          <div class="sec-divider" style="margin-top:10px">CA Schedule CA — Additions (non-conformity items)</div>
+          <div class="g2">
+            <div class="field"><div class="label">CA bonus depreciation addback ($)</div><input type="number" id="ca-bonus-dep" placeholder="0" title="CA does not conform to federal bonus depreciation — FTB 3885"/></div>
+            <div class="field"><div class="label">CA lottery winnings ($)</div><input type="number" id="ca-lottery" placeholder="0" title="CA lottery winnings exempt from federal tax but taxable for CA — R&amp;TC §17154"/></div>
+          </div>
+          <div class="g2" style="margin-top:10px">
+            <div class="field"><div class="label">CA military pay exclusion ($)</div><input type="number" id="ca-military-pay" placeholder="0" title="Active duty military pay excluded from CA tax — Mil &amp; Vet Code §402; FTB 3504"/></div>
+            <div class="field"><div class="label">CA student loan forgiveness excluded ($)</div><input type="number" id="ca-loan-forgive" placeholder="0" title="CA AB 1577 — student loan forgiveness excluded from CA income"/></div>
+          </div>
+          <div class="sec-divider" style="margin-top:10px">CalEITC / YCTC / FYTC Eligibility — FTB Schedule 3514</div>
+          <div class="g2">
+            <div class="field"><div class="label">Taxpayer age (for CalEITC — must be 18+)</div><input type="number" id="ca-tp-age" placeholder="0" title="CalEITC requires taxpayer age 18 or older — FTB 3514 Step 1"/></div>
+            <div class="field"><div class="label">CA investment income (CalEITC — must be ≤$4,814) ($)</div><input type="number" id="ca-invest-caleitc" placeholder="0" title="CalEITC disqualified if investment income &gt; $4,814 — FTB 3514 Worksheet 1"/></div>
+          </div>
+          <div class="g2" style="margin-top:10px">
+            <div class="field"><div class="label">Qualifying child under age 6?</div><select id="ca-young-child"><option value="no">No</option><option value="yes">Yes — may qualify for Young Child Tax Credit (YCTC $1,189)</option></select></div>
+            <div class="field"><div class="label">Taxpayer in CA foster care (age 18–25)?</div><select id="ca-foster-tp"><option value="no">No</option><option value="yes">Yes — may qualify for Foster Youth Tax Credit (FYTC)</option></select></div>
+          </div>
+          <div class="g2" style="margin-top:10px">
+            <div class="field"><div class="label">Spouse in CA foster care (age 18–25)?</div><select id="ca-foster-sp"><option value="no">No</option><option value="yes">Yes — FYTC eligible spouse</option></select></div>
+            <div style=""></div>
           </div>
         </div>
         <div class="note note-gold"><span class="note-icon">⚠</span><span>CA estimate only. Full return requires CA Schedule CA, CA Schedule D, and verification of CalEITC eligibility. Community property rules apply for MFS filers. Source: ftb.ca.gov/forms/2025/2025-540-booklet.pdf.</span></div>
@@ -2036,6 +2070,12 @@ function addScheE() {
       <div class="field"><div class="label">Property address</div><input type="text" id="sche-addr-${id}" placeholder="123 Main St, City, ST 12345"/></div>
       <div class="field"><div class="label">Days rented at fair market rate</div><input type="number" id="sche-dr-${id}" placeholder="365"/></div>
       <div class="field"><div class="label">Days personal use</div><input type="number" id="sche-dp-${id}" placeholder="0" title="§280A vacation rules apply if personal use > 14 days or 10% of rental days"/></div>
+      <div class="field"><div class="label">Enforce §280A vacation home proration?</div>
+        <select id="sche-280a-${id}" title="Engine auto-detects if personal days > 14 or 10% of rental days; override here if needed">
+          <option value="auto">Auto-detect (recommended)</option>
+          <option value="yes">Yes — apply §280A expense proration</option>
+          <option value="no">No — property is not a vacation home</option>
+        </select></div>
     </div>
     <div class="sec-divider" style="margin-top:10px">Income &amp; expenses (f1040se.pdf Part I)</div>
     <div class="g3">
@@ -2368,7 +2408,19 @@ function addCOD() {
       <div class="field"><div class="label">Box 7 — FMV of property (if applicable, $)</div><input type="number" id="cod-fmv-${id}" placeholder="0" title="Fair market value of property given up in foreclosure or short sale"/></div>
       <div class="field"><div class="label">Exclusion applies? (insolvency / bankruptcy → Form 982)</div>
         <select id="cod-excl-${id}"><option value="no">No — fully taxable</option><option value="yes">Yes — Form 982 required</option><option value="partial">Partial — Form 982 (insolvency up to amount)</option></select></div>
-    </div>`;
+      <div class="field"><div class="label">Form 982 — exclusion type</div>
+        <select id="cod-982-type-${id}" title="Source: f982.pdf Line 1; IRC §108">
+          <option value="insolvency">Insolvency (total liabilities exceeded total assets)</option>
+          <option value="bankruptcy">Bankruptcy — Title 11 case (Line 1a)</option>
+          <option value="qualified_farm">Qualified farm indebtedness (Line 1c)</option>
+          <option value="qualified_real">Qualified real property business debt (Line 1d)</option>
+          <option value="qualified_principal">Qualified principal residence debt (Line 1e)</option>
+        </select></div>
+    </div>
+    <div class="g2" id="cod-982-wrap-${id}" style="margin-top:8px">
+      <div class="field"><div class="label">Form 982 — Total liabilities immediately before discharge ($)</div><input type="number" id="cod-liab-${id}" placeholder="0" title="Insolvency test: liabilities − assets = insolvency amount. IRC §108(d)(3)"/></div>
+      <div class="field"><div class="label">Form 982 — Total assets FMV immediately before discharge ($)</div><input type="number" id="cod-assets-${id}" placeholder="0" title="If liabilities > assets, insolvency = liabilities − assets. IRC §108(d)(3)"/></div>
+    </div>
   document.getElementById('cod-list').appendChild(el);
   document.getElementById('cod-empty').classList.add('hidden');
 }
@@ -2464,6 +2516,7 @@ function addF4797() {
       <div class="field"><div class="label">Depreciation taken ($)</div><input type="number" id="f4797-depr-${id}" placeholder="0" title="Leave 0 to auto-compute from depreciation schedule"/></div>
       <div class="field"><div class="label">Prior §1231 losses (5-yr lookback) ($)</div><input type="number" id="f4797-prior1231-${id}" placeholder="0"/></div>
       <div class="field"><div class="label">Suspended passive losses released ($)</div><input type="number" id="f4797-susp-${id}" placeholder="0" title="From prior-year Form 8582 — released at complete disposition per IRC §469(g)"/></div>
+      <div class="field"><div class="label">Additional §1250 recapture ($)</div><input type="number" id="f4797-1250r-${id}" placeholder="0" title="Excess of accelerated depreciation over straight-line — Form 4797 Line 26g; IRC §1250"/></div>
     </div>`;
   document.getElementById('f4797-list').appendChild(el);
   document.getElementById('f4797-empty').classList.add('hidden');
@@ -2624,7 +2677,9 @@ function buildSchema() {
       box8_allocated_tips: n('w2-box8-' + id),
       box10_dep_care: n('w2-box10-' + id),
       box11_nonqual_deferred: n('w2-box11-' + id),
-      box13_retirement_plan: box13raw === 'retirement',
+      box13_retirement_plan:   box13raw === 'retirement',
+      box13_statutory_employee: box13raw === 'statutory',
+      box13_third_party_sick:   box13raw === 'sick',
       box14_other: v('w2-box14-' + id),
       box12a_code: b12a.code, box12a_amt: b12a.amt,
       box12b_code: b12b.code, box12b_amt: b12b.amt,
@@ -2632,6 +2687,7 @@ function buildSchema() {
       box12d_code: b12d.code, box12d_amt: b12d.amt,
       box15_state: v('w2-state-' + id),
       box15_state_id: v('w2-state-' + id),
+      box15_state_employer_id: v('w2-state-' + id),
       box16_state_wages: n('w2-statew-' + id),
       box17_state_wh: n('w2-statewh-' + id),
       box18_local_wages: n('w2-locw-' + id),
@@ -2840,6 +2896,8 @@ function buildSchema() {
   schema.auto_loan_interest          = n('auto-loan-interest');
   schema.auto_loan_originated_after_2024    = v('auto-loan-post2024') === '1';
   schema.auto_loan_vehicle_new_us_assembled = v('auto-loan-us-vehicle') === '1';
+  schema.ca_foster_youth_taxpayer = v('ca-foster-tp') === 'yes';
+  schema.ca_foster_youth_spouse   = v('ca-foster-sp') === 'yes';
   schema.estimated_tax_payments = (n('est-q1') + n('est-q2') + n('est-q3') + n('est-q4') + n('est-prior'));
   schema.estimated_tax_quarters = { q1: n('est-q1'), q2: n('est-q2'), q3: n('est-q3'), q4: n('est-q4'), prior_overpay: n('est-prior') };
   schema.prior_year_tax = n('py-tax');
@@ -2858,6 +2916,7 @@ function buildSchema() {
     address: v('sche-addr-' + id),
     days_rented: parseInt(v('sche-dr-' + id)) || 365,
     days_personal_use: parseInt(v('sche-dp-' + id)) || 0,
+    enforce_280a: v('sche-280a-' + id) === 'yes' ? true : v('sche-280a-' + id) === 'no' ? false : null,
     rents_received: n('sche-rents-' + id),
     advertising: n('sche-adv-' + id),
     auto_travel: n('sche-auto-' + id),
@@ -2939,6 +2998,7 @@ function buildSchema() {
         depreciation_taken: n('f4797-depr-' + id),
         prior_sec1231_losses_5yr: n('f4797-prior1231-' + id),
         suspended_passive_losses: n('f4797-susp-' + id),
+        additional_section_1250_recapture: n('f4797-1250r-' + id),
       }; });
   if (f4797Rows.length) schema.form_4797s = f4797Rows;
 
@@ -2965,6 +3025,9 @@ function buildSchema() {
         box7_fmv: n('cod-fmv-' + id),
         exclusion_applies: v('cod-excl-' + id) !== 'no',
         exclusion_type: v('cod-excl-' + id),
+        bankruptcy_title11: v('cod-982-type-' + id) === 'bankruptcy',
+        total_liabilities_before: n('cod-liab-' + id),
+        total_assets_fmv_before: n('cod-assets-' + id),
       }; });
   if (codRows.length) schema.form_1099cs = codRows;
   schema.cancellation_of_debt = codRows.reduce((s,c) => s + (!c.exclusion_applies ? (c.box2_discharged||0) : 0), 0);
@@ -3094,6 +3157,7 @@ function buildSchema() {
       roth_conversion_amount: n('f8606-conversion'),
       roth_ira_distributions: n('f8606-roth-dist'),
       roth_basis: n('f8606-roth-basis'),
+      is_backdoor_roth: v('f8606-backdoor') === 'yes',
       roth_5yr_met: v('f8606-5yr') === 'yes',
       over_59_half: v('f8606-age') === 'yes',
       is_inherited: v('f8606-inh') === 'yes',
@@ -3162,9 +3226,24 @@ function buildSchema() {
   // California 540
   schema.ca_540 = {
     sdi_withheld: n('ca-sdi'),
+    ca_sdi_withheld: n('ca-sdi'),
     renter_credit: v('ca-renter') === 'yes',
+    paid_rent_over_half_year: v('ca-renter') === 'yes',
     other_subtractions: n('ca-sub'),
+    ca_other_subtractions: n('ca-sub'),
+    ca_other_additions: n('ca-add'),
     ca_itemized_override: n('ca-itemized') || null,
+    ca_itemized_total: n('ca-itemized') || null,
+    use_ca_itemized: v('ca-use-itemized') === 'yes',
+    ca_bonus_depreciation_addback: n('ca-bonus-dep'),
+    ca_lottery_winnings: n('ca-lottery'),
+    ca_military_pay_exclusion: n('ca-military-pay'),
+    ca_loan_forgiveness_excluded: n('ca-loan-forgive'),
+    ca_taxpayer_age: parseInt(n('ca-tp-age')) || 0,
+    ca_investment_income_caleitc: n('ca-invest-caleitc'),
+    has_young_child_under6: v('ca-young-child') === 'yes',
+    foster_youth_taxpayer: v('ca-foster-tp') === 'yes',
+    foster_youth_spouse: v('ca-foster-sp') === 'yes',
   };
 
   // Alimony — use era dropdown
@@ -3464,7 +3543,9 @@ function populateFromSchema(sc) {
     sv('w2-state-' + id,  w.box15_state || '');
     sv('w2-box14-' + id,  w.box14_other || '');
     // Box 13
-    if (w.box13_retirement_plan) sv('w2-box13-' + id, 'retirement');
+    if (w.box13_retirement_plan)   sv('w2-box13-' + id, 'retirement');
+    else if (w.box13_statutory_employee) sv('w2-box13-' + id, 'statutory');
+    else if (w.box13_third_party_sick)   sv('w2-box13-' + id, 'sick');
     else sv('w2-box13-' + id, 'none');
     sv('w2-box14-' + id, w.box14_other || '');
     sv('w2-state-' + id, w.box15_state || '');
@@ -3601,6 +3682,7 @@ function populateFromSchema(sc) {
     sv('sche-addr-' + id,      se.address || se.property_address || '');
     sv('sche-dr-' + id,        se.days_rented       || '');
     sv('sche-dp-' + id,        se.days_personal_use || '');
+    sv('sche-280a-' + id,      se.enforce_280a === true ? 'yes' : se.enforce_280a === false ? 'no' : 'auto');
     sv('sche-rents-' + id,     se.rents_received    || '');
     sv('sche-adv-' + id,       se.advertising       || '');
     sv('sche-auto-' + id,      se.auto_travel       || '');
@@ -3807,6 +3889,7 @@ function populateFromSchema(sc) {
     sv('f8606-l6', f.l6_ira_fmv || ''); sv('f8606-l7', f.l7_total_dist || '');
     sv('f8606-roth', f.roth_conversion || ''); sv('f8606-l19', f.l19_roth_dist || '');
     sv('f8606-l22', f.l22_roth_basis || '');
+    sv('f8606-backdoor', f.is_backdoor_roth ? 'yes' : 'no');
     sv('f8606-5yr', f.roth_5yr_met ? 'yes' : 'no');
     sv('f8606-over59', f.over_59_half ? 'yes' : 'no');
   }
@@ -3833,9 +3916,20 @@ function populateFromSchema(sc) {
   if (sc.california) {
     const ca = sc.california;
     sv('ca-sdi', ca.ca_sdi_withheld || ca.sdi_withheld || '');
-    sv('ca-renter', ca.renters_credit || '');
-    sv('ca-subtractions', ca.ca_other_subtractions || ca.ca_subtractions || '');
-    sv('ca-itemized', ca.ca_itemized_override || ca.ca_itemized_total || '');
+    sv('ca-renter', (ca.paid_rent_over_half_year || ca.renters_credit) ? 'yes' : 'no');
+    sv('ca-sub', ca.ca_other_subtractions || ca.ca_subtractions || '');
+    sv('ca-add', ca.ca_other_additions || '');
+    sv('ca-use-itemized', ca.use_ca_itemized ? 'yes' : 'no');
+    sv('ca-itemized', ca.ca_itemized_total || ca.ca_itemized_override || '');
+    sv('ca-bonus-dep', ca.ca_bonus_depreciation_addback || '');
+    sv('ca-lottery', ca.ca_lottery_winnings || '');
+    sv('ca-military-pay', ca.ca_military_pay_exclusion || '');
+    sv('ca-loan-forgive', ca.ca_loan_forgiveness_excluded || '');
+    sv('ca-tp-age', ca.ca_taxpayer_age || '');
+    sv('ca-invest-caleitc', ca.ca_investment_income_caleitc || '');
+    sv('ca-young-child', ca.has_young_child_under6 ? 'yes' : 'no');
+    sv('ca-foster-tp', ca.foster_youth_taxpayer ? 'yes' : 'no');
+    sv('ca-foster-sp', ca.foster_youth_spouse ? 'yes' : 'no');
   }
 
   // ── W-2G gambling ────────────────────────────────────────────────────────
@@ -3864,6 +3958,7 @@ function populateFromSchema(sc) {
     sv('f4797-depr-' + id,     p.depreciation_taken || p.depreciation || '');
     sv('f4797-prior1231-' + id,p.prior_sec1231_losses || p.prior_sec1231_losses_5yr || '');
     sv('f4797-susp-' + id,     p.suspended_passive_losses || '');
+    sv('f4797-1250r-' + id,    p.additional_section_1250_recapture || '');
   });
 
   // ── Form 5329 ────────────────────────────────────────────────────────────
@@ -3891,6 +3986,9 @@ function populateFromSchema(sc) {
     sv('cod-code-' + id,      c.box6_event_code    || c.box6_code || 'F');
     sv('cod-fmv-' + id,       c.box7_fmv           || '');
     sv('cod-excl-' + id,      c.exclusion_applies ? 'yes' : (c.exclusion_type || 'no'));
+    sv('cod-982-type-' + id,  c.bankruptcy_title11 ? 'bankruptcy' : (c.exclusion_type || 'insolvency'));
+    sv('cod-liab-' + id,      c.total_liabilities_before || '');
+    sv('cod-assets-' + id,    c.total_assets_fmv_before || '');
   });
 
   // ── 1099-MISC ────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # SachinTaxCare — Field Manifest
 *Single source of truth for all intake fields*
-*Version: 1.3 | Engine: v12-fork | Last updated: 2026-05-16*
+*Version: 1.4 | Engine: V17.1 | Last updated: 2026-05-24*
 *Rule: Any session that adds a field to the engine MUST add a row here and add the field to the UI.*
 
 ---
@@ -31,7 +31,7 @@
 | Blind (taxpayer) | `tp-blind` | `TaxpayerSchema.taxpayer_is_blind` | Std ded +$1,950 | f1040.pdf | ✅ |
 | Claimed as dependent | `tp-dep-of` | `TaxpayerSchema.is_dependent_of_another` | Std ded cap | IRC §63(c)(5) | ✅ |
 | Dependent earned income | `tp-dep-ei` | `TaxpayerSchema.dependent_earned_income` | Std ded cap | IRC §63(c)(5) | ✅ |
-| Full-time student | `tp-student` | `TaxpayerSchema.taxpayer_is_full_time_student` | Form 8880 bar | f8880.pdf | ✅ |
+| Full-time student | `tp-student` | `TaxpayerSchema.care_spouse_is_student` *(see §2441 fields)* | Form 8880 bar | f8880.pdf | ✅ |
 | Filing status | `fs` (hidden) | `TaxpayerSchema.filing_status` | All brackets | f1040.pdf | ✅ |
 
 ### 1a — Qualifying Surviving Spouse
@@ -117,7 +117,7 @@
 | Payer name | `int-payer-${id}` | `Form1099INT.payer` | Schedule B | f1099int.pdf | ✅ |
 | Payer EIN | `int-ein-${id}` | `Form1099INT.payer_ein` | Schedule B | f1099int.pdf | ✅ |
 | Box 1 — Interest | `int-box1-${id}` | `Form1099INT.box1_interest` | Sch B → Line 2b | f1099int.pdf | ✅ |
-| Box 2 — Early withdrawal penalty | `int-box2-${id}` | `Form1099INT.box2_early_withdrawal` | Sch 1 Line 18 | f1099int.pdf | ✅ |
+| Box 2 — Early withdrawal penalty | `int-box2-${id}` | `Form1099INT.box2_early_withdrawal_penalty` | Sch 1 Line 18 | f1099int.pdf | ✅ |
 | Box 3 — US savings bond interest | `int-box3-${id}` | `Form1099INT.box3_us_savings_bond` | Line 2b (state-exempt) | f1099int.pdf | ✅ |
 | Box 4 — Federal backup WH | `int-box4-${id}` | `Form1099INT.box4_fed_wh` | Line 25b | f1099int.pdf | ✅ |
 | Box 6 — Foreign tax paid | `int-box6-${id}` | `Form1099INT.box6_foreign_tax` | Form 1116 | f1099int.pdf | ✅ |
@@ -373,7 +373,7 @@
 | Wash sale disallowed (Box 1g) | `sale-wash-${id}` | `Form1099B.wash_sale_loss_disallowed` | Form 8949 adj Code W | f8949.pdf | ✅ |
 | Term (long/short) | `sale-term-${id}` | `Form1099B.is_long_term` | Sch D L1b/L8b | f8949.pdf | ✅ |
 | Basis reported to IRS | `sale-covered-${id}` | `Form1099B.basis_reported_to_irs` | Box A/B/C/D | f8949.pdf | ✅ |
-| Prior year cap loss carryover | `cap-carryover` | `TaxpayerSchema.capital_loss_carryover` | Sch D Line 6 | f1040sd.pdf | ✅ |
+| Prior year cap loss carryover | `cap-carryover` | `TaxpayerSchema.capital_loss_carryover_prior` | Sch D Line 6 | f1040sd.pdf | ✅ |
 
 ### 11a — Form 4797 Sales of Business Property
 
@@ -419,9 +419,9 @@
 | Payer | `w2g-payer-${id}` | `FormW2G.payer` | Sch 1 Line 8b | fw2g.pdf | ✅ |
 | Box 1 — Winnings | `w2g-box1-${id}` | `FormW2G.box1_winnings` | Sch 1 Line 8b | fw2g.pdf | ✅ |
 | Box 4 — Fed WH | `w2g-box4-${id}` | `FormW2G.box4_fed_wh` | Line 25b | fw2g.pdf | ✅ |
-| Box 15 — State WH | `w2g-box15-${id}` | `FormW2G.box15_state_wh` | State return | fw2g.pdf | ✅ |
-| Box 16 — State ID | `w2g-box16-${id}` | `FormW2G.box16_state_id` | State return | fw2g.pdf | ✅ |
-| Box 17 — Local WH | `w2g-box17-${id}` | `FormW2G.box17_local_wh` | Local return | fw2g.pdf | ✅ |
+| Box 15 — State WH | `w2g-box15-${id}` | *(not in engine — field removed)* | State return | fw2g.pdf | ✅ |
+| Box 16 — State ID | `w2g-box16-${id}` | *(not in engine — field removed)* | State return | fw2g.pdf | ✅ |
+| Box 17 — Local WH | `w2g-box17-${id}` | *(not in engine — field removed)* | Local return | fw2g.pdf | ✅ |
 | Gambling losses | `gambling-losses` | `TaxpayerSchema.gambling_losses` | Sch A Line 16 | IRC §165(d) | ✅ |
 
 ### 12b — 1099-C Cancellation of Debt
@@ -491,7 +491,7 @@
 |---|---|---|---|---|---|
 | Teacher / educator expense | `adj-teacher` | `TaxpayerSchema.teacher_expense` | Sch 1 Line 11 (max $300) | f1040s1.pdf | ✅ |
 | Student loan interest | `adj-student-loan` | `TaxpayerSchema.student_loan_interest` | Sch 1 Line 21 | f1040s1.pdf | ✅ |
-| Early CD withdrawal penalty | `adj-early-wdwl` | `TaxpayerSchema.early_withdrawal_penalty` | Sch 1 Line 18 | f1040s1.pdf | ✅ |
+| Early CD withdrawal penalty | `adj-early-wdwl` | *(derived from 1099-INT box2_early_withdrawal_penalty)* | Sch 1 Line 18 | f1040s1.pdf | ✅ |
 | SE health insurance premiums | `adj-se-health` | `TaxpayerSchema.se_health_insurance_premiums` | Sch 1 Line 17 | f1040s1.pdf IRC §162(l) | ✅ |
 | Other above-line adjustments | `adj-other` | `TaxpayerSchema.other_adjustments` | Sch 1 Line 24z | f1040s1.pdf | ✅ |
 | NOL carryforward from prior year | `nol-carryforward` | `TaxpayerSchema.nol_carryforward_prior_year` | Sch 1 Line 8a (80% TI limit) | p536.pdf IRC §172 | ✅ |
@@ -553,7 +553,7 @@
 
 | Field label | UI id pattern | Engine field | Routes to | IRS source | Status |
 |---|---|---|---|---|---|
-| Employer dep. care benefits (W-2 Box 10 total) | `emp-dep-care` | `TaxpayerSchema.emp_dependent_care` | Form 2441 L12 §129 exclusion | f2441.pdf | ✅ |
+| Employer dep. care benefits (W-2 Box 10 total) | `emp-dep-care` | *(derived from W-2 box10_dependent_care)* | Form 2441 L12 §129 exclusion | f2441.pdf | ✅ |
 
 *Care providers — Repeating id pattern: `care-xxx-${id}`*
 
@@ -575,13 +575,13 @@
 | Box 1 — Payments received | `t-box1-${id}` | `Form1098T.box1_payments` | Form 8863 net expenses | f1098t.pdf | ✅ |
 | Box 5 — Scholarships / grants | `t-box5-${id}` | `Form1098T.box5_scholarships` | Reduces qualified expenses | f1098t.pdf | ✅ |
 | Student name | `t-student-${id}` | `Form1098T.student_name` | Form 8863 | f8863.pdf | ✅ |
-| Student is (taxpayer/spouse/dep) | `t-who-${id}` | `Form1098T.student_is` *(also: `student_who`)* | Credit attribution | f8863.pdf | ✅ |
+| Student is (taxpayer/spouse/dep) | `t-who-${id}` | `Form1098T.student_who` *(also: `student_who`)* | Credit attribution | f8863.pdf | ✅ |
 | Credit type (AOC / LLC) | `t-type-${id}` | `Form1098T.credit_type` | AOC → L29 refundable; LLC → Sch 3 | f8863.pdf | ✅ |
 | AOC prior years claimed | `t-aoc-prior-${id}` | `Form1098T.aoc_years_claimed_prior` | First 4 years only | f8863.pdf | ✅ |
 | Books & required materials | `t-books-${id}` | `Form1098T.out_of_pocket_books` | Qualified expenses | f8863.pdf | ✅ |
 | Required supplies & equipment | `t-supplies-${id}` | `Form1098T.out_of_pocket_supplies` | Qualified expenses | f8863.pdf | ✅ |
 | Other qualified expenses | `t-other-qee-${id}` | `Form1098T.out_of_pocket_other` | Qualified expenses | f8863.pdf | ✅ |
-| Box 8 — At least half-time | `t-halftime-${id}` | `Form1098T.box8_at_least_half_time` | AOC eligibility | f1098t.pdf | ✅ |
+| Box 8 — At least half-time | `t-halftime-${id}` | `Form1098T.box8_half_time` | AOC eligibility | f1098t.pdf | ✅ |
 | Box 9 — Graduate student | `t-grad-${id}` | `Form1098T.box9_graduate` | LLC only (no AOC for grad) | f1098t.pdf | ✅ |
 
 ### 15c — Form 8880 Retirement Savings Credit
@@ -824,32 +824,198 @@ No new intake fields — `ScheduleAData.cash_charitable` unchanged; floor logic 
 ### 22a — SE Retirement Plan Type (P1)
 | Field label | UI id | Engine field | Notes | Status |
 |---|---|---|---|---|
-| Retirement plan type | `se-retire-plan` | `TaxpayerSchema.se_retirement_plan_type` | "sep" \| "solo401k" \| "simple" | ❌ UI pending |
+| Retirement plan type | `se-ret-type` | `TaxpayerSchema.se_retirement_plan_type` | "sep" / "solo401k" / "simple" | f1040sc.pdf | ✅ |
 
 ### 22b — Capital Loss Carryover (P1)
 | Field label | UI id | Engine field | Routes to | IRS source | Status |
 |---|---|---|---|---|---|
-| Capital loss carryover from prior year ($) | `cap-loss-carryover` | `TaxpayerSchema.capital_loss_carryover_prior` | Schedule D Lines 6/14 | f1040sd.pdf; IRC §1212(b) | ❌ UI pending |
+| Capital loss carryover from prior year ($) | `cap-carryover` | `TaxpayerSchema.capital_loss_carryover_prior` | Schedule D Lines 6/14 | f1040sd.pdf; IRC §1212(b) | ✅ |
 
 ### 22c — ScheduleC 8995-A Fields (P3)
 | Field label | UI id | Engine field | Routes to | IRS source | Status |
 |---|---|---|---|---|---|
-| W-2 wages paid by business ($) | `sc-w2-wages` | `ScheduleC.w2_wages` | Form 8995-A Part II Line 12 | f8995a.pdf | ❌ UI pending |
-| UBIA of qualified property ($) | `sc-ubia` | `ScheduleC.ubia_qualified_property` | Form 8995-A Part II Line 13 | f8995a.pdf; IRC §199A(b)(6) | ❌ UI pending |
-| Is SSTB (law/health/consult/etc.)? | `sc-is-sstb` | `ScheduleC.is_sstb` | Form 8995-A Part III | f8995a.pdf; IRC §199A(d) | ❌ UI pending |
+| W-2 wages paid by business ($) | `sc-w2wages-${id}` | `ScheduleC.w2_wages` | Form 8995-A Part II Line 12 | f8995a.pdf | ✅ |
+| UBIA of qualified property ($) | `sc-ubia-${id}` | `ScheduleC.ubia_qualified_property` | Form 8995-A Part II Line 13 | f8995a.pdf; IRC §199A(b)(6) | ✅ |
+| Is SSTB (law/health/consult/etc.)? | `sc-sstb-${id}` | `ScheduleC.is_sstb` | Form 8995-A Part III | f8995a.pdf; IRC §199A(d) | ✅ |
 
 ### 22d — CalEITC / YCTC / FYTC (P2)
 | Field label | UI id | Engine field | Routes to | IRS source | Status |
 |---|---|---|---|---|---|
-| Qualifying child under age 6? | `ca-young-child` | `CaliforniaData.has_young_child_under6` | FTB 3514 Part VI YCTC | ftb.ca.gov/forms/2025/2025-3514.pdf | ❌ UI pending |
-| Taxpayer in CA foster care (age 18-25)? | `ca-foster-tp` | `CaliforniaData.foster_youth_taxpayer` | FTB 3514 Part IX FYTC | ftb.ca.gov/forms/2025/2025-3514.pdf | ❌ UI pending |
-| Spouse in CA foster care (age 18-25)? | `ca-foster-sp` | `CaliforniaData.foster_youth_spouse` | FTB 3514 Part IX FYTC | ftb.ca.gov/forms/2025/2025-3514.pdf | ❌ UI pending |
-| CA taxpayer age | `ca-tp-age` | `CaliforniaData.ca_taxpayer_age` | CalEITC age gate (18+) | FTB 3514 Step 1 | ❌ UI pending |
-| CA investment income (CalEITC) ($) | `ca-invest-caleitc` | `CaliforniaData.ca_investment_income_caleitc` | FTB 3514 Worksheet 1 (≤ $4,814) | ftb.ca.gov/forms/2025/2025-3514-booklet.html | ❌ UI pending |
+| Qualifying child under age 6? | `ca-young-child` | `CaliforniaData.has_young_child_under6` | FTB 3514 Part VI YCTC | ftb.ca.gov/forms/2025/2025-3514.pdf | ✅ |
+| Taxpayer in CA foster care (age 18-25)? | `ca-foster-tp` | `CaliforniaData.foster_youth_taxpayer` | FTB 3514 Part IX FYTC | ftb.ca.gov/forms/2025/2025-3514.pdf | ✅ |
+| Spouse in CA foster care (age 18-25)? | `ca-foster-sp` | `CaliforniaData.foster_youth_spouse` | FTB 3514 Part IX FYTC | ftb.ca.gov/forms/2025/2025-3514.pdf | ✅ |
+| CA taxpayer age | `ca-tp-age` | `CaliforniaData.ca_taxpayer_age` | CalEITC age gate (18+) | FTB 3514 Step 1 | ✅ |
+| CA investment income (CalEITC) ($) | `ca-invest-caleitc` | `CaliforniaData.ca_investment_income_caleitc` | FTB 3514 Worksheet 1 (≤ $4,814) | ftb.ca.gov/forms/2025/2025-3514-booklet.html | ✅ |
 
 ### 22e — TY 2026 Support (P5)
 Engine auto-selects PARAMS_2026 when `tax_year=2026`. No new UI fields required — tax_year field already in UI.
 
 ---
 
-*End of manifest · v1.2-v12 · 2026-05-11*
+---
+
+## 23 — Fields Added Since v12 (Engine V13–V17.1)
+
+*Added to engine after the last manifest update. All verified against V17.1 dataclasses.*
+
+### 23a — TaxpayerSchema additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Tip occupation (IRS Notice 2025-65) | `tip-occupation` | `TaxpayerSchema.tip_occupation` | OBBBA tip deduction gate | Notice 2025-65 | ✅ |
+| FLSA overtime confirmed | `overtime-flsa` | `TaxpayerSchema.overtime_flsa_confirmed` | OBBBA OT deduction gate | P.L. 119-21 §70202 | ✅ |
+| Care spouse is student | `care-sp-student` | `TaxpayerSchema.care_spouse_is_student` | Form 2441 Line 6 deemed income | f2441.pdf | ✅ |
+| Care spouse is disabled | `care-sp-disabled` | `TaxpayerSchema.care_spouse_is_disabled` | Form 2441 Line 6 deemed income | f2441.pdf | ✅ |
+| Care spouse months qualified | `care-sp-months` | `TaxpayerSchema.care_spouse_months_qualified` | Form 2441 Line 6 deemed income | f2441.pdf | ✅ |
+| CA foster youth taxpayer | `ca-foster-tp` | `TaxpayerSchema.ca_foster_youth_taxpayer` | CA FYTC (FTB 3514 Part IX) | ftb.ca.gov/forms/2025/2025-3514.pdf | ✅ |
+| CA foster youth spouse | `ca-foster-sp` | `TaxpayerSchema.ca_foster_youth_spouse` | CA FYTC (FTB 3514 Part IX) | ftb.ca.gov/forms/2025/2025-3514.pdf | ✅ |
+| QBI loss carryforward | `qbi-loss-cf` | `TaxpayerSchema.qbi_loss_carryforward` | Form 8995 Line 2 | f8995.pdf | ⚠ captured not computed |
+| ACA household size override | `aca-household` | `TaxpayerSchema.aca_household_size` | Form 8962 Line 1 | f8962.pdf | ⚠ captured not computed |
+| Prior §1231 losses 5yr | `f4797-1231-prior` | `TaxpayerSchema.prior_sec1231_losses_5yr` | Form 4797 §1231 lookback | f4797.pdf; IRC §1231(c) | ⚠ captured not computed |
+
+### 23b — CaliforniaData additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Use CA itemized deductions | `ca-use-itemized` | `CaliforniaData.use_ca_itemized` | CA Form 540 deduction | FTB 540 | ✅ |
+| CA itemized total | `ca-itemized-total` | `CaliforniaData.ca_itemized_total` | CA Form 540 Line 18 | FTB 540 | ✅ |
+| CA OBBBA addback override | `ca-obbba-override` | `CaliforniaData.ca_obbba_addback_override` | CA non-conformity override | FTB Announcement 2025-4 | ⚠ mapped via ca_other_additions |
+| CA bonus depreciation addback | `ca-bonus-dep` | `CaliforniaData.ca_bonus_depreciation_addback` | CA Schedule CA addback | FTB 3885 | ✅ |
+| CA military pay exclusion | `ca-military-pay` | `CaliforniaData.ca_military_pay_exclusion` | CA Mil & Vet Code §402 | FTB 3504 | ✅ |
+| CA loan forgiveness excluded | `ca-loan-forgive` | `CaliforniaData.ca_loan_forgiveness_excluded` | CA AB 1577 exclusion | FTB guidance | ✅ |
+| CA lottery winnings | `ca-lottery` | `CaliforniaData.ca_lottery_winnings` | CA Form 540 Schedule CA | R&TC §17154 | ✅ |
+
+### 23c — AlimonyData addition
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Decree modified after 12/31/2018 | `al-modified` | `AlimonyData.decree_modified_after_2018` | Post-2018 = no deduction/income | IRC §11051(c); Pub 504 | ✅ |
+
+### 23d — Form1099R additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| IRA/SEP/SIMPLE flag | `r-is-ira-${id}` | `Form1099R.is_ira` | Routes to Lines 4b vs 5b | f1099r.pdf | ❌ UI uses box7_ira_sep_simple instead — ⚠ bridge maps both |
+| Payer TIN | `r-payer-tin-${id}` | `Form1099R.payer_tin` | Identification | f1099r.pdf | ⚠ captured not displayed |
+| Recipient TIN | `r-recip-tin-${id}` | `Form1099R.recipient_tin` | Identification | f1099r.pdf | ⚠ captured not displayed |
+
+### 23e — Form1098T additions (all gates)
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| At least half-time student | `1098t-half-time-${id}` | `Form1098T.box8_half_time` | AOC hard gate (1 of 3) | f8863.pdf; IRC §25A(b)(3) | ✅ |
+| No drug conviction | `1098t-drug-${id}` | `Form1098T.aoc_drug_conviction` | AOC hard gate (2 of 3) | f8863.pdf; IRC §25A(b)(2) | ✅ |
+| First four years | `1098t-4yr-${id}` | `Form1098T.first_four_years` | AOC eligibility (3 of 3) | f8863.pdf; IRC §25A(b)(2) | ✅ |
+| Graduate student | `1098t-grad-${id}` | `Form1098T.box9_graduate` | LLC eligibility (not AOC) | f8863.pdf | ✅ |
+| Future period box 7 | `1098t-fut-${id}` | `Form1098T.box7_future_period` | Timing adjustment | f1098t.pdf | ⚠ captured not computed |
+| Student relationship | `1098t-who-${id}` | `Form1098T.student_who` | Taxpayer/spouse/dep routing | f8863.pdf | ✅ |
+
+### 23f — ScheduleC additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Business code (NAICS) | `sc-code-${id}` | `ScheduleC.business_code` | Schedule C header | f1040sc.pdf | ✅ |
+| Business miles | `sc-miles-${id}` | `ScheduleC.business_miles` | Car/truck expenses | f1040sc.pdf; Pub 463 | ✅ |
+| NEC income in gross receipts? | `sc-nec-${id}` | `ScheduleC.nec_included_in_gross` | Prevents double-count | f1040sc.pdf | ✅ |
+| For spouse? | `sc-spouse-${id}` | `ScheduleC.for_spouse` | MFJ SE allocation | f1040sc.pdf | ✅ |
+| W-2 wages paid (Form 8995-A) | `sc-w2wages-${id}` | `ScheduleC.w2_wages` | Form 8995-A Part II L12 | f8995a.pdf | ✅ |
+| UBIA qualified property | `sc-ubia-${id}` | `ScheduleC.ubia_qualified_property` | Form 8995-A Part II L13 | f8995a.pdf; IRC §199A(b)(6) | ✅ |
+| Is SSTB? | `sc-sstb-${id}` | `ScheduleC.is_sstb` | Form 8995-A Part III | f8995a.pdf; IRC §199A(d) | ✅ |
+| Accounting method | `sc-acctg-${id}` | `ScheduleC.accounting_method` | Schedule C header | f1040sc.pdf | ⚠ captured not computed |
+
+### 23g — Form 8606 addition
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Backdoor Roth conversion | `f8606-backdoor` | `Form8606Data.is_backdoor_roth` | Form 8606 Part II warning | f8606.pdf; Notice 2014-54 | ✅ |
+
+### 23h — Form 4797 addition
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Additional §1250 recapture | `f4797-1250r-${id}` | `Form4797SaleData.additional_section_1250_recapture` | Form 4797 Line 26g | f4797.pdf; IRC §1250 | ✅ |
+
+### 23i — Form 982 (new form since v12)
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Bankruptcy Title 11 | `cod-982-type-${id}` | `Form982Data.bankruptcy_title11` | Form 982 Line 1a | f982.pdf; IRC §108(a)(1)(A) | ✅ (via 1099-C exclusion type) |
+| Total liabilities before | `cod-liab-${id}` | `Form982Data.total_liabilities_before` | Insolvency test | f982.pdf | ✅ (via 1099-C section) |
+| Total assets FMV before | `cod-assets-${id}` | `Form982Data.total_assets_fmv_before` | Insolvency test | f982.pdf | ✅ (via 1099-C section) |
+| Discharged amount override | `f982-override` | `Form982Data.discharged_amount_override` | Form 982 Line 2 | f982.pdf | ⚠ bridge-only — no UI field yet |
+
+### 23j — W-2 additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Box 13 — Statutory employee | `w2-box13-${id}` (select val=statutory) | `W2.box13_statutory_employee` | Schedule C routing | iw2w3.pdf | ✅ (shared select with retirement/sick) |
+| Box 13 — Third-party sick pay | `w2-box13-${id}` (select val=sick) | `W2.box13_third_party_sick` | Line 1d | iw2w3.pdf | ✅ (shared select with retirement/statutory) |
+| State employer ID (Box 15b) | `w2-state-${id}` | `W2.box15_state_employer_id` | State return | iw2w3.pdf | ✅ (shared with box15_state) |
+| Employee SSN | `w2-empssn-${id}` | `W2.employee_ssn` | Identification | iw2w3.pdf | ⚠ captured not displayed |
+
+### 23k — Form 1116 (all fields — form added since v12)
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Passive foreign taxes paid | `f1116-pass-tax` | `Form1116Data.passive_foreign_taxes_paid` | Form 1116 Part II | f1116.pdf | ✅ |
+| Passive foreign income | `f1116-pass-inc` | `Form1116Data.passive_foreign_income` | Form 1116 Part I | f1116.pdf | ✅ |
+| Passive foreign expenses | `f1116-pass-exp` | `Form1116Data.passive_foreign_expenses` | Form 1116 Part I | f1116.pdf | ✅ |
+| General basket foreign taxes | `f1116-gen-tax` | `Form1116Data.general_foreign_taxes_paid` | Form 1116 Part II | f1116.pdf | ✅ |
+| General basket income | `f1116-gen-inc` | `Form1116Data.general_foreign_income` | Form 1116 Part I | f1116.pdf | ✅ |
+| General basket expenses | `f1116-gen-exp` | `Form1116Data.general_foreign_expenses` | Form 1116 Part I | f1116.pdf | ✅ |
+| Passive carryover | `f1116-pass-cf` | `Form1116Data.passive_carryover` | Form 1116 Line 10 | f1116.pdf | ⚠ captured not computed |
+| General carryover | `f1116-gen-cf` | `Form1116Data.general_carryover` | Form 1116 Line 10 | f1116.pdf | ⚠ captured not computed |
+| Cash basis | `f1116-cash` | `Form1116Data.cash_basis` | Form 1116 election | f1116.pdf | ⚠ captured not computed |
+| AMT applies | `f1116-amt` | `Form1116Data.amt_applies` | AMT FTC | f1116.pdf | ⚠ captured not computed |
+
+### 23l — ScheduleE addition
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Enforce §280A vacation home rules | `sche-280a-${id}` | `ScheduleE.enforce_280a` | Personal use day proration | IRC §280A; f1040se.pdf | ✅ |
+
+### 23m — Form 5329 addition
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Account type | `5329-acct-${id}` | `Form5329Exception.account_type` | IRA vs plan routing | f5329.pdf | ✅ |
+
+### 23n — SSA-1099 additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Lump sum election | `ssa-lump-elect` | `FormSSA1099.lump_sum_election` | Pub 915 Worksheet 2 | p915.pdf | ✅ |
+| Lump sum years | `ssa-lump-yrs` | `FormSSA1099.lump_sum_years` | Pub 915 Worksheet 2 | p915.pdf | ✅ |
+| Medicare Part B premiums | `ssa-mcare-b` | `FormSSA1099.medicare_part_b_premiums` | Schedule A medical | p915.pdf | ⚠ captured not computed |
+| Medicare Part C premiums | `ssa-mcare-c` | `FormSSA1099.medicare_part_c_premiums` | Schedule A medical | p915.pdf | ⚠ captured not computed |
+| Medicare Part D premiums | `ssa-mcare-d` | `FormSSA1099.medicare_part_d_premiums` | Schedule A medical | p915.pdf | ⚠ captured not computed |
+
+### 23o — ScheduleA additions
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Mortgage balance outstanding | `sa-mort-bal` | `ScheduleAData.mortgage_balance_outstanding` | $750k limit calc | f1040sa.pdf; IRC §163(h)(3); Pub 936 | ✅ |
+| Mortgage is pre-12/16/2017 (grandfathered) | `sa-mort-grand` | `ScheduleAData.mortgage_is_grandfathered` | $1M limit if grandfathered | f1040sa.pdf; IRC §163(h)(3)(F) | ✅ |
+| Other state/local taxes | `sa-other-tax` | `ScheduleAData.other_state_local_tax` | SALT pool (within $40k cap) | f1040sa.pdf | ✅ |
+
+### 23p — Dependent addition
+
+| Field label | UI id | Engine field | Routes to | IRS source | Status |
+|---|---|---|---|---|---|
+| Lived with taxpayer all year | `dep-lived-${id}` | `Dependent.lived_all_year` | HOH / QSS eligibility | f1040.pdf; IRC §2(b) | ⚠ captured not fully computed |
+
+### 23q — Manifest totals (V17.1)
+
+| Category | Count |
+|---|---|
+| Total engine fields | **555** |
+| Documented in manifest (v1.4) | **~450** |
+| Status ✅ (in UI and computed) | ~370 |
+| Status ⚠ (captured, not computed or displayed) | ~25 |
+| Status ❌ (missing from UI — pending) | ~55 |
+| Stale manifest entries fixed this session | **10** |
+| New entries added this session (§23a–23p) | **58** |
+
+---
+
+*End of manifest · v1.4 · V17.1 · 2026-05-24*

@@ -16,7 +16,7 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 | File | Lines | Version | Role |
 |---|---|---|---|
 | `sachintaxcare_engine.py` | **8,752** | v17 — mileage 70¢, QBI L13a+L6 REIT, l4b routing, qdcgt fix, L21-L24 labels; +qbi_min alias | Computation engine (TY 2025 + TY 2026) |
-| `sachintaxcare_pro.html` | **4,629** | v7 — NEC inclusion, nec_included_in_gross, int-ein, 1098-E restore, L16-L24 panel | Primary UI — intake + results |
+| `sachintaxcare_pro.html` | **4,727** | v7 — NEC inclusion, nec_included_in_gross, int-ein, 1098-E restore, L16-L24 panel | Primary UI — intake + results |
 | `sachintaxcare_server.py` | **761** | v16 — map_result() pass-through | Flask server + bridge |
 | `sachintaxcare_workpaper.html` | **1,670** | v8 — 18 pages, try/catch, pre-declared sub-dicts, QBI L13a, Sch C summary | CPA workpaper |
 | `sachintaxcare_test.py` | **2,527** | v4.1 — 584 PASS · 0 FAIL · 4 WARN | Regression suite |
@@ -25,7 +25,7 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 | `sachintaxcare_pdf.py` | 367 | v1.0 | PDF output (reportlab) |
 | `sachintaxcare_report.py` | 965 | v11 | JSON verification report |
 | `test_report.py` | 415 | v1 | Report verification tests |
-| `sachintaxcare_field_manifest.md` | 855 | v1.3 | Field registry |
+| `sachintaxcare_field_manifest.md` | 1021 | v1.3 | Field registry |
 | `IMPLEMENTATION_GUIDE.md` | 330 | V17.1 | How to rebuild from scratch |
 | `ENGINE_ALGORITHM.md` | 604 | V17.1 | Engine computation flow |
 | `sachintaxcare_schema_2025.json` | 276 | v1 | JSON schema reference |
