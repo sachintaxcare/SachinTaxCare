@@ -539,7 +539,7 @@ select{cursor:pointer;}
 
       <!-- OTHER INCOME -->
       <div class="panel" id="panel-other-inc">
-        <div class="ph"><div class="pt">Other Income</div><div class="pd">// Schedule 1 Part I — 1099-G · W-2G · 1099-C · 1099-NEC · K-1 · Alimony · Other</div></div>
+        <div class="ph"><div class="pt">Other Income</div><div class="pd">// Schedule 1 Part I — 1099-G · W-2G · 1099-C · 1099-NEC · K-1 · Jury Duty · Alimony · Other</div></div>
         <div class="card card-accent-blue">
           <div class="card-title" style="margin-bottom:10px">1099-G — Government payments</div>
           <div class="g3">
@@ -551,6 +551,30 @@ select{cursor:pointer;}
             <div class="field"><div class="label">Box 10a — State income tax withheld (CA SDI, etc.) ($)</div><input type="number" id="unemp-state-wh" placeholder="0"/></div>
             <div class="field"><div class="label">Did taxpayer itemize in the prior year? (determines if Box 2 is taxable)</div>
               <select id="prior-yr-itemized"><option value="no">No — Box 2 refund not taxable</option><option value="yes">Yes — Box 2 refund taxable (IRC §111)</option></select></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:8px">Other Schedule 1 Income — Lines 8h / 8i / 8z</div>
+          <div class="note note-blue"><span class="note-icon">ℹ</span><span>These items go on Schedule 1 Line 8 (Other income) and are fully taxable as ordinary income. Source: <a href="https://www.irs.gov/pub/irs-pdf/f1040s1.pdf" target="_blank">f1040s1.pdf</a> Lines 8h–8z; IRC §61(a).</span></div>
+          <div class="g2">
+            <div class="field">
+              <div class="label">Jury duty pay → Sch 1 Line 8h ($) <span style="font-size:10px;color:var(--muted)">Source: f1040s1.pdf L8h; IRC §61(a)</span></div>
+              <input type="number" id="jury-duty" placeholder="0" title="Jury duty fees received are taxable. If you remitted jury pay to your employer, that amount is deductible on Sch 1 Line 24a."/>
+            </div>
+            <div class="field">
+              <div class="label">Prizes and awards → Sch 1 Line 8i ($) <span style="font-size:10px;color:var(--muted)">Source: f1040s1.pdf L8i; IRC §74</span></div>
+              <input type="number" id="prize-award" placeholder="0" title="Taxable prizes and awards not reported on 1099-MISC (e.g., Nobel Prize, employer achievement awards above exclusion). Source: f1040s1.pdf L8i; IRC §74."/>
+            </div>
+          </div>
+          <div class="g2" style="margin-top:8px">
+            <div class="field">
+              <div class="label">Other income not reported elsewhere → Sch 1 Line 8z ($)</div>
+              <input type="number" id="other-income-8z" placeholder="0" title="Any taxable income not fitting other lines — foreign income, hobby income, etc. Provide description. Source: f1040s1.pdf L8z."/>
+            </div>
+            <div class="field">
+              <div class="label">Description of Line 8z income (required)</div>
+              <input type="text" id="other-income-8z-desc" placeholder="e.g. Foreign income, hobby income" maxlength="60"/>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -1792,23 +1816,28 @@ function addDIV() {
       <div class="field"><div class="label">Box 1b — Qualified dividends → QDCGT rates ($)</div><input type="number" id="div-b1b-${id}" placeholder="0"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 2a — Total capital gain distributions ($)</div><input type="number" id="div-b2a-${id}" placeholder="0"/></div>
-      <div class="field"><div class="label">Box 2b — Unrecap. §1250 gain (25% rate) ($)</div><input type="number" id="div-b2b-${id}" placeholder="0"/></div>
-      <div class="field"><div class="label">Box 2d — Collectibles (28%) gain ($)</div><input type="number" id="div-b2d-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 2a — Total capital gain distributions ($)</div><input type="number" id="div-b2a-${id}" placeholder="0" title="Source: f1099div.pdf Box 2a — total cap gain dist from RIC/REIT → Schedule D Line 13"/></div>
+      <div class="field"><div class="label">Box 2b — Unrecap. §1250 gain (25% rate) ($)</div><input type="number" id="div-b2b-${id}" placeholder="0" title="Portion of 2a subject to 25% rate. Source: f1099div.pdf Box 2b; i1040sd.pdf §1250 worksheet"/></div>
+      <div class="field"><div class="label">Box 2c — Section 1202 gain ($)</div><input type="number" id="div-b2c-${id}" placeholder="0" title="Gain from small business stock §1202 (potential 50-100% exclusion). Source: f1099div.pdf Box 2c; i1040sd.pdf"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 3 — Nondividend distributions (return of capital) ($)</div><input type="number" id="div-b3-${id}" placeholder="0"/></div>
-      <div class="field"><div class="label">Box 4 — Federal backup WH → Line 25b ($)</div><input type="number" id="div-b4-${id}" placeholder="0"/></div>
-      <div class="field"><div class="label">Box 5 — §199A dividends (REIT/PTP → QBI deduction) ($)</div><input type="number" id="div-b5-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 2d — Collectibles (28%) gain ($)</div><input type="number" id="div-b2d-${id}" placeholder="0" title="Portion of 2a taxed at max 28% rate (coins, art, stamps). Source: f1099div.pdf Box 2d; IRC §1(h)(4)"/></div>
+      <div class="field"><div class="label">Box 3 — Nondividend distributions (return of capital) ($)</div><input type="number" id="div-b3-${id}" placeholder="0" title="Not taxable until basis reaches $0; then LTCG. Reduces cost basis. Source: f1099div.pdf Box 3; IRC §301(c)"/></div>
+      <div class="field"><div class="label">Box 4 — Federal backup WH → Line 25b ($)</div><input type="number" id="div-b4-${id}" placeholder="0" title="Backup withholding at 24%. Source: f1099div.pdf Box 4"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 7 — Foreign tax paid → Form 1116 ($)</div><input type="number" id="div-b7-${id}" placeholder="0"/></div>
-      <div class="field"><div class="label">Box 11 — Exempt-interest dividends → Line 2a ($)</div><input type="number" id="div-b11-${id}" placeholder="0"/></div>
-      <div class="field"><div class="label">Box 12 — Specified private activity bond interest (Form 6251 L3) ($)</div><input type="number" id="div-b12-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 5 — §199A dividends (REIT/PTP → QBI deduction) ($)</div><input type="number" id="div-b5-${id}" placeholder="0" title="Qualified REIT dividends for §199A QBI deduction. Source: f1099div.pdf Box 5; f8995.pdf Line 6"/></div>
+      <div class="field"><div class="label">Box 6 — Investment expenses ($)</div><input type="number" id="div-b6-${id}" placeholder="0" title="Included in Box 1a. Expenses of nonpublicly offered RIC. Source: f1099div.pdf Box 6"/></div>
+      <div class="field"><div class="label">Box 7 — Foreign tax paid → Form 1116 ($)</div><input type="number" id="div-b7-${id}" placeholder="0" title="May claim as credit (Form 1116) or deduction. Source: f1099div.pdf Box 7"/></div>
+    </div>
+    <div class="g3" style="margin-top:8px">
+      <div class="field"><div class="label">Box 11 — Exempt-interest dividends → Line 2a ($)</div><input type="number" id="div-b11-${id}" placeholder="0" title="Tax-exempt interest from municipal bonds. Included in SS provisional income. Source: f1099div.pdf Box 11"/></div>
+      <div class="field"><div class="label">Box 12 — Specified private activity bond interest ($)</div><input type="number" id="div-b12-${id}" placeholder="0" title="Included in Box 11. AMT preference item. Source: f1099div.pdf Box 12; Form 6251 L3"/></div>
+      <div class="field"><div class="label">Box 9 — Cash liquidation distributions ($)</div><input type="number" id="div-b9-${id}" placeholder="0" title="Return of capital; taxable as LTCG to extent exceeds basis. Source: f1099div.pdf Box 9; Pub 550"/></div>
     </div>
     <div class="g2" style="margin-top:8px">
-      <div class="field"><div class="label">Box 9 — Cash liquidation distributions ($)</div><input type="number" id="div-b9-${id}" placeholder="0" title="Return of capital until basis = $0; then LTCG"/></div>
       <div class="field"><div class="label">Box 15 — State WH ($)</div><input type="number" id="div-b15-${id}" placeholder="0"/></div>
+      <div style=""></div>
     </div>`;
   document.getElementById('div-list').appendChild(el);
 }
@@ -2730,22 +2759,25 @@ function buildSchema() {
     box7_foreign_country: v('int-box7-' + id),
   }));
 
-  // 1099-DIV
+  // 1099-DIV — exact engine field names per Form1099DIV dataclass
+  // Source: irs.gov/pub/irs-pdf/f1099div.pdf
   schema.form_1099divs = S.divs.map(id => ({
-    payer: v('div-payer-' + id),
-    box1a_ordinary_div: n('div-b1a-' + id),
-    box1b_qualified_div: n('div-b1b-' + id),
-    box2a_total_cap_gain: n('div-b2a-' + id),
-    box2b_unrec_sec1250: n('div-b2b-' + id),
-    box2d_collectibles_gain: n('div-b2d-' + id),
-    box3_nondividend_dist: n('div-b3-' + id),
-    box4_fed_wh: n('div-b4-' + id),
-    box5_sec199a_div: n('div-b5-' + id),
-    box7_foreign_tax_paid: n('div-b7-' + id),
-    box9_cash_liquidation: n('div-b9-' + id),
-    box11_exempt_interest_div: n('div-b11-' + id),
-    box12_specified_pab_interest: n('div-b12-' + id),
-    box15_state_wh: n('div-b15-' + id),
+    payer:                  v('div-payer-' + id),
+    box1a_ordinary_div:     n('div-b1a-' + id),       // → Line 3b; Schedule B
+    box1b_qualified_div:    n('div-b1b-' + id),       // → Line 3a; QDCGT rates
+    box2a_total_cap_gain:   n('div-b2a-' + id),       // → Schedule D Line 13
+    box2a_cap_gain_dist:    n('div-b2a-' + id),       // alias — engine reads either
+    box2b_unrec_1250:       n('div-b2b-' + id),       // → 25% rate QDCGT worksheet
+    box2c_sec1202:          n('div-b2c-' + id),       // → Schedule D §1202 exclusion
+    box2d_collectibles:     n('div-b2d-' + id),       // → 28% rate QDCGT worksheet
+    box3_nondiv_dist:       n('div-b3-' + id),        // Return of capital (reduces basis)
+    box4_fed_wh:            n('div-b4-' + id),        // → Line 25b backup WH
+    box5_sec199a_div:       n('div-b5-' + id),        // → Form 8995 Line 6 REIT component
+    box6_invest_expense:    n('div-b6-' + id),        // Investment expenses (included in 1a)
+    box7_foreign_tax:       n('div-b7-' + id),        // → Form 1116 or Line 1 deduction
+    box11_exempt_interest:  n('div-b11-' + id),       // → Line 2a + SS provisional income
+    box12_private_activity: n('div-b12-' + id),       // → Form 6251 AMT preference
+    box15_state_wh:         n('div-b15-' + id),       // → State return
   }));
 
   // 1099-R
@@ -2802,6 +2834,10 @@ function buildSchema() {
 
   // Other income
   schema.unemployment_income = n('unemp');
+  schema.jury_duty_income    = n('jury-duty');
+  schema.prize_award_income  = n('prize-award');
+  schema.other_income_8z     = n('other-income-8z');
+  schema.other_income_8z_desc = v('other-income-8z-desc') || '';
   schema.state_tax_refund = n('state-refund');
   schema.state_refund_prior_year_itemized = v('prior-yr-itemized') === 'yes';
   schema.unemployment_wh = n('unemp-wh');
@@ -3371,13 +3407,24 @@ function renderResult(schema, r) {
     ['6b', 'Social security benefits — taxable (Line 6b)',       r.l6b_ss_taxable],
     ['7',  'Capital gain or loss (Line 7)',                      r.cap_gains || r.cap_gain_net],
     ['8',  'Additional income — Schedule 1, line 10 (Line 8)',   r.additional_income],
+    ...((r.unemployment_income||0)>0  ? [['↳L7',  'Unemployment compensation (Sch 1 L7)',              r.unemployment_income]] : []),
+    ...((r.gambling_income||0)>0      ? [['↳L8b', 'Gambling winnings — W-2G (Sch 1 L8b)',              r.gambling_income]] : []),
+    ...((r.jury_duty_income||0)>0     ? [['↳L8h', 'Jury duty pay (Sch 1 L8h)',                         r.jury_duty_income]] : []),
+    ...((r.prize_income||0)>0         ? [['↳L8i', 'Prizes and awards (Sch 1 L8i)',                     r.prize_income]] : []),
+    ...((r.cancelled_debt||0)>0       ? [['↳L8c', 'Cancellation of debt (Sch 1 L8c)',                  r.cancelled_debt]] : []),
     ['9',  'Total income (Line 9)',                              r.total_income],
     ['10', 'Adjustments to income — Schedule 1, line 26',        r.total_adjustments ? -r.total_adjustments : null],
     ['11', 'Adjusted gross income (Line 11)',                    r.agi],
     ['12', 'Deduction — ' + (r.deduction_type === 'itemized' ? 'Itemized (Schedule A)' : 'Standard'),
                                                                  r.deduction_used],
     ['13a','QBI deduction — Form 8995/8995-A (Line 13a)',        r.adj_qbi],
-    ...((r.l13b_schedule1a || 0) > 0 ? [['13b','Schedule 1-A — OBBBA additional deductions (Line 13b)', -(r.l13b_schedule1a)]] : []),
+    ...((r.l13b_schedule1a || 0) > 0 ? [
+      ['13b','Schedule 1-A — OBBBA additional deductions (Line 13b)', -(r.l13b_schedule1a)],
+      ...((r.obbba_senior_deduction||0)>0   ? [['↳','  Senior Bonus Deduction (age 65+)',        -(r.obbba_senior_deduction)]] : []),
+      ...((r.obbba_tip_deduction||0)>0      ? [['↳','  Qualified tip income deduction',          -(r.obbba_tip_deduction)]] : []),
+      ...((r.obbba_overtime_deduction||0)>0 ? [['↳','  FLSA overtime pay deduction',             -(r.obbba_overtime_deduction)]] : []),
+      ...((r.obbba_auto_loan_deduction||0)>0? [['↳','  Auto loan interest deduction',            -(r.obbba_auto_loan_deduction)]] : []),
+    ] : []),
     ['15', 'Taxable income (Line 15)',                           r.taxable_income],
     ['16', 'Tax (Line 16)',                                       r.l16_income_tax || r.income_tax],
     ...((r.l17_amt || r.amt_tax || 0) > 0 ? [['17', 'Alternative minimum tax — Form 6251 (Line 17)', r.l17_amt || r.amt_tax]] : []),
@@ -3571,12 +3618,17 @@ function populateFromSchema(sc) {
     const id = S.divs[S.divs.length - 1];
     sv('div-payer-' + id, f.payer);
     sv('div-b1a-' + id, f.box1a_ordinary_div || ''); sv('div-b1b-' + id, f.box1b_qualified_div || '');
-    sv('div-b2a-' + id, f.box2a_total_cap_gain || ''); sv('div-b2b-' + id, f.box2b_unrec_sec1250 || '');
-    sv('div-b2d-' + id, f.box2d_collectibles_gain || ''); sv('div-b3-' + id, f.box3_nondividend_dist || '');
+    sv('div-b2a-' + id, f.box2a_total_cap_gain || f.box2a_cap_gain_dist || '');
+    sv('div-b2b-' + id, f.box2b_unrec_1250 || f.box2b_unrec_sec1250 || '');
+    sv('div-b2c-' + id, f.box2c_sec1202 || '');
+    sv('div-b2d-' + id, f.box2d_collectibles || f.box2d_collectibles_gain || '');
+    sv('div-b3-' + id, f.box3_nondiv_dist || f.box3_nondividend_dist || '');
     sv('div-b4-' + id, f.box4_fed_wh || ''); sv('div-b5-' + id, f.box5_sec199a_div || '');
-    sv('div-b7-' + id, f.box7_foreign_tax_paid || ''); sv('div-b9-' + id, f.box9_cash_liquidation || '');
-    sv('div-b11-' + id, f.box11_exempt_interest_div || '');
-    sv('div-b12-' + id, f.box12_specified_pab_interest || '');
+    sv('div-b6-' + id, f.box6_invest_expense || '');
+    sv('div-b7-' + id, f.box7_foreign_tax || f.box7_foreign_tax_paid || '');
+    sv('div-b9-' + id, f.box9_cash_liquidation || '');
+    sv('div-b11-' + id, f.box11_exempt_interest || f.box11_exempt_interest_div || '');
+    sv('div-b12-' + id, f.box12_private_activity || f.box12_specified_pab_interest || '');
     sv('div-b15-' + id, f.box15_state_wh || '');
   });
 
@@ -3769,6 +3821,10 @@ function populateFromSchema(sc) {
   sv('unemp', sc.unemployment_income || '');
   sv('unemp-wh', sc.unemployment_wh || '');
   sv('unemp-state-wh', sc.unemployment_state_wh || '');
+  sv('jury-duty', sc.jury_duty_income || '');
+  sv('prize-award', sc.prize_award_income || '');
+  sv('other-income-8z', sc.other_income_8z || '');
+  sv('other-income-8z-desc', sc.other_income_8z_desc || '');
   sv('state-refund', sc.state_tax_refund || '');
   sv('prior-yr-itemized', sc.state_refund_prior_year_itemized ? 'yes' : 'no');
   sv('gambling-losses', sc.gambling_losses || '');

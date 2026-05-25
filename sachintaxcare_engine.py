@@ -1072,6 +1072,12 @@ class TaxpayerSchema:
     # Source: IRC §1231(c); f4797.pdf; Pub 544
     prior_sec1231_losses_5yr: float = 0     # → passed to compute_form_4797 as aggregate
 
+    # Schedule 1 Line 8h — Jury duty pay
+    # Taxable as ordinary income per IRC §61(a). If taxpayer remitted jury pay to employer,
+    # the employer-remitted amount may be deducted on Schedule 1 Line 24a.
+    # Source: irs.gov/pub/irs-pdf/f1040s1.pdf Line 8h; IRC §61(a); IRS Pub 525
+    jury_duty_income: float = 0             # → Schedule 1 Line 8h
+
 
 @dataclass
 class ScheduleE:
@@ -6870,6 +6876,18 @@ def run(schema: TaxpayerSchema) -> dict:
             "Source: irs.gov/pub/irs-pdf/f1099g.pdf; IRC §85."
         )
 
+    # ── Jury Duty Pay → Schedule 1 Line 8h ──────────────────────────────────────
+    # Taxable as ordinary income. If employer required taxpayer to remit jury pay,
+    # employer-remitted amount is deductible on Schedule 1 Line 24a (other adjustments).
+    # Source: irs.gov/pub/irs-pdf/f1040s1.pdf Line 8h; IRC §61(a); IRS Pub 525
+    jury_duty_income = rnd(getattr(schema, 'jury_duty_income', 0) or 0)
+    if jury_duty_income > 0:
+        result["warnings"].append(
+            f"Jury duty pay: ${jury_duty_income:,} → Schedule 1 Line 8h (taxable). "
+            "If you remitted jury pay to your employer, that amount is deductible "
+            "on Schedule 1 Line 24a. Source: f1040s1.pdf Line 8h; IRC §61(a); Pub 525."
+        )
+
     # ── v8: Alimony Received → Schedule 1 Line 2a (pre-2019 decrees only) ────────
     alimony_received_income = 0
     alimony_paid_deduction  = 0
@@ -7263,6 +7281,7 @@ def run(schema: TaxpayerSchema) -> dict:
                          rnd(se_net_profit) +        # SE net profit → Sch 1 Line 3
                          rental_net +                # Rental net → Sch 1 Line 5
                          gambling_income +           # W-2G → Sch 1 Line 8b
+                         jury_duty_income +           # → Sch 1 Line 8h; Source: f1040s1.pdf L8h; IRC §61(a)
                          unemployment_income +       # 1099-G → Sch 1 Line 7
                          state_refund_taxable +      # v8: state refund (if prior-year itemized)
                          alimony_received_income +   # v8: alimony received → Sch 1 Line 2a
@@ -8189,6 +8208,7 @@ def run(schema: TaxpayerSchema) -> dict:
     # Withholding sources:
     # Line 25a = W-2 Box 2 only (never includes other forms)
     # Line 25b = 1099-R Box 4 + SSA-1099 Box 6 + 1099-INT Box 4 (backup WH) + 1099-B Box 4
+    # + 1099-G Box 4 (unemployment WH) + W-2G Box 4 (gambling WH)
     # Line 25d = 25a + 25b (total federal income tax withheld)
     # Source: f1040.pdf Lines 25a–25d; irs.gov/pub/irs-pdf/i1040gi.pdf
     l25a_w2_wh     = fed_wh
@@ -8198,8 +8218,11 @@ def run(schema: TaxpayerSchema) -> dict:
     l25b_1099b_wh  = rnd(sum(t.fed_wh for t in schema.form_1099bs))
     l25b_nec_wh    = nec_backup_wh          # 1099-NEC Box 4
     l25b_div_wh    = div_backup_wh          # 1099-DIV Box 4
+    l25b_1099g_wh  = rnd(sum(g.box4_fed_wh for g in schema.form_1099gs))  # 1099-G Box 4 unemployment WH
+    l25b_w2g_wh    = gambling_wh            # W-2G Box 4 gambling WH
     l25b_total     = rnd(l25b_1099r_wh + l25b_ssa_wh + l25b_int_wh +
-                          l25b_1099b_wh + l25b_nec_wh + l25b_div_wh)
+                          l25b_1099b_wh + l25b_nec_wh + l25b_div_wh +
+                          l25b_1099g_wh + l25b_w2g_wh)
     l25d_total_wh  = rnd(l25a_w2_wh + l25b_total)
 
     if l25b_ssa_wh > 0:
@@ -8212,6 +8235,10 @@ def run(schema: TaxpayerSchema) -> dict:
         result["warnings"].append(f"1099-NEC backup WH ${l25b_nec_wh:,} → Line 25b.")
     if l25b_div_wh > 0:
         result["warnings"].append(f"1099-DIV backup WH ${l25b_div_wh:,} → Line 25b.")
+    if l25b_1099g_wh > 0:
+        result["warnings"].append(f"1099-G (unemployment) WH ${l25b_1099g_wh:,} → Line 25b. Source: f1040.pdf L25b.")
+    if l25b_w2g_wh > 0:
+        result["warnings"].append(f"W-2G (gambling) WH ${l25b_w2g_wh:,} → Line 25b. Source: f1040.pdf L25b.")
 
     l27a_eitc = eitc
     l28_actc  = actc
@@ -8513,6 +8540,7 @@ def run(schema: TaxpayerSchema) -> dict:
             "l8a_gambling":         rnd(gambling_income),
             "l8b_cancellation_debt":rnd(cancelled_debt),
             "l8c_prize":            rnd(prize_income),
+            "l8h_jury_duty":        rnd(jury_duty_income),   # Source: f1040s1.pdf Line 8h; IRC §61(a)
             "l10_total":            rnd(additional_income),   # → 1040 Line 8
             # Part II — Adjustments to Income (→ 1040 Line 10 through 24)
             "l11_educator":         rnd(teacher_adj),
@@ -8641,6 +8669,7 @@ def run(schema: TaxpayerSchema) -> dict:
         # v8 new computations
         "gambling_income": gambling_income,
         "gambling_wh": gambling_wh,
+        "jury_duty_income": jury_duty_income,       # Sch 1 Line 8h; Source: f1040s1.pdf L8h; IRC §61(a)
         "unemployment_income": unemployment_income,
         "state_refund_taxable": state_refund_taxable,
         # Echo 1098-E data for workpaper display

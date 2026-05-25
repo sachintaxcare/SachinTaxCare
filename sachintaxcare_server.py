@@ -459,6 +459,49 @@ def deserialize_schema(data: dict) -> e.TaxpayerSchema:
     if misc_prizes:
         kwargs['form_1099misc_prizes'] = misc_prizes
 
+    # -- Bridge: flat unemployment_income → Form1099G (engine reads form_1099gs list) --
+    # UI sends schema.unemployment_income as a scalar; engine reads form_1099gs[].box1_unemployment
+    # Source: f1040s1.pdf Line 7; IRC §85; irs.gov/pub/irs-pdf/f1099g.pdf
+    _unemp_flat = float(data.get('unemployment_income') or 0)
+    _unemp_wh   = float(data.get('unemployment_wh') or 0)
+    if _unemp_flat > 0 and not kwargs.get('form_1099gs'):
+        kwargs['form_1099gs'] = [e.Form1099G(
+            payer='State Unemployment',
+            box1_unemployment=_unemp_flat,
+            box4_fed_wh=_unemp_wh,
+            prior_year_itemized=False,
+        )]
+
+    # -- Bridge: flat jury_duty_income scalar → TaxpayerSchema.jury_duty_income --
+    # Source: f1040s1.pdf Line 8h; IRC §61(a)
+    _jury = float(data.get('jury_duty_income') or data.get('jury-duty') or 0)
+    if _jury > 0 and not kwargs.get('jury_duty_income'):
+        kwargs['jury_duty_income'] = _jury
+
+    # -- Bridge: prize_award_income (Sch 1 L8i) → form_1099misc_prizes --
+    # Source: f1040s1.pdf Line 8i; IRC §74
+    _prize_award = float(data.get('prize_award_income') or 0)
+    if _prize_award > 0:
+        _prizes = list(kwargs.get('form_1099misc_prizes', []))
+        _prizes.append(e.Form1099MISC_Prize(
+            payer='Prize/Award',
+            box3_other_income=_prize_award,
+            description='Prize or award (Sch 1 Line 8i)',
+        ))
+        kwargs['form_1099misc_prizes'] = _prizes
+
+    # -- Bridge: other_income_8z → form_1099misc_prizes (generic other income) --
+    # Source: f1040s1.pdf Line 8z; IRC §61(a)
+    _other_8z = float(data.get('other_income_8z') or 0)
+    if _other_8z > 0:
+        _prizes = list(kwargs.get('form_1099misc_prizes', []))
+        _prizes.append(e.Form1099MISC_Prize(
+            payer=data.get('other_income_8z_desc') or 'Other income',
+            box3_other_income=_other_8z,
+            description=data.get('other_income_8z_desc') or 'Other income (Sch 1 Line 8z)',
+        ))
+        kwargs['form_1099misc_prizes'] = _prizes
+
     # -- Bridge: Form1098T field name mismatches ---------------------------------
     # schema: box8_at_least_half_time → engine: box8_half_time
     # schema: student_is/student_who → use credit_type directly (already correct)

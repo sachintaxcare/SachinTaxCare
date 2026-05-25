@@ -1759,7 +1759,7 @@ import os
 
 FILE_REGISTRY = [
     ("sachintaxcare_engine.py",        8755,  100),
-    ("sachintaxcare_pro.html",         4727,   50),
+    ("sachintaxcare_pro.html",         4783,   50),
     ("sachintaxcare_server.py",         761,   50),
     ("sachintaxcare_workpaper.html",   1639,   50),
     ("sachintaxcare_test.py",          None,   None),   # self -- skip
