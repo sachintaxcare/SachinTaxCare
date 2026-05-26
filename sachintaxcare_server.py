@@ -785,12 +785,24 @@ def run_startup_tests():
     """
     import subprocess, sys
     try:
+        import os as _os
+        _env = _os.environ.copy()
+        _env['PYTHONIOENCODING'] = 'utf-8'   # force test output to UTF-8 on Windows
         result = subprocess.run(
             [sys.executable, 'sachintaxcare_test.py'],
-            capture_output=True, text=True, timeout=60
+            capture_output=True,
+            timeout=60,
+            env=_env,
+            # Always read as bytes then decode with UTF-8 + replace so Windows
+            # cp1252 console encoding never causes UnicodeDecodeError on
+            # Unicode chars (✅ ❌ ── etc.) in test output.
+            # Source: Python docs subprocess.run; Windows cp1252 issue 2026-05-26
         )
-        # Print last 10 lines of output (summary)
-        lines = (result.stdout + result.stderr).strip().splitlines()
+        # Decode bytes with UTF-8, replacing any undecodable chars (safe on all platforms)
+        stdout = result.stdout.decode('utf-8', errors='replace') if result.stdout else ''
+        stderr = result.stderr.decode('utf-8', errors='replace') if result.stderr else ''
+        # Print last 12 lines of output (summary)
+        lines = (stdout + stderr).strip().splitlines()
         for line in lines[-12:]:
             print(f"  [TEST] {line}")
         if result.returncode != 0:
@@ -809,7 +821,7 @@ if __name__ == '__main__':
     print(f"""
 +======================================================+
 |         SachinTaxCare Computation Server             |
-|         Engine v15 . 180/180 tests passing           |
+|         Engine V17.3 · 593 tests · 218 VITA tests   |
 +======================================================+
 |  Intake:    http://{host}:{port}/                |
 |  Workpaper: http://{host}:{port}/workpaper       |
