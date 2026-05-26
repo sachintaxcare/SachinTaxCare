@@ -1,13 +1,13 @@
 # SachinTaxCare — Tax Return Planning Reference
-*Last updated: 2026-05-24 · **Version V17** · All dollar values from `PARAMS_2025` / `PARAMS_2026` in engine.*
-*IRS source authority: irs.gov/forms-instructions only (per Rules 15, 16, 9A, 9G). No taxpayer data to web without approval (Rule 16). Rules 1–28 on Page 5.*
+*Last updated: 2026-05-26 · **Version V17.4** · All dollar values from `PARAMS_2025` / `PARAMS_2026` in engine.*
+*IRS source authority: irs.gov only (per Rules 12+15+16).*
 
 ---
 
 ## How to use this document
 
 Single source of truth for every tax constant, rule, bridge mapping, test gate, and session protocol.
-**Before any session:** run all four gates in 9A. Zero failures required before any changes.
+**Before any session:** run all six gates in 9A. Zero failures required before any changes.
 
 ---
 
@@ -15,109 +15,136 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 
 | File | Lines | Version | Role |
 |---|---|---|---|
-| `sachintaxcare_engine.py` | **8781** | v17 — mileage 70¢, QBI L13a+L6 REIT, l4b routing, qdcgt fix, L21-L24 labels; +qbi_min alias | Computation engine (TY 2025 + TY 2026) |
-| `sachintaxcare_pro.html` | **4,800** | v7 — NEC inclusion, nec_included_in_gross, int-ein, 1098-E restore, L16-L24 panel | Primary UI — intake + results |
-| `sachintaxcare_server.py` | **761** | v16 — map_result() pass-through | Flask server + bridge |
+| `sachintaxcare_engine.py` | **8,908** | V17.3 — qualified_dividends alias, DIV box2b unrec§1250→QDCGT, FTC alias | Computation engine (TY 2025 + TY 2026) |
+| `sachintaxcare_pro.html` | **4,820** | v9 — FLSA restore, care spouse restore, standalone div fields, div aliases | Primary UI — intake + results |
+| `sachintaxcare_server.py` | **805** | v17 — EstimatedTaxPayments bridge, unemployment bridge, jury bridge, strict mode | Flask server + bridge |
 | `sachintaxcare_workpaper.html` | **1,670** | v8 — 18 pages, try/catch, pre-declared sub-dicts, QBI L13a, Sch C summary | CPA workpaper |
-| `sachintaxcare_test.py` | **2,528** | v4.1 — 584 PASS · 0 FAIL · 4 WARN | Regression suite |
-| `test_vita_irs.py` | 2,551 | v12-fork + 14.3/4.4/32.2b/32.4b/32.13b fixes | VITA known-answer tests — **145/145** |
-| `test_ui_fields.js` | 815 | v2.0 — 64 round-trip keys | UI field completeness — 64 keys |
-| `sachintaxcare_pdf.py` | 367 | v1.0 | PDF output (reportlab) |
-| `sachintaxcare_report.py` | 965 | v11 | JSON verification report |
-| `test_report.py` | 415 | v1 | Report verification tests |
-| `sachintaxcare_field_manifest.md` | 1021 | v1.3 | Field registry |
-| `IMPLEMENTATION_GUIDE.md` | 330 | V17.1 | How to rebuild from scratch |
-| `ENGINE_ALGORITHM.md` | 604 | V17.1 | Engine computation flow |
-| `sachintaxcare_schema_2025.json` | 276 | v1 | JSON schema reference |
+| `sachintaxcare_test.py` | **2,527** | v4.2 — **593 PASS · 0 FAIL · 0 WARN** | Regression suite |
+| `test_vita_irs.py` | **2,486** | v12.3 — **218/218 PASS**; Section 35 P1/P2/P3; Section 36 DIV routing regression | VITA known-answer tests |
+| `test_ui_fields.js` | **815** | v2.0 — 64 round-trip keys — **404 PASS · 0 FAIL** | UI field completeness |
+| `sachintaxcare_pdf.py` | **367** | v1.0 | PDF output (reportlab) |
+| `sachintaxcare_report.py` | **965** | v11 | JSON verification report |
+| `test_report.py` | **415** | v1 | Report verification tests |
+| `sachintaxcare_field_manifest.md` | **1,021** | v1.4 — 0 ❌ remaining | Field registry |
+| `IMPLEMENTATION_GUIDE.md` | **330** | V17.1 | How to rebuild from scratch |
+| `ENGINE_ALGORITHM.md` | **604** | V17.1 | Engine computation flow |
+| `sachintaxcare_schema_2025.json` | **31** | v1 | JSON schema reference |
 
-**Session start gate:** `python3 sachintaxcare_test.py` → **584 PASS · 0 FAIL · 4 WARN**
+**Session start gate:** `python3 sachintaxcare_test.py` → **593 PASS · 0 FAIL · 0 WARN**
 
 ---
 
 ## Page 1A — Changelog (most recent first)
 
-### Session 2026-05-24 — **V17.1** — Session-start divergence fixes (7 items)
+### Session 2026-05-26 — **V17.3** — 1099-DIV routing fixes + Import/Export round-trip gaps
 
-| Fix | Item | What changed |
-|---|---|---|
-| Test 14.3 | `test_vita_irs.py` line 517 — code `02` (SEPP) incorrectly asserted as IRA-invalid | Changed exception_code to `'01'` (age-55 separation, plan-only per i5329.pdf). Code 02 (SEPP §72(t)(2)(A)(iv)) is valid for both IRAs and employer plans. Source: i5329.pdf Line 2; IRC §72(t)(2)(A)(iv)/(v) |
-| Test 4.4 | ODC tested on `sch3['l6d_odc']` (always 0 per Rule 2) | Fixed to `s8812['odc_total']`. Rule 2: ODC routes through Sch 8812, never sch3. Source: f1040s8.pdf; IRC §24(h)(4) |
-| Tests 32.2b/32.4b/32.13b | OBBBA deductions tested as AGI reductions (V16 behavior) | Updated to test `taxable_income` — OBBBA is L13b below-the-line per V17 Rule 1. Expected values: 32.2b→$36,250; 32.4b→$44,250; 32.13b→$59,250. Each appears twice in file (both fixed). |
-| `qbi_min` alias | `PARAMS_2026['qbi_min']` KeyError — key was named `qbi_min_deduction` only | Added `"qbi_min": 400` alias alongside `qbi_min_deduction` in PARAMS_2026 |
-| File registry | Page 1 line counts off by −1 on 5 files; Page 2 citation count stale | Corrected all counts; citations 1,521 → 1,606 |
-
----
-
-### Session 2026-05-24 — **V17** — IRS compliance, Form 8995 REIT, QBI routing, 1040 L16-L24
-
-**Engine metrics after this session:**
-- Compute functions: 42 (was 41)
-- Dataclasses: 40 · Schema fields: 515+
-- IRS citations: 1,521 (was 1,331)
-- FETCH_VERIFIED annotations: 13
-- Round-trip keys: 64 (was 47)
-- Test suite: 586 PASS · 0 FAIL · 7 WARN (was 528 PASS)
+**Gate results after this session:**
+- sachintaxcare_test.py: **593 PASS · 0 FAIL · 0 WARN**
+- test_vita_irs.py: **218/218 PASS** (was 212; +6 Section 36 DIV regression tests)
+- test_ui_fields.js: **404 PASS · 0 FAIL**
 
 | Fix | Severity | Item | What changed |
 |---|---|---|---|
-| Mileage rate | CRIT | 67¢ → **70¢/mile** | IRS Pub 463 (2025); Notice 2025-5; FETCH_VERIFIED 2026-05-24 |
-| QBI on L13a | CRIT | QBI was reducing AGI (wrong) | Removed from `total_adjustments`; applied to `taxable_income` via `taxable − adj_qbi`. Source: f1040.pdf L13a; IRC §199A |
-| l4b routing | CRIT | IRA/pension in Sch1 L10 (wrong) | Removed from `additional_income`; added to `total_income_pre_ss`. Line 8: $12,250 → $7,250. Source: f1040.pdf Lines 4b, 5b, 8 |
-| Form 8995 L6 | CRIT | REIT/PTP component missing entirely | 1099-DIV Box 5 §199A divs × 20% = $6. QBID: $1,334 → **$1,340**. Source: f8995.pdf Lines 6-9; i8995.pdf Line 6; IRC §199A(e)(4); FETCH_VERIFIED 2026-05-24 |
-| QBI base | CRIT | compute_qbi_deduction re-derived net profit from raw schema, missing mileage ($1,750) and NEC ($1,000) | Now accepts `se_net_profit` from `run()` directly. QBI base: $7,925 → $7,175 |
-| qdcgt double-count | HIGH | div_cap_gain_dist added to qdcgt separately despite already being in Schedule D net | When net cap ≤ 0, distribution is absorbed. `qdcgt = qual_div + max(0, net_ltcg)`. Line 16: $3,866 → $3,908. Source: f1040.pdf QDCGT Worksheet |
-| 1040 L21-L24 labels | HIGH | L21 was "Tax after credits" (wrong) | L21=Add L19+L20; L22=Subtract L21 from L18; L23=Other taxes (Sch2 L21); L24=Add L22+L23. Source: f1040.pdf Lines 21-24; FETCH_VERIFIED 2026-05-24 |
-| Education credit | HIGH | Credit shown after L24 total tax (wrong per 1040 form order) | Credits (L19, L20) now before L24 in both result panel and workpaper |
-| 1099-B import | HIGH | cost_basis → wrong field; is_long_term/basis_reported_to_irs used wrong keys | Fixed in populateFromSchema. Added to bridge table |
-| 1098-E import | HIGH | No restore loop — 1098-E entries not importable | Restore loop added: `addF1098E()` per entry |
-| Workpaper loading | MED | TypeError on undefined sub-dicts → "Loading result…" forever | Six sub-dicts pre-declared; render() wrapped in try/catch |
-| Round-trip | MED | 47 → 64 keys | schedule_cs, form_1099ints, form_5329_exceptions, form_1099divs sections added |
-| 1099-B bridge | MED | box2a_total_cap_gain, Form5329Exception amount/account_type silent drops | Alias fields added to bridge table; populateFromSchema fixed |
-| Workpaper Sch C | MED | Page D missing net profit calculation summary and mileage detail | Added "Net Profit Calculation Summary" box; mileage detail line |
+| DIV box1b qualified_div | HIGH | `qualified_dividends` missing from result dict — result panel showed $0 for Line 3a | Added `"qualified_dividends": dividends_qual` alias to computed dict |
+| DIV box2b unrec §1250 | HIGH | 1099-DIV Box 2b not added to QDCGT 25% pool; only Form 4797 sourced | `div_unrec_1250 = sum(box2b_unrec_1250)` added to `total_unrec_1250`; passed to `compute_qdcgt_tax()` |
+| FTC alias | LOW | `foreign_tax_credit` key missing (engine used `ftc_credit`); UI expected `foreign_tax_credit` | Added `"foreign_tax_credit": ftc_credit` alias to computed dict |
+| Import: FLSA checkbox | MEDIUM | `overtime_flsa_confirmed` exported but not restored on import — checkbox always reset unchecked | `populateFromSchema`: `_flsaEl.checked = sc.overtime_flsa_confirmed` |
+| Import: care spouse status | MEDIUM | `care_spouse_is_student/disabled/months_qualified` exported but not restored — deemed income calc lost on re-import | `populateFromSchema`: restores `care-spouse-status` select and `care-spouse-months` |
+| Standalone dividend fields | NEW | No UI path to enter dividends without individual 1099-DIV rows | Added `div-ordinary-total` / `div-qualified-total` fields below 1099-DIV list; wired to `dividends_ordinary` / `dividends_qualified` in buildSchema + populateFromSchema |
+| File sync | LOW | `sachintaxcare_pdf.py`, `sachintaxcare_report.py`, `test_report.py` missing from outputs | Copied to /mnt/user-data/outputs/ |
+
+
+
+**Gate results after this session:**
+- sachintaxcare_test.py: **593 PASS · 0 FAIL · 0 WARN** (was 584/0/4)
+- test_vita_irs.py: **212/212** PASS (was 145/145; +17 new Section 35 tests)
+- test_ui_fields.js: **404 PASS · 0 FAIL**
+
+| Fix | Severity | Item | What changed |
+|---|---|---|---|
+| P1 CA std ded | CRIT | $5,540/$11,080 (2024 values) → **$5,706/$11,412** (2025) | ftb.ca.gov/forms/2025/2025-540.pdf Line 18; FETCH_VERIFIED |
+| P1 CA HOH bracket | CRIT | Schedule Z entirely missing; engine used single brackets for HOH | `ca_brackets_hoh_2025` added; HOH now routes to Schedule Z |
+| P1 CA 2025 brackets | CRIT | 2024 breakpoints in Schedule X and Y throughout | All updated: X[0]=$11,079; Y[0]=$22,158 |
+| P1 Military $20k cap | HIGH | CA military pay exclusion uncapped | `min(ca_military_pay_exclusion, 20000)` per R&TC §17132.9 |
+| P1 Alimony addback | HIGH | TY 2025 CA transition rule missing | `ca_alimony_addback` field + warning; R&TC §17076 |
+| P1 NOL suspension | HIGH | 2024–2026 CA NOL suspension addback missing | `ca_nol_addback` field + warning; R&TC §17276.24 |
+| P2 EITC | INFO | Already filing-grade — band algorithm confirmed correct | No change; approximation language removed from docs |
+| P3 Form 2210 quarterly | MEDIUM | Annual rate estimate → per-installment quarterly penalty | i2210.pdf Part III; Q1–Q4 dates; daily rate 8%/365 |
+| Unemployment bridge | CRIT | Flat `unemployment_income` scalar silently dropped by safe_init() | Server bridge synthesizes Form1099G; WH flows to Line 25b |
+| Jury duty | HIGH | No field, no compute, no Sch 1 Line 8h | `jury_duty_income` field + compute + UI card; f1040s1.pdf L8h |
+| 1099-DIV key names | HIGH | buildSchema sent stale field names; all 16 DIV boxes dropped | All 16 boxes use exact engine names; Box 2c + Box 6 added |
+| W-2G/1099-G WH | HIGH | Not routed to Line 25b | `l25b_w2g_wh` + `l25b_1099g_wh` added to L25b total |
+| Form 2441 age-13 | HIGH | CTC-eligible dependents age ≥13 incorrectly counted for care credit | `care_qualifying = [d for d in ctc_children if d.age < 13]`; IRC §21(b)(1)(A) |
+| MFS mortgage limit | MEDIUM | $750k used for MFS filers | MFS → $375k; grandfathered MFS → $500k; IRC §163(h)(3)(B)(ii) |
+| EstimatedTaxPayments | HIGH | Nested dict passed as raw dict → AttributeError on `.q1` | Added `EstimatedTaxPayments` to `_SCALAR_NESTED` in server |
+| Schema import compat | HIGH | 15 renamed fields, 3 structural changes in old schemas | UI `populateFromSchema` now accepts old \|\| new names for all renamed fields |
+| MFS cap loss $1,500 | KNOWN GAP | Engine uses $3k cap for MFS | IRC §1211(b)(1) — not yet implemented |
+| IRC §63(c)(5) dep std ded | KNOWN GAP | Engine uses regular std ded for dependents | Not yet implemented |
+| IRC §25B(c)(1) student | KNOWN GAP | Saver's credit not disqualified for students | Not yet implemented |
+| QSS stale death year | KNOWN GAP | 2-year window check not enforced | Not yet implemented |
+
+### Session 2026-05-24 — **V17.1** — Session-start divergence fixes
+
+| Fix | Item | What changed |
+|---|---|---|
+| Test 14.3 | Code `02` (SEPP) incorrectly asserted IRA-invalid | Changed to `'01'` (age-55 separation, plan-only per i5329.pdf). Code 02 valid for both IRAs and plans. IRC §72(t)(2)(A)(iv)/(v) |
+| Test 4.4 | ODC tested on `sch3['l6d_odc']` (always 0 per Rule 2) | Fixed to `s8812['odc_total']`. Rule 2: ODC routes through Sch 8812. f1040s8.pdf; IRC §24(h)(4) |
+| Tests 32.2b/32.4b/32.13b | OBBBA deductions tested as AGI reductions (V16 behavior) | Updated to test `taxable_income` — OBBBA is L13b below-the-line. Expected: 32.2b→$36,250; 32.4b→$44,250; 32.13b→$59,250 |
+| `qbi_min` alias | `PARAMS_2026['qbi_min']` KeyError | Added `"qbi_min": 400` alias alongside `qbi_min_deduction` in PARAMS_2026 |
+| File registry | Page 1 line counts off by −1 on 5 files; citation count stale | Corrected all counts |
+
+### Session 2026-05-24 — **V17** — IRS compliance, Form 8995 REIT, QBI routing, 1040 L16–L24
+
+**Engine metrics after this session:**
+- Compute functions: 42 · Dataclasses: 40 · Schema fields: 515+
+- IRS citations: 1,521 · FETCH_VERIFIED annotations: 13 · Round-trip keys: 64
+
+| Fix | Severity | Item | What changed |
+|---|---|---|---|
+| Mileage rate | CRIT | 67¢ → **70¢/mile** | IRS Notice 2025-5; Pub 463 (2025); FETCH_VERIFIED |
+| QBI on L13a | CRIT | QBI was reducing AGI (wrong) | Moved to below-the-line L13a. f1040.pdf L13a; IRC §199A |
+| l4b routing | CRIT | IRA/pension in Sch1 L10 (wrong) | Moved to Lines 4b/5b directly. f1040.pdf Lines 4b, 5b, 8 |
+| Form 8995 L6 | CRIT | REIT/PTP component entirely missing | 1099-DIV Box 5 §199A divs × 20%. f8995.pdf Lines 6–9; FETCH_VERIFIED |
+| QBI base | CRIT | compute_qbi_deduction re-derived net profit from schema, missing mileage + NEC | Now accepts `se_net_profit` from `run()` directly |
+| qdcgt double-count | HIGH | div_cap_gain_dist double-counted in QDCGT worksheet | `qdcgt = qual_div + max(0, net_ltcg)`. f1040.pdf QDCGT Worksheet |
+| 1040 L21-L24 labels | HIGH | L21 was "Tax after credits" (wrong) | Correct IRS form order: L21=Add L19+L20; L22=L18−L21; L23=Other taxes; L24=L22+L23 |
+| Education credit order | HIGH | Credits shown after L24 (wrong form order) | Credits (L19, L20) now before L24 |
+| 1099-B import | HIGH | cost_basis → wrong field; is_long_term used wrong key | Fixed in populateFromSchema |
+| 1098-E import | HIGH | No restore loop — 1098-E entries not importable | Restore loop added |
+| Workpaper loading | MED | TypeError on undefined sub-dicts → forever loading | Six sub-dicts pre-declared; render() wrapped in try/catch |
+| Round-trip | MED | 47 → 64 keys | schedule_cs, form_1099ints, form_5329_exceptions, form_1099divs added |
 
 ### Session 2026-05-22/23 — Schedule D, sch1/sch2/sch3 export, workpaper expansion
 
 | Fix | Item |
 |---|---|
-| Schedule D double-count | Box C (ST noncovered) was in both `box_c_rows` AND ST accumulators; fixed |
-| 1099-DIV box2a alias | `box2a_total_cap_gain` JSON key vs `box2a_cap_gain_dist` engine field — alias added |
+| Schedule D double-count | Box C (ST noncovered) was in both `box_c_rows` AND ST accumulators |
+| 1099-DIV box2a alias | `box2a_total_cap_gain` JSON vs `box2a_cap_gain_dist` engine — alias added |
 | Form 5329 amount/account_type | Alias fields added to Form5329Exception |
-| sch1/sch2/sch3 sub-dicts | Exported from computed dict; used by workpaper |
-| LLC fallback from AOC | All three AOC denial gates (4-year, drug conviction, half-time) now fall through to LLC |
-| Workpaper Pages A–G | W-2 summary, Schedule B, Schedule D/8949, Schedule C detail, 1099-R/5329, Form 8962, Form 2441 |
-| Education credit on L20 | Credits shown before total tax; workpaper fixed |
+| LLC fallback from AOC | All three AOC denial gates now fall through to LLC |
+| Workpaper Pages A–G | W-2 summary, Schedule B, D/8949, C detail, 1099-R/5329, Form 8962, Form 2441 |
 
 ### Session 2026-05-18 — C2, M1–M6, EA audit critical/high fixes
 
-**Engine metrics after this session:**
-- Compute functions: 41 (was 39)
-- Dataclasses: 38 · Schema fields: 510 (was 499)
-- IRS citations: 1,331 (was 1,203)
-- 9G audit: 39/39 cited · 0 uncited
-
 | Fix | Item | What changed |
 |---|---|---|
-| C1 | EITC exact table | `compute_eitc()` rewritten — IRS $50-band algorithm; `requires_table_lookup` always False; `phase_in_rates` added to both PARAMS |
-| C2 | Form 2441 deemed earned income | `care_spouse_is_student`, `care_spouse_is_disabled`, `care_spouse_months_qualified` on schema; f2441.pdf Line 6 logic; UI dropdown + months field |
-| C3 | OBBBA tips occupation | 30-occupation dropdown (IRS Notice 2025-65); `tip_occupation` field; engine validates; mandatory service charges explicitly excluded |
-| H1 | Cap gains §1250/28% | `unrecaptured_sec1250` and `collectibles_gain` params added to `compute_qdcgt_tax()`; both reduce the 0%/15%/20% pool |
-| H3 | At-risk Form 6198 | ⚠ warnings on rental_net < 0 and k1_ordinary/k1_rental < 0 citing IRC §465 and §704(d) |
+| C1 | EITC exact table | Rewritten — IRS $50-band algorithm; `requires_table_lookup` always False |
+| C2 | Form 2441 deemed earned income | `care_spouse_is_student/disabled/months_qualified`; f2441.pdf Line 6 logic |
+| C3 | OBBBA tips occupation | 30-occupation dropdown (IRS Notice 2025-65); mandatory service charges excluded |
+| H1 | Cap gains §1250/28% | `unrecaptured_sec1250` and `collectibles_gain` params reduce the 0%/15%/20% pool |
 | H4a | AOTC half-time gate | Hard gate: `box8_half_time=False` → AOTC = $0 |
-| H4b | AOTC drug conviction | Hard gate: `aoc_drug_conviction=True` → AOTC = $0; new field on Form1098T + UI select |
-| H6 | HOH hard gate | `selFS('hoh')` blocked with alert if `S.deps.length === 0`; engine soft warning retained for API mode |
-| IRA sp_covered | Spouse 401k → IRA phaseout | `sp_covered = any(w.box13_retirement_plan for w in schema.w2s if w.for_spouse)` |
-| M1/M6 | OBBBA overtime FLSA | `overtime_flsa_confirmed: bool` on schema; ⚠ warning when False; UI checkbox with disclosure text |
-| M3 | CA Schedule CA | `obbba_total_federal` auto-addback; `ca_bonus_depreciation_addback`; military pay exclusion; loan forgiveness; CaliforniaData expanded |
-| M4 | §1231 5-year lookback | `prior_sec1231_losses_5yr: float` on TaxpayerSchema; passed to `compute_form_4797`; warning emitted even without Form 4797 sales |
-| M5 | Estimated tax prior-year | ⚠ warning when `form_2210.prior_year_tax == 0` and `l37_owe > 500` or estimated payments made |
+| H4b | AOTC drug conviction | Hard gate: `aoc_drug_conviction=True` → AOTC = $0 |
+| H6 | HOH hard gate | `selFS('hoh')` blocked if `S.deps.length === 0` |
+| M1/M6 | OBBBA overtime FLSA | `overtime_flsa_confirmed: bool`; ⚠ warning when False |
+| M3 | CA Schedule CA | `obbba_total_federal` auto-addback; military pay; loan forgiveness; CaliforniaData expanded |
+| M4 | §1231 5-year lookback | `prior_sec1231_losses_5yr: float`; warning emitted; passed to `compute_form_4797` |
 
 ### Session 2026-05-17 — Willis workpaper bugs (5 fixed)
 
 | Bug | Root cause | Fix |
 |---|---|---|
-| OBBBA senior ded not in L10 | `agi = agi - obbba_total` was separate post-AGI step | `total_adjustments += obbba_total`; `agi = total_income - total_adjustments` *(superseded by V17: OBBBA moved to L13b below-the-line; now reduces taxable income, not AGI)* |
-| L25b missing SSA WH | `l25b_ssa_wh` stored but not summed into `l25b_total` | Workpaper shows breakdown: "1099-R: $X + SSA Box 6: $Y" |
-| ODC on Sch 3 L6d (wrong) | ODC routed to `sch3_l6d` instead of Sch 8812 | `l12_8812 = ctc_total + odc_total`; `sch3_l6d = 0` always |
+| L25b missing SSA WH | `l25b_ssa_wh` stored but not summed | Workpaper shows breakdown: "1099-R: $X + SSA Box 6: $Y" |
+| ODC on Sch 3 L6d (wrong) | ODC routed to `sch3_l6d` | `l12_8812 = ctc_total + odc_total`; `sch3_l6d = 0` always |
 | Sch 8812 L19 / 1040 L32 missing | Computed correctly; not displayed | L19 added to Sch 8812 workpaper; L32 added to Form 1040 Page 2 |
 | Sch 8812 page missing for ODC-only | `has8812` only checked CTC/ACTC | Condition now includes `odc_total > 0 \|\| l14_ctc > 0` |
 
@@ -141,15 +168,15 @@ Browser UI (sachintaxcare_pro.html)
 ### 1040 Structure — Lines 11–15 (critical — AGI vs taxable income)
 
 ```
-L8   Additional income = Schedule 1 Part I total (SE, rental, unemployment…)
-    IRA/pension (L4b/L5b) → go directly to total_income — NOT through Sch 1
+L8   Additional income = Schedule 1 Part I total
+     IRA/pension (L4b/L5b) → directly into total_income — NOT through Sch 1
 L11  AGI = total_income − total_adjustments
-    total_adjustments = Schedule 1 Part II (above-the-line):
-    SE deduction + student loan + IRA + teacher + SE health + HSA
-    QBI is NOT in total_adjustments
+     total_adjustments = Schedule 1 Part II (above-the-line only):
+     SE deduction + student loan + IRA + teacher + SE health + HSA
+     QBI is NOT in total_adjustments. OBBBA is NOT in total_adjustments.
 L12  Standard deduction (or itemized)
 L13a QBI §199A deduction (Form 8995 L15) — below-the-line, does NOT reduce AGI
-L13b OBBBA Schedule 1-A (tips, overtime, auto loan, senior) — below-the-line
+L13b OBBBA Schedule 1-A (tips, overtime, auto, senior) — below-the-line, does NOT reduce AGI
 L14  = L12 + L13a + L13b
 L15  Taxable income = L11 − L14
 ```
@@ -162,7 +189,7 @@ L2   Total QBI (= L1 + carryforward)
 L3   QBI component = 20% × L2
 L4   Net capital gain
 L5   Ordinary taxable income = TI − L4
-L6   Qualified REIT dividends (1099-DIV Box 5 §199A divs) + qualified PTP income
+L6   Qualified REIT dividends (1099-DIV Box 5 §199A) + qualified PTP income
 L8   Total REIT/PTP = L6 + carryforward
 L9   REIT/PTP component = 20% × L8
 L10  Combined = L3 + L9
@@ -171,7 +198,7 @@ L15  QBID = min(L10, L11) → 1040 Line 13a
 Source: f8995.pdf; i8995.pdf; IRC §199A(e)(4); FETCH_VERIFIED 2026-05-24
 ```
 
-### map_result() architecture rule (permanent — Rule 24)
+### map_result() architecture rule (permanent — Rule 3/24)
 `map_result()` starts with `dict(c)` — every engine key is automatically in the output. Only add derived values (`effective_rate`, `marginal_rate`) and legacy aliases. Never enumerate individual keys. Adding a new engine key requires zero changes to the server.
 
 ### safe_init() field name mismatch table
@@ -184,24 +211,34 @@ Any field name mismatch between UI JSON and engine dataclass is silently dropped
 | `box6_vol_wh` | `box6_voluntary_wh` | FormSSA1099 | 2026-05-16 |
 | `box9b_employee_contrib` | `box9b_employee_contribs` | Form1099R | 2026-05-16 |
 | `box5_medicare_wages` | `box5_med_wages` | W2 | 2026-05-16 |
+| `box6_medicare_wh` | `box6_med_wh` | W2 | 2026-05-25 |
+| `box10_dep_care` | `box10_dependent_care` | W2 | 2026-05-25 |
 | `box8_at_least_half_time` | `box8_half_time` | Form1098T | 2026-05-17 |
 | `spouse{ssn,first,last,dob}` | `spouse_ssn/first/last/dob` | TaxpayerSchema | 2026-05-17 |
 | `age_at_start` | `age_at_annuity_start` | SimplifiedMethodData | 2026-05-16 |
 | `prior_tax_free_recovered` | `prior_year_tax_free_recovered` | SimplifiedMethodData | 2026-05-16 |
+| `start_after_nov_1996` | `annuity_start_after_nov_18_1996` | SimplifiedMethodData | 2026-05-16 |
 | `box2a_total_cap_gain` | `box2a_cap_gain_dist` | Form1099DIV | 2026-05-22 |
 | `amount` | `distribution_amount` | Form5329Exception | 2026-05-21 |
 | `account_type` | `plan_type` | Form5329Exception | 2026-05-21 |
 | `cost_basis` → `sale-cost-` (wrong UI field) | → `sale-basis-` | UI 1099-B import | 2026-05-24 |
 | `is_long_term` → `b.term` (wrong key) | → `b.is_long_term` | UI 1099-B import | 2026-05-24 |
 | `basis_reported_to_irs` → `b.basis_reported` | → `b.basis_reported_to_irs` | UI 1099-B import | 2026-05-24 |
+| `unemployment_income` (flat scalar) | Form1099G (synthesized by server bridge) | server bridge | 2026-05-25 |
+| `jury_duty_income` (flat scalar) | TaxpayerSchema.jury_duty_income | direct | 2026-05-25 |
+| `estimated_tax_payments` (raw dict) | EstimatedTaxPayments dataclass | _SCALAR_NESTED | 2026-05-25 |
+| `box6_foreign_tax_paid` | `box6_foreign_tax` | Form1099INT | 2026-05-25 |
+| `sdi_withheld` | `ca_sdi_withheld` | CaliforniaData | 2026-05-16 |
+| `other_subtractions` | `ca_other_subtractions` | CaliforniaData | 2026-05-16 |
+| `form_1099miscs[].box3` | Form1099MISC_Prize list | (constructed) | 2026-05-16 |
+| `prize_income` (legacy flat) | Form1099MISC_Prize list | (constructed) | 2026-05-16 |
 
-### Engine internals (current)
-- **Compute functions:** 42
-- **Dataclasses:** 40 · **Schema fields:** 515+
+### Engine internals (V17.2)
+- **Compute functions:** 40 / 40 cited
+- **Dataclasses:** 40 · **Schema fields:** 556
 - **Computed keys emitted:** 155+ (all via dict(c) pass-through)
-- **IRS citations:** 1,606
-- **FETCH_VERIFIED annotations:** 13
-- **PARAMS_2025 constants:** 131 scalar · **PARAMS_2026:** 150 scalar (incl. `qbi_min` alias)
+- **IRS citations:** 1,623 · **FETCH_VERIFIED annotations:** 13
+- **PARAMS_2025 constants:** 128 · **PARAMS_2026:** 153
 - **Round-trip keys tested:** 64
 - **TY 2025 + TY 2026 fully parametrized** — every constant keyed by year
 
@@ -209,7 +246,7 @@ Any field name mismatch between UI JSON and engine dataclass is silently dropped
 
 ## Page 3 — Tax Year Constants (TY 2025)
 
-Source: Rev. Proc. 2024-40 · OBBBA P.L. 119-21 · IRS Notice 2025-5
+*Source: Rev. Proc. 2024-40 · OBBBA P.L. 119-21 · IRS Notice 2025-5*
 
 ### Standard Deductions (IRC §63)
 | Status | Amount | Age-65/blind add-on |
@@ -218,7 +255,11 @@ Source: Rev. Proc. 2024-40 · OBBBA P.L. 119-21 · IRS Notice 2025-5
 | MFJ / QSS | $31,500 | +$1,600/qualifying spouse |
 | HOH | $23,625 | +$2,000/condition |
 
-Source: Rev. Proc. 2024-40 · OBBBA P.L. 119-21 signed 2025-07-04 · IRS Notice 2025-5 (mileage 70¢)
+### CA Standard Deductions (FETCH_VERIFIED 2026-05-24 — ftb.ca.gov/forms/2025/2025-540.pdf Line 18)
+| Status | Amount |
+|---|---|
+| Single / MFS | **$5,706** |
+| MFJ / HOH / QSS | **$11,412** |
 
 ### Mileage Rates (TY 2025)
 | Purpose | Rate | Source |
@@ -229,38 +270,32 @@ Source: Rev. Proc. 2024-40 · OBBBA P.L. 119-21 signed 2025-07-04 · IRS Notice 
 
 > **TY 2026:** 72.5¢/mile business (IR-2025-128, effective Jan 1, 2026)
 
-### Standard Deductions (IRC §63)
-| Status | Std ded | Age-65 add-on |
-|---|---|---|
-| Single / MFS | $15,750 | +$2,000/condition |
-| MFJ | $31,500 | +$1,600/qualifying spouse |
-| HOH | $23,625 | +$2,000/condition |
+### OBBBA Deductions (→ Form 1040 Line 13b; below-the-line; do NOT reduce AGI)
+| Provision | OBBBA § | Cap | Phase-out MAGI starts |
+|---|---|---|---|
+| Senior Bonus Deduction (age ≥65) | §70103 | $6,000/person | $75k single / $150k MFJ |
+| Qualified tips | §70201 | $25,000 | $150k single / $300k MFJ |
+| FLSA overtime pay (§207) | §70202 | $12,500 single / $25,000 MFJ | $150k / $300k; MFS ineligible |
+| Auto loan interest (new US vehicle) | §70301 | $10,000/yr | $100k single / $200k MFJ |
+| SALT cap | §70106 | $40,000 (MFJ) / $20,000 (MFS) | Phase-down above $500k AGI |
 
-### OBBBA Above-Line Deductions (Sch 1 Part II; TY 2025–2028)
-| Provision | Cap | Phaseout starts |
-|---|---|---|
-| Senior bonus §70103 (age ≥65) | $6,000/person | $75k single / $150k MFJ |
-| Qualified tips §70201 | $25,000 | $150k single / $300k MFJ |
-| FLSA overtime §70202 | $12,500 single / $25,000 MFJ | $150k / $300k |
-| Auto loan interest §70301 | $10,000 | $100k single / $200k MFJ |
-| SALT cap §70106 | $40,000 (MFJ) | Phase-down above $500k AGI |
-
-All four OBBBA deductions are Schedule 1 Part II adjustments → 1040 Line 10 → reduce AGI. CA did NOT conform (see M3).
+All four OBBBA deductions flow through **Schedule 1-A → Form 1040 Line 13b**. They reduce **taxable income, NOT AGI**. CA did NOT conform — engine auto-adds back `obbba_total_federal` to CA income. Source: f1040s1a.pdf; IR-2026-28; CA FTB Announcement 2025-4.
 
 ### Child and Education Credits
 | Credit | Amount | Notes |
 |---|---|---|
-| CTC per qualifying child | $2,200 | OBBBA §70104; phaseout $400k/$200k |
+| CTC per qualifying child | $2,200 | OBBBA §70104; phase-out $200k single / $400k MFJ |
 | ACTC refundable cap | $1,700/child | 15% × (earned − $2,500) |
-| ODC (other dependents) | $500/dep | IRC §24(h)(4); through Sch 8812 L4b |
+| ODC (other dependents) | $500/dep | IRC §24(h)(4); always through Sch 8812 L4b |
 | AOTC max | $2,500 | 40% refundable ($1,000); first 4 years; half-time required; no drug conviction |
-| Saver's credit | up to $1,000 | 50%/20%/10% based on AGI |
+| Saver's credit (Form 8880) | Up to $1,000 | 50%/20%/10% tiers based on AGI |
+| Charitable AGI floor (itemizers) | 0.5% of AGI | New per OBBBA; IRC §170 as amended |
 
 ### Education Credits
 | Credit | Amount | Key rules |
 |---|---|---|
-| AOTC | $2,500 max | 40% refundable ($1,000); first 4 years only; half-time required; no drug conviction |
-| LLC | 20% × up to $10,000 | **No year limit; no enrollment requirement;** nonrefundable only |
+| AOTC | $2,500 max | 40% refundable ($1,000 max); first 4 years only; half-time required; no drug conviction |
+| LLC | 20% × up to $10,000 | No year limit; no enrollment requirement; nonrefundable only |
 | LLC AGI phase-out | $85k–$105k single / $170k–$190k MFJ | Fully eliminated above top of range |
 
 ### Form 5329 Part I Line 2 Exception Codes
@@ -307,17 +342,19 @@ All four OBBBA deductions are Schedule 1 Part II adjustments → 1040 Line 10 �
 
 ## Page 4 — Tax Year Constants (TY 2026)
 
-Source: Rev. Proc. 2025-32 · IR-2025-103 · OBBBA P.L. 119-21
+*Source: Rev. Proc. 2025-32 · IR-2025-103 · OBBBA P.L. 119-21*
 
 ### Changes from TY 2025 → TY 2026
 
-| Item | TY 2025 | TY 2026 | ⚠ |
+| Item | TY 2025 | TY 2026 | Note |
 |---|---|---|---|
 | Std ded — Single | $15,750 | $16,100 | |
 | Std ded — MFJ | $31,500 | $32,200 | |
+| Std ded — HOH | $23,625 | $24,150 | |
 | Age-65 add-on — MFJ | $1,600 | $1,650 | |
 | CTC per child | $2,200 | $2,300 | |
 | ACTC cap | $1,700 | $1,800 | |
+| Business mileage | 70¢/mile | 72.5¢/mile | IR-2025-128 |
 | IRA limit | $7,000 | $7,500 | |
 | IRA catch-up (50+) | +$1,000 | +$1,100 | |
 | HSA self-only | $4,300 | $4,400 | |
@@ -334,24 +371,19 @@ Source: Rev. Proc. 2025-32 · IR-2025-103 · OBBBA P.L. 119-21
 
 ## Page 5 — Filing Rules
 
-### Rule 1 — OBBBA deductions are Form 1040 Line 13b (below-the-line; NOT Schedule 1 Part II)
-All four OBBBA deductions (senior, tips, OT, auto) flow through **Schedule 1-A → Form 1040 Line 13b**. They reduce taxable income, NOT AGI. `taxable = max(0, taxable - l13b_schedule1a)`. Do NOT add to `total_adjustments`. AGI is unaffected. V17 fix (2026-05-24): OBBBA removed from `total_adjustments` and applied post-deduction at Line 13b. CA does not conform — see Rule 11. Source: f1040s1a.pdf; P.L. 119-21 §70103–70301; IR-2026-28.
+### Rule 1 — OBBBA deductions are Form 1040 Line 13b (below-the-line; reduce taxable income, NOT AGI)
+All four OBBBA deductions (senior, tips, OT, auto) flow through **Schedule 1-A → Form 1040 Line 13b**. `taxable = max(0, taxable − l13b_schedule1a)`. Do NOT add to `total_adjustments`. AGI is unaffected. CA does not conform — `obbba_total_federal` is added back in `compute_california_540()`. Source: f1040s1a.pdf; P.L. 119-21 §70103–70301; IR-2026-28; CA FTB Announcement 2025-4.
 
-> ⚠ **V16 note (now obsolete):** Rule 1 previously said OBBBA was Schedule 1 Part II above-the-line. That was incorrect. Tests 32.2b/32.4b/32.13b in test_vita_irs.py have been updated to reflect the correct below-the-line behavior.
-
-### Rule 2 — ODC routes through Sch 8812, never Sch 3
-All dependents — qualifying children AND other qualifying dependents — route through Schedule 8812. L4a = children × CTC; L4b = other deps × $500 (ODC); L4c = pooled. L14 → 1040 L19. `sch3_l6d = 0` always. Source: f1040s8.pdf (2025); IRC §24(h)(4).
-
-### Rule 1A — QBI §199A deduction is 1040 Line 13a (NOT Schedule 1)
-QBI goes on 1040 **Line 13a** — it is a below-the-line deduction. It does NOT reduce AGI. It reduces taxable income via Line 14.
+### Rule 1A — QBI §199A deduction is 1040 Line 13a (NOT Schedule 1; does NOT reduce AGI)
+QBI goes on 1040 **Line 13a** — a below-the-line deduction that reduces taxable income via Line 14.
 ```
 L11  AGI = total_income − Schedule 1 Part II adjustments
 L12  Standard / itemized deduction
 L13a QBI §199A (Form 8995 Line 15) — does NOT affect AGI
-L14  = L12 + L13a + L13b (OBBBA below-line)
+L14  = L12 + L13a + L13b (OBBBA)
 L15  Taxable income = L11 − L14
 ```
-Source: f1040.pdf Lines 11-15; f8995.pdf; IRC §199A.
+Source: f1040.pdf Lines 11–15; f8995.pdf; IRC §199A.
 
 ### Rule 1B — IRA/pension distributions go on 1040 Lines 4b/5b (NOT Schedule 1)
 `l4b` (IRA taxable) and `l5b` (pension taxable) go directly into `total_income`. They are NOT Schedule 1 Part I items and must NOT appear in `additional_income` (Line 8). Source: f1040.pdf Lines 4b, 5b, 8.
@@ -362,61 +394,66 @@ L18  Add lines 16 and 17
 L19  Child tax credit / ODC — Schedule 8812
 L20  Schedule 3, line 8 (nonrefundable credits incl. education)
 L21  Add lines 19 and 20
-L22  Subtract line 21 from line 18 (tax after credits — if zero or less, enter -0-)
+L22  Subtract line 21 from line 18 (if zero or less, enter -0-)
 L23  Other taxes — Schedule 2, line 21 (SE tax, 5329, NIIT, etc.)
 L24  Add lines 22 and 23 — This is your total tax
 ```
-FETCH_VERIFIED: irs.gov/pub/irs-pdf/f1040.pdf | Page 2 Lines 18-24 | 2026-05-24
+FETCH_VERIFIED: irs.gov/pub/irs-pdf/f1040.pdf | Page 2 Lines 18–24 | 2026-05-24
 
-### Rule 1D — Form 8995 includes REIT/PTP component (Lines 6-9)
-Form 8995 QBID = (20% × QBI component) + (20% × REIT/PTP component).
-- L6 = qualified REIT dividends (1099-DIV Box 5 §199A dividends) + qualified PTP income (K-1 §199A)
-- L9 = 20% × L8 REIT/PTP
-- L10 = L3 + L9 (combined before TI limit)
-- L15 = min(L10, 20% × ordinary TI) → 1040 Line 13a
-Do NOT skip Lines 6-9. Source: f8995.pdf; i8995.pdf Line 6; IRC §199A(e)(4); FETCH_VERIFIED 2026-05-24.
+### Rule 1D — Form 8995 includes REIT/PTP component (Lines 6–9)
+QBID = (20% × QBI component) + (20% × REIT/PTP component). L6 = qualified REIT dividends (1099-DIV Box 5 §199A) + qualified PTP income (K-1 §199A). L9 = 20% × L8. L10 = L3 + L9. L15 = min(L10, 20% × ordinary TI) → 1040 Line 13a. Do NOT skip Lines 6–9. Source: f8995.pdf; i8995.pdf Line 6; IRC §199A(e)(4); FETCH_VERIFIED 2026-05-24.
+
+### Rule 2 — ODC routes through Sch 8812, never Sch 3
+All dependents — qualifying children AND other qualifying dependents — route through Schedule 8812. L4a = children × CTC; L4b = other deps × $500 (ODC); L4c = pooled. L14 → 1040 L19. `sch3_l6d = 0` always. Source: f1040s8.pdf (2025); IRC §24(h)(4).
 
 ### Rule 3 — map_result() is a pass-through (never a translator)
-`map_result()` starts with `dict(c)`. Every engine key is automatically in the output. Only add: derived values and legacy aliases. Never enumerate individual engine keys.
+`map_result()` starts with `dict(c)`. Every engine key is automatically in the output. Only add derived values and legacy aliases. Never enumerate individual engine keys.
 
 ### Rule 4 — EITC uses IRS $50-band table algorithm (not formula)
-The IRS EIC Table uses discrete $50 bands. Credit is computed at `band = (int(lookup) // 50) * 50`, not at exact income. Formula approximations differ by $1–$100 per return. `requires_table_lookup` is always False — the band algorithm is filing-grade. Source: p1040.pdf pp.16+; IRC §32; Rev. Proc. 2024-40 §3.07.
+The IRS EIC Table uses discrete $50 bands. Credit is computed at `band = (int(lookup) // 50) * 50`. Formula approximations differ by $1–$100 per return. `requires_table_lookup` is always False — the band algorithm is filing-grade. Source: p1040.pdf pp.16+; IRC §32; Rev. Proc. 2024-40 §3.07.
 
-### Rule 5 — safe_init() silently drops field name mismatches; every new field must be in all three places
-Any field name difference between UI JSON and engine dataclass is dropped without error. The bridge audit (Page 9F) is the only safeguard. Every new form field must match the exact engine dataclass field name. **Any new UI field must be added simultaneously to:** `buildSchema()`, `populateFromSchema()`, and `safe_init()` bridge — all three, every time. *(Consolidates former Rule 21.)* 
+### Rule 5 — safe_init() silently drops field name mismatches
+Any field name difference between UI JSON and engine dataclass is dropped without error. The bridge audit (Page 9F) is the only safeguard. Every new form field must match the exact engine dataclass field name.
 
 ### Rule 6 — Form 2441 Line 6 deemed earned income
 When MFJ spouse has $0 earned income but is a full-time student OR disabled, deemed income = $250/month (1 qualifying person) or $500/month (2+ persons) × months qualified. Source: f2441.pdf Line 6; IRC §21(d)(2).
 
 ### Rule 7 — AOTC eligibility gates (all three required)
-(1) `box8_half_time=True` — at least half-time enrollment required (hard gate). (2) `aoc_drug_conviction=False` — no federal/state drug conviction (hard gate). (3) `first_four_years=True` — cannot exceed 4 tax years total. Source: IRC §25A(b); i8863.pdf.
+(1) `box8_half_time=True` — at least half-time enrollment (hard gate). (2) `aoc_drug_conviction=False` — no federal/state drug conviction (hard gate). (3) `first_four_years=True` — cannot exceed 4 tax years total. Source: IRC §25A(b); i8863.pdf.
 
 ### Rule 8 — OBBBA tips occupation required (IRS Notice 2025-65)
 Tip deduction requires a qualifying occupation from the IRS Notice 2025-65 list. Mandatory service charges are explicitly excluded (they are wages, not tips). Source: IRC §3121; Rev. Rul. 2012-18; Notice 2025-65.
 
 ### Rule 9 — OBBBA overtime must be FLSA-qualifying
-Only time-and-a-half overtime qualifying under FLSA §207 counts. Bonuses, shift differentials, and exempt-employee extra pay do not qualify. Employer must separately identify FLSA overtime on W-2 or employer statement. Source: P.L. 119-21 §70202; FLSA §207(a)(1).
+Only time-and-a-half overtime qualifying under FLSA §207 counts. Bonuses, shift differentials, and exempt-employee extra pay do not qualify. Source: P.L. 119-21 §70202; FLSA §207(a)(1).
 
 ### Rule 10 — Capital gains special rates: §1250 (25%) and collectibles (28%)
-Unrecaptured §1250 gain (straight-line depreciation on real property) is taxed at max 25%. Collectibles gain (coins, art, stamps, bullion) is taxed at max 28%. Both are passed to `compute_qdcgt_tax()` and reduce the pool subject to 0%/15%/20% rates. Source: IRC §1(h)(1)(D),(4); i1040sd.pdf Lines 18–19.
+Unrecaptured §1250 gain is taxed at max 25%. Collectibles gain is taxed at max 28%. Both reduce the pool subject to 0%/15%/20% rates. Source: IRC §1(h)(1)(D),(4); i1040sd.pdf Lines 18–19.
 
 ### Rule 11 — CA does not conform to OBBBA
-CA Schedule CA must add back all four OBBBA deductions (senior, tips, OT, auto) when computing CA AGI. Engine auto-computes: `obbba_total_federal` passed to `compute_california_540()`. Source: CA FTB Announcement 2025-4.
+CA Schedule CA must add back all four OBBBA deductions when computing CA AGI. Engine auto-computes: `obbba_total_federal` passed to `compute_california_540()`. Source: CA FTB Announcement 2025-4.
 
 ### Rule 12 — IRS-first before any calculation (EA audit requirement)
-Before coding any new formula, limit, or rate: look it up on irs.gov first. Primary sources only. Add `# Source: <form>.pdf <line>; <IRC §>` on the formula line. Never rely on training data for dollar amounts — they change annually and OBBBA made large mid-year changes. See 9A and 9G.
+Before coding any new formula, limit, or rate: look it up on irs.gov first. Add `# Source: <form>.pdf <line>; <IRC §>` on the formula line. Never rely on training data for dollar amounts. See 9A and 9G.
+
+**IRS source tiers (always prefer higher tier):**
+| Tier | Source |
+|---|---|
+| 1 | IRS form/instruction PDF · IRS Pub · IRC § · Rev. Proc. · OBBBA § |
+| 2 | IRS Notice / newsroom |
+| ❌ | Training data memory — never for amounts/rates |
 
 ### Rule 13 — HOH requires a qualifying person (hard gate in UI)
-`selFS('hoh')` is blocked when `S.deps.length === 0`. Alert shown to user. Engine also warns via soft gate for API mode. Source: IRC §2(b); Pub 501.
+`selFS('hoh')` is blocked when `S.deps.length === 0`. Alert shown. Engine also warns via soft gate for API mode. Source: IRC §2(b); Pub 501.
 
 ### Rule 14 — IRA spouse covered_by_plan from W-2 Box 13
-`sp_covered = any(w.box13_retirement_plan for w in schema.w2s if w.for_spouse)`. Never hardcode False. When noncovered taxpayer / covered spouse, phaseout is $236k–$246k (2025). Source: Pub 590-A WS 1-2; IRC §219(g)(7).
+`sp_covered = any(w.box13_retirement_plan for w in schema.w2s if w.for_spouse)`. Never hardcode False. When noncovered taxpayer / covered spouse: phaseout $236k–$246k (2025). Source: Pub 590-A WS 1-2; IRC §219(g)(7).
 
-### Rule 15 — IRS tax documents from irs.gov/forms-instructions only
-All tax forms, instructions, and publications used in this project must come from **https://www.irs.gov/forms-instructions** exclusively. No third-party reproductions, cached copies, or training-data memory substitutes. When fetching a form or instruction for a calculation, cite the direct irs.gov URL. Hard requirement — not a preference.
+### Rule 15 — All IRS forms from irs.gov/forms-instructions only
+No secondary sources (TurboTax, tax blogs, cached PDFs). Forms and instructions from https://www.irs.gov/forms-instructions only.
 
-### Rule 16 — No taxpayer information sent to web without express approval
-No data from any TaxpayerSchema, computed result, or intake form may be transmitted to any external URL, API, or web service without the user's explicit approval in the chat. This includes web search queries that could contain PII. All IRS lookups must be read-only fetches of public IRS documents — never POST requests containing taxpayer data.
+### Rule 16 — No taxpayer data to web without express approval
+No taxpayer data (names, SSNs, income, etc.) sent to any external service without explicit user approval per session.
 
 ### Rule 17 — OBBBA senior deduction auto-populate
 Enter taxpayer DOB in Taxpayer panel; UI auto-fills `tp-age-senior`. Engine applies $6,000 deduction per person ≥ 65 at year-end. MFS ineligible. MAGI phaseout: $75k single / $150k MFJ. Source: P.L. 119-21 §70103; OBBBA §70103; PARAMS_2025[`senior_deduction_amount`].
@@ -445,6 +482,14 @@ Simplified method ($5/sqft, max 300 sqft) cannot exceed gross income from busine
 ### Rule 25 — NOL carryforward 80% limit
 Post-TCJA NOL carryforward limited to 80% of taxable income per year. Indefinite carryforward. No carryback except farming losses. Field: `nol_carryforward_prior_year`. Source: IRC §172(a)(2); IRS Pub 536.
 
+### Rule 26 — Every nested object must be in _SCALAR_NESTED
+Any nested dataclass object passed in JSON must be registered in `_SCALAR_NESTED` in server.py, otherwise safe_init() receives a raw dict and crashes with AttributeError on first field access.
+
+### Rule 27 — Always patch HTML with str_replace; never rewrite full file
+Python `open/write` converts CRLF → LF across the entire file. Chromium v141 fails to parse template literals in LF-only files in some cases. Always use the `str_replace` tool for targeted HTML patches.
+
+### Rule 28 — Always modify TaxReturn_PlanningReference.md; never create from scratch
+Open the existing file and use str_replace for targeted updates. Creating from scratch silently drops the full changelog history, all rules, all patterns, and all bridge entries accumulated across sessions.
 
 ---
 
@@ -466,7 +511,7 @@ Post-TCJA NOL carryforward limited to 80% of taxable income per year. Indefinite
 - Business travel (airfare, lodging) → Line 24a — separate from mileage
 
 ### 1099-NEC handling
-- `nec_included_in_gross: true` (default) — preparer included NEC in gross receipts
+- `nec_included_in_gross: true` (default) — preparer included NEC in gross receipts on L1
 - `nec_included_in_gross: false` — engine auto-adds all 1099-NEC Box 1 to gross receipts
 - Engine always emits verification warning when 1099-NEC income exists
 - Do NOT enter NEC in both SE panel and Other Income panel (double-count)
@@ -476,29 +521,32 @@ Post-TCJA NOL carryforward limited to 80% of taxable income per year. Indefinite
 - **L6 REIT/PTP** = 1099-DIV Box 5 (§199A dividends) + K-1 §199A income
 - **L9** = 20% × L8 REIT/PTP
 - **L10** = L3 (QBI component) + L9 (REIT/PTP component)
-- **L15 QBID** = min(L10, TI limit) → 1040 **Line 13a** (NOT Schedule 1)
+- **L15 QBID** = min(L10, TI limit) → 1040 **Line 13a** (NOT Schedule 1; does NOT reduce AGI)
 - Source: f8995.pdf; i8995.pdf; IRC §199A(e)(4); FETCH_VERIFIED 2026-05-24
 
 ---
 
 ## Page 6 — Forms Implemented
 
-### Fully implemented ✅ (33 forms)
-Form 1040 all lines · Schedule 1 Part I+II · Schedule A (OBBBA) · Schedule B · Schedule C · Schedule D/8949 · Schedule E/8582 · Schedule K-1 · Schedule SE · Form 2441 (incl. Line 6 deemed) · Form 6251 AMT · Form 8606 (pro-rata) · Form 8863 AOTC+LLC · Form 8880 · Schedule 8812 CTC/ACTC/ODC · Form 8889 HSA · Form 8962 PTC (incl. repayment cap) · Form 1116 FTC · Form 4797 §1231/§1245/§1250 · Form 5329 · Form 8615 Kiddie · Pub 915 WS1 SS · Pub 575 Simplified Method · OBBBA §70103–70301 · CA 540 (partial) · TY 2026 full params · EITC $50-band table · Cap gains 25%/28% rates · QBI Form 8995-A (above threshold with W-2/UBIA) · PTC repayment cap Table 5 · AOTC half-time + drug conviction gates · HOH qualifying person gate
+### Fully implemented ✅ (38 forms/schedules — updated V17.2)
+Form 1040 all lines · Schedule 1 Part I+II (incl. L8h jury duty) · Schedule 1-A OBBBA · Schedule A · Schedule B · Schedule C · Schedule D/8949 · Schedule E/8582 · Schedule K-1 · Schedule SE · Schedule 8812 CTC/ACTC/ODC · Form 2441 (incl. Line 6 deemed income + age-13 gate) · Form 2210 (quarterly per-installment) · Form 4797 §1231/§1245/§1250 · Form 5329 (all codes) · Form 6251 AMT · Form 8606 (pro-rata, TP+SP, backdoor Roth) · Form 8615 Kiddie tax · Form 8863 AOTC+LLC · Form 8880 Saver's · Form 8889 HSA · Form 8959 Add'l Medicare · Form 8960 NIIT · Form 8962 PTC (incl. repayment cap) · Form 8995 QBI (incl. REIT L6–9) · Form 8995-A (above threshold scaffold) · Form 982 CoD exclusion · Form 1116 FTC · Pub 915 WS1 SS taxability · Pub 575 Simplified Method · OBBBA §70103–70301 · CA 540 (partial — see ⬜) · CalEITC/YCTC/FYTC · TY 2026 full PARAMS · EITC $50-band table · Cap gains 25%/28% rates · QCD §408(d)(8) · Form 8582 PAL §469
 
-### Not yet implemented ⬜ (10 items)
+### Not yet implemented ⬜
 | # | Priority | Item | Notes |
 |---|---|---|---|
-| 1 | HIGH | CA Schedule CA line-by-line | Major adjustments (military pay, loan forgiveness, community property) not full; use with caution |
-| 2 | MEDIUM | EITC exact embedded table | Current band algorithm is filing-grade but not the pre-computed table |
-| 3 | MEDIUM | CalEITC using W-2 Box 16/17 | Currently uses CA AGI proxy |
-| 4 | MEDIUM | Form 982 insolvency worksheet | CoD exclusion for insolvency/bankruptcy |
-| 5 | LOW | Form 2210 quarterly rate | Uses annual rate; directionally correct |
-| 6 | LOW | K-1 outside basis computation | Warnings issued; basis not tracked multi-year |
-| 7 | LOW | Form 8829 home office | Not implemented |
-| 8 | LOW | AMT ISO/NQSO | Stock option AMT beyond $0 input |
-| 9 | LOW | Non-CA state returns | Only CA 540 |
-| 10 | LOW | §1231 5-year lookback computation | Warning issued; reclassification not auto-computed |
+| 1 | HIGH | CA Schedule CA full line-by-line | Community property MFS, Form 3885 detail not done; use with caution |
+| 2 | MEDIUM | CalEITC using W-2 Box 16/17 CA wages | Currently uses CA AGI proxy |
+| 3 | MEDIUM | IRC §63(c)(5) dependent std ded limitation | $1,350 min / earned+$450 cap |
+| 4 | MEDIUM | IRC §1211(b)(1) MFS capital loss $1,500 limit | Engine uses $3k for all statuses |
+| 5 | MEDIUM | Form 8995-A above-threshold W-2 wage / SSTB detail | Scaffolded only |
+| 6 | LOW | IRC §25B(c)(1) full-time student saver's credit disqualification | Known gap |
+| 7 | LOW | QSS stale death year validation (2-year window) | Known gap |
+| 8 | LOW | Sch 1 Line 24a jury pay deduction (when remitted to employer) | Known gap |
+| 9 | LOW | K-1 outside basis computation | Warnings issued; basis not tracked multi-year |
+| 10 | LOW | Form 8829 home office | Not implemented |
+| 11 | LOW | AMT ISO/NQSO | Stock option AMT beyond $0 input |
+| 12 | LOW | Non-CA state returns | Only CA 540 |
+| 13 | LOW | §1231 5-year lookback auto-computation | Warning issued; reclassification not auto-applied |
 
 ---
 
@@ -506,9 +554,11 @@ Form 1040 all lines · Schedule 1 Part I+II · Schedule A (OBBBA) · Schedule B 
 
 | Severity | Risk | Mitigation |
 |---|---|---|
-| MEDIUM | safe_init() silent drops | Bridge audit (Page 9F) every session; Layer 1 tests all bridge targets |
-| HIGH | CA Schedule CA incomplete | Add-backs for OBBBA, bonus depreciation, military pay added; full line-by-line still needed; flag for filers |
-| LOW | Form 2210 annual rate only | Penalty estimate directionally correct; exact quarterly calc may differ |
+| HIGH | CA Schedule CA incomplete | P1 partial: brackets/std ded/HOH/alimony/NOL/military fixed. Community property MFS, Form 3885 not done. Flag for all CA filers. |
+| MEDIUM | safe_init() silent drops | Bridge audit (Page 9F) every session; _SCALAR_NESTED required for all nested objects |
+| LOW | MFS cap loss $1,500 limit | Engine uses $3k single limit for MFS. IRC §1211(b)(1) known gap. |
+| LOW | Dependent std ded limitation | IRC §63(c)(5) not implemented. Engine uses regular std ded. |
+| LOW | Form 8995-A above threshold | Scaffolded; W-2 wage limit not complete for SSTB |
 | LOW | K-1 basis/at-risk not enforced | ⚠ warnings issued on all losses; Form 6198 verification required |
 | LOW | EITC band algorithm vs pre-computed table | Band algorithm matches table to within $1–$3 on most returns; acceptable for filing |
 
@@ -517,8 +567,8 @@ Form 1040 all lines · Schedule 1 Part I+II · Schedule A (OBBBA) · Schedule B 
 ## Page 8 — Recurring Bug Patterns
 
 ### Pattern 1 — safe_init() silent drop
-**Examples:** CoD always $0 · SSA WH $0 · SM never applied · books missing from AOTC · spouse fields dropped
-**Prevention:** Bridge audit (Page 9F) every session. Layer 1 tests all bridge target fields.
+**Examples:** CoD always $0 · SSA WH $0 · Simplified Method never applied · books missing from AOTC · spouse fields dropped · unemployment flat scalar dropped · estimated_tax_payments raw dict crash
+**Prevention:** Bridge audit (Page 9F) every session. Every nested object must be in `_SCALAR_NESTED`.
 
 ### Pattern 2 — Local var not in computed dict
 **Examples:** `additional_income` $0 · `obbba_senior_deduction` not in result
@@ -526,47 +576,69 @@ Form 1040 all lines · Schedule 1 Part I+II · Schedule A (OBBBA) · Schedule B 
 
 ### Pattern 3 — UI import overwrites auto-computed value
 **Examples:** Senior age blanked · spouse SSN lost on re-import
-**Prevention:** `populateFromSchema()` only overrides if schema value > 0. `buildSchema()` derives from DOB if field blank. Engine DOB fallback.
+**Prevention:** `populateFromSchema()` only overrides if schema value is non-zero/non-null. `buildSchema()` derives from DOB if field blank.
 
 ### Pattern 4 — map_result() manual drift
-**Example:** 86 engine keys missing · renderResult showed $0 for correct values
+**Example:** Engine keys missing from result → renderResult showed $0 for correct values
 **Prevention:** `map_result()` now starts with `dict(c)`. Can never drift.
 
 ### Pattern 5 — Test helper uses __import__ inline
+**Example:** `__import__('dataclasses').fields` inside function body → field not found
+**Prevention:** Always use a module-level `si()` helper with `import dataclasses as _dc` at top of test block.
 
 ### Pattern 6 — Independent re-computation diverges from engine
-**Example:** `compute_qbi_deduction()` re-derived net profit from raw `sc.*` fields, missing the standard mileage deduction ($1,750) and NEC auto-add ($1,000) that `compute_schedule_c_se()` had already applied. The QBI function used `sc.car_truck_expenses = $0` (schema value) instead of the computed $1,750.
-**Rule:** Never re-derive a value that has already been computed by another function. Pass computed results as parameters.
+**Example:** `compute_qbi_deduction()` re-derived net profit from raw schema, missing mileage ($1,750) and NEC ($1,000) already applied by `compute_schedule_c_se()`.
+**Rule:** Never re-derive a value that another function already computed. Pass computed results as parameters.
 
 ### Pattern 7 — Template literal TypeError silently aborts innerHTML
-**Example:** `r.qbi_detail.per_biz.map(...)` inside a template literal — if `r.qbi_detail` is undefined, this throws TypeError, the entire innerHTML assignment fails, and the UI stays on "Loading result…" forever with no visible error.
-**Rule:** Pre-declare all sub-dicts at top of render(): `const _qbi = r.qbi_detail || {}`. Wrap render() in try/catch with a visible error display.
+**Example:** `r.qbi_detail.per_biz.map(...)` — if `r.qbi_detail` is undefined, TypeError aborts the entire innerHTML assignment. UI stays on "Loading result…" forever.
+**Rule:** Pre-declare all sub-dicts at top of render(): `const _qbi = r.qbi_detail || {}`. Wrap render() in try/catch.
 
 ### Pattern 8 — localStorage cross-origin isolation
-**Example:** Workpaper opened as `file://` never has data set by `localhost:5000`. localStorage is per-origin. The standalone embedded workpaper (bundle injected at build time) is the workaround.
+**Example:** Workpaper opened as `file://` never has data set by `localhost:5000`. localStorage is per-origin.
+**Prevention:** Use embedded standalone workpaper or pass data via URL parameter / postMessage.
 
 ### Pattern 9 — qdcgt double-count of cap gain distributions
-**Example:** `div_cap_gain_dist` was added to `qdcgt_income` separately, despite already being included in `net_ltcg_with_k1` (via Schedule D Line 13). When the Schedule D net is negative, the distribution is absorbed — adding it back to qdcgt artificially reduces ordinary income taxed at bracket rates.
+**Example:** `div_cap_gain_dist` was added to `qdcgt_income` separately despite already being in `net_ltcg_with_k1` (via Schedule D Line 13). When Schedule D net is negative, adding it back artificially reduces ordinary income taxed at bracket rates.
 **Rule:** `qdcgt_income = qual_div + max(0, net_ltcg)`. Never add `div_cap_gain_dist` separately.
-**Example:** M1/M5 tests used `__import__('dataclasses').fields` inside function → field not found
-**Prevention:** Always use a module-level `si()` helper with `import dataclasses as _dcN` at top of test block.
+
+### Pattern 10 — Wrong 1040 line routing
+**Examples:** IRA/pension in Sch1 instead of L4b/5b; QBI in Sch1 instead of L13a; OBBBA in AGI instead of L13b.
+**Prevention:** Always look up the exact 1040 line in f1040.pdf before routing. Cite the line number in the code.
+
+### Pattern 11 — Variable shadowing in template literals
+**Example:** `map(r =>)` inside template literal shadows outer `r` → TypeError aborts innerHTML.
+**Prevention:** Use distinct variable names. Pre-declare all computed values outside the template.
+
+### Pattern 12 — Line ending conversion kills browser JS parse
+**Example:** Python `open/write` converts CRLF → LF; Chromium v141 fails to parse template literals in the entire script block.
+**Prevention:** Always patch HTML using `str_replace` tool. Never rewrite the full file via Python `f.write(html)`.
+
+### Pattern 13 — Partial form implementation
+**Example:** Form 8995 Lines 1–7 computed, Lines 6–9 (REIT/PTP) skipped entirely.
+**Prevention:** Always implement all form lines. Check against the actual IRS form PDF.
+
+### Pattern 14 — Planning Reference blank-page regression
+**Example:** Writing TaxReturn_PlanningReference.md from scratch for a new version loses all prior content (full changelog history, all rules, all patterns, bridge table, priority list).
+**Prevention:** Always open the existing file and use str_replace for targeted updates. Never create from scratch (Rule 27).
 
 ---
 
 ## Page 9 — Session Protocol
 
-### 9A — Session start (required — all 6 steps)
-1. `python3 sachintaxcare_test.py` → **584 PASS · 0 FAIL · 4 WARN**
-2. `python3 test_vita_irs.py` → **145 PASS · 0 FAIL**
-3. Sync audit (9C) → **0 divergences**
-4. `node test_ui_fields.js sachintaxcare_pro.html` → **404 PASS · 0 FAIL**
-5. **IRS Citation Audit (9G)** → 40/40 cited · 0 uncited
+### 9A — Session start (required — all 6 steps before any work)
+
+```
+1. python3 sachintaxcare_test.py       → 593 PASS · 0 FAIL · 0 WARN
+2. python3 test_vita_irs.py            → 212 PASS · 0 FAIL
+3. Sync audit (9C)                     → 0 divergences
+4. node test_ui_fields.js sachintaxcare_pro.html  → 404 PASS · 0 FAIL
+5. IRS Citation Audit (9G)             → 40/40 cited · 0 uncited
 6. Then begin work
+```
 
 **STOP GATE before writing any new calculation code:**
 > Before coding any new tax rule, formula, or limit — look it up on irs.gov first.
-> **Rule 15:** Forms and instructions from https://www.irs.gov/forms-instructions ONLY.
-> **Rule 16:** Never send taxpayer data to any web service without express user approval.
 > Primary sources only: IRS form PDFs, instructions, publications, Rev. Proc., IRC sections, OBBBA §.
 > Add the citation as `# Source: <form>.pdf <line>; IRC §X` on the formula line.
 > Never rely on training data for dollar amounts — they change annually.
@@ -580,38 +652,46 @@ Form 1040 all lines · Schedule 1 Part I+II · Schedule A (OBBBA) · Schedule B 
 
 ### 9B — Session end (required)
 1. Run `python3 sachintaxcare_test.py` → 0 failures
-2. Update file registry (Page 1) with new line counts
-3. Update this changelog (Page 1A) with what changed and why
-4. Update Page 10 remaining priorities
+2. Run `python3 test_vita_irs.py` → 0 failures
+3. Run `node test_ui_fields.js sachintaxcare_pro.html` → 0 failures
+4. Update Page 1 file registry with new line counts and version notes
+5. Add entry to Page 1A changelog (what changed and why)
+6. Update Page 6 ⬜ list if any gaps resolved or added
+7. Update Page 10 priorities (mark completed, add new)
+8. Copy all changed files to /mnt/user-data/outputs/
+9. Update this document via str_replace — never rewrite from scratch (Rule 27)
 
 ### 9C — Sync Audit (paste into python3)
 
 ```python
-import sachintaxcare_engine as e, re
+import sachintaxcare_engine as e
 
 p25 = e.PARAMS_2025; p26 = e.PARAMS_2026
 checks = [
     # TY 2025 key values
-    ("P25 std_ded MFJ",          p25["std_deduction"]["mfj"],         31500),
-    ("P25 std_ded single",       p25["std_deduction"]["single"],       15750),
-    ("P25 ctc_per_child",        p25["ctc_per_child"],                 2200),
-    ("P25 actc_cap",             p25["actc_cap_per_child"],            1700),
-    ("P25 senior_ded",           p25["senior_deduction_amount"],       6000),
-    ("P25 tip_max",              p25["tip_deduction_max"],             25000),
-    ("P25 ot_max_mfj",           p25["overtime_deduction_max_mfj"],    25000),
-    ("P25 ira_limit",            p25["ira_contribution_limit_2025"],   7000),
-    ("P25 hsa_self",             p25["hsa_limit_self_only_2025"],      4300),
-    ("P25 amt_ex_single",        p25["amt_exemption_single"],          88100),
-    ("P25 amt_po_single",        p25["amt_phaseout_single"],           626350),
-    ("P25 qbi_threshold_mfj",   p25["qbi_threshold_mfj"],             394600),
-    ("P25 eitc_invest_limit",    p25["eitc_investment_income_limit"],  11600),
+    ("P25 std_ded MFJ",        p25["std_deduction"]["mfj"],              31500),
+    ("P25 std_ded single",     p25["std_deduction"]["single"],           15750),
+    ("P25 ctc_per_child",      p25["ctc_per_child"],                     2200),
+    ("P25 actc_cap",           p25["actc_cap_per_child"],                1700),
+    ("P25 senior_ded",         p25["senior_deduction_amount"],           6000),
+    ("P25 tip_max",            p25["tip_deduction_max"],                 25000),
+    ("P25 ot_max_mfj",         p25["overtime_deduction_max_mfj"],        25000),
+    ("P25 ira_limit",          p25["ira_contribution_limit_2025"],       7000),
+    ("P25 hsa_self",           p25["hsa_limit_self_only_2025"],          4300),
+    ("P25 amt_ex_single",      p25["amt_exemption_single"],              88100),
+    ("P25 amt_po_single",      p25["amt_phaseout_single"],               626350),
+    ("P25 qbi_threshold_mfj",  p25["qbi_threshold_mfj"],                394600),
+    ("P25 eitc_invest_limit",  p25["eitc_investment_income_limit"],      11600),
+    ("P25 ca_std_single",      p25["ca_std_ded_single"],                 5706),
+    ("P25 ca_std_mfj",         p25["ca_std_ded_mfj"],                   11412),
+    ("P25 mileage_biz",        p25["mileage_rate_business"],             0.70),
     # TY 2026 key values
-    ("P26 std_ded MFJ",          p26["std_deduction"]["mfj"],         32200),
-    ("P26 ctc_per_child",        p26["ctc_per_child"],                 2300),
-    ("P26 ira_limit",            p26["ira_limit_2026"],                7500),
-    ("P26 hsa_self",             p26["hsa_self_only_2026"],            4400),
-    ("P26 amt_po_single",        p26["amt_phaseout_single"],           500000),
-    ("P26 qbi_min",              p26["qbi_min_deduction"],             400),
+    ("P26 std_ded MFJ",        p26["std_deduction"]["mfj"],              32200),
+    ("P26 ctc_per_child",      p26["ctc_per_child"],                     2300),
+    ("P26 ira_limit",          p26["ira_limit_2026"],                    7500),
+    ("P26 hsa_self",           p26["hsa_self_only_2026"],                4400),
+    ("P26 amt_po_single",      p26["amt_phaseout_single"],               500000),
+    ("P26 qbi_min",            p26["qbi_min_deduction"],                 400),
 ]
 ok = True
 for label, got, exp in checks:
@@ -625,57 +705,63 @@ if ok:
 ### 9D — Adding a new engine field (checklist)
 1. Add field to the appropriate dataclass with type annotation and default value
 2. Add `# Source: <IRS form/IRC>` comment inline
-3. Add field to UI HTML with correct `id`
-4. Wire field in `buildSchema()` using `v()` or `n()`
-5. Wire field in `populateFromSchema()` for import
-6. If field name differs between UI and dataclass, add to bridge table (server.py + Page 2)
-7. Add test assertion in test suite (Layer 1B registry check is automatic via `safe_init`)
-8. Run 9A gates — 0 failures required
+3. If a nested object: add to `_SCALAR_NESTED` in sachintaxcare_server.py (Rule 25)
+4. Add field to UI HTML with correct `id`
+5. Wire field in `buildSchema()` using `v()` or `n()`
+6. Wire field in `populateFromSchema()` for import
+7. If field name differs between UI and dataclass, add to bridge table (server.py + Page 2)
+8. Add test assertion in test suite
+9. Run 9A gates — 0 failures required
+10. Update Page 1 registry and Page 1A changelog
 
 ### 9E — Adding a new compute function (checklist)
 1. Define `compute_X()` with `# Source: <IRS form>` in docstring
-2. Add at least one IRS citation inside the function body
-3. Call from `run()` with appropriate params
+2. Add at least one IRS citation inside the function body on every formula line
+3. Call from `run()` with appropriate params at correct position in 14-step order
 4. Store result in `result["computed"]` (or sub-dict)
 5. Add test assertions — both unit (Layer 3) and pipeline (Layer 2)
-6. Run 9G citation audit — 0 uncited
-7. Run 9A gates — 0 failures
+6. Run 9G citation audit → 0 uncited
+7. Run 9A gates → 0 failures
 
-### 9F — Bridge Audit Protocol (run at session start)
+### 9F — Bridge Audit Protocol (run at session start — step 5 of 9A)
 
 ```python
 import sachintaxcare_engine as e, dataclasses as dc
 
 BRIDGE_TARGETS = [
-    (e.Form1099C,         "box2_amount_discharged"),
-    (e.Form1099C,         "is_excluded"),
-    (e.FormSSA1099,       "box6_voluntary_wh"),
-    (e.Form1099R,         "box9b_employee_contribs"),
-    (e.W2,                "box5_med_wages"),
-    (e.Form1098T,         "box8_half_time"),
-    (e.Form1098T,         "aoc_drug_conviction"),
-    (e.Form1098T,         "box9_graduate"),
-    (e.TaxpayerSchema,    "spouse_ssn"),
-    (e.TaxpayerSchema,    "spouse_first"),
-    (e.TaxpayerSchema,    "spouse_last"),
-    (e.TaxpayerSchema,    "spouse_dob"),
-    (e.TaxpayerSchema,    "tip_occupation"),
-    (e.TaxpayerSchema,    "overtime_flsa_confirmed"),
-    (e.TaxpayerSchema,    "care_spouse_is_student"),
-    (e.TaxpayerSchema,    "care_spouse_is_disabled"),
-    (e.TaxpayerSchema,    "care_spouse_months_qualified"),
-    (e.TaxpayerSchema,    "prior_sec1231_losses_5yr"),
+    (e.Form1099C,            "box2_amount_discharged"),
+    (e.Form1099C,            "is_excluded"),
+    (e.FormSSA1099,          "box6_voluntary_wh"),
+    (e.Form1099R,            "box9b_employee_contribs"),
+    (e.W2,                   "box5_med_wages"),
+    (e.Form1098T,            "box8_half_time"),
+    (e.Form1098T,            "aoc_drug_conviction"),
+    (e.Form1098T,            "box9_graduate"),
+    (e.TaxpayerSchema,       "spouse_ssn"),
+    (e.TaxpayerSchema,       "spouse_first"),
+    (e.TaxpayerSchema,       "spouse_last"),
+    (e.TaxpayerSchema,       "spouse_dob"),
+    (e.TaxpayerSchema,       "tip_occupation"),
+    (e.TaxpayerSchema,       "overtime_flsa_confirmed"),
+    (e.TaxpayerSchema,       "care_spouse_is_student"),
+    (e.TaxpayerSchema,       "care_spouse_is_disabled"),
+    (e.TaxpayerSchema,       "care_spouse_months_qualified"),
+    (e.TaxpayerSchema,       "prior_sec1231_losses_5yr"),
+    (e.TaxpayerSchema,       "jury_duty_income"),
+    (e.TaxpayerSchema,       "prize_award_income"),
+    (e.CaliforniaData,       "ca_alimony_addback"),
+    (e.CaliforniaData,       "ca_nol_addback"),
+    (e.EstimatedTaxPayments, "q1"),
     (e.SimplifiedMethodData, "age_at_annuity_start"),
     (e.SimplifiedMethodData, "prior_year_tax_free_recovered"),
-    # Added 2026-05-22/24
-    (e.Form1099DIV,       "box2a_total_cap_gain"),   # alias for box2a_cap_gain_dist
-    (e.Form5329Exception, "amount"),                 # alias for distribution_amount
-    (e.Form5329Exception, "account_type"),           # alias for plan_type
-    (e.Form1098E,         "box1_student_loan_interest"),
-    (e.ScheduleC,         "nec_included_in_gross"),
-    (e.ScheduleC,         "business_code"),
-    (e.ScheduleC,         "business_miles"),
-    (e.Form1099INT,       "payer_ein"),
+    (e.SimplifiedMethodData, "annuity_start_after_nov_18_1996"),
+    (e.Form1099DIV,          "box2a_cap_gain_dist"),
+    (e.Form5329Exception,    "distribution_amount"),
+    (e.Form1099INT,          "box6_foreign_tax"),
+    (e.ScheduleC,            "nec_included_in_gross"),
+    (e.ScheduleC,            "business_code"),
+    (e.ScheduleC,            "business_miles"),
+    (e.Form1099INT,          "payer_ein"),
 ]
 all_ok = True
 for cls, field in BRIDGE_TARGETS:
@@ -734,41 +820,51 @@ print(f'{"="*60}')
 
 ---
 
-## Page 10 — Next Session Priorities
+## Page 10 — Session Priorities
 
-| # | Priority | Item | Notes |
-|---|---|---|---|
-| 1 | HIGH | CA Schedule CA full line-by-line | Military pay, community property MFS split, loan forgiveness, bonus depreciation recalculation |
-| 2 | MEDIUM | CalEITC: use W-2 Box 16/17 CA wages | Currently uses CA AGI proxy; accuracy matters for low-income filers |
-| 3 | MEDIUM | Form 982 insolvency worksheet | CoD exclusion for bankruptcy/insolvency; common with cancelled mortgage debt |
-| 4 | MEDIUM | Form 2441 Line 6 workpaper display | Deemed income calculation not yet shown on workpaper page |
-| 5 | LOW | §1231 5-year lookback auto-computation | Warning issued; actual reclassification not auto-applied |
-| 6 | LOW | Form 2210 quarterly rate | Annual rate used; directionally correct |
-| 7 | LOW | 1099-INT Box 9 PAB → AMT route verify | Low impact |
-| 8 | LOW | Schedule B Line 3 Treasury bond premium | Display only |
-| 9 | LOW | Schedule C Part III COGS workpaper display | For product-based businesses |
+| # | Status | Priority | Item | Notes |
+|---|---|---|---|---|
+| 1 | ✅ V17.2 | — | CA Schedule CA brackets/HOH/alimony/NOL | ftb.ca.gov/forms/2025/2025-540.pdf FETCH_VERIFIED |
+| 2 | ✅ V17.2 | — | Form 2210 quarterly per-installment | i2210.pdf Part III |
+| 3 | ✅ V17.2 | — | Jury duty income Sch 1 Line 8h | f1040s1.pdf L8h |
+| 4 | ✅ V17 | — | EITC $50-band table algorithm | Filing-grade confirmed |
+| 5 | ✅ V17 | — | Form 2210 annual rate | Replaced by quarterly in V17.2 |
+| 6 | 🔲 | HIGH | CA Schedule CA full line-by-line | Community property MFS, Form 3885 |
+| 7 | 🔲 | MEDIUM | CalEITC using W-2 Box 16/17 CA wages | Currently uses CA AGI proxy |
+| 8 | 🔲 | MEDIUM | IRC §63(c)(5) dependent std ded limitation | $1,350 min / earned+$450 |
+| 9 | 🔲 | MEDIUM | IRC §1211(b)(1) MFS capital loss $1,500 | Engine uses $3k |
+| 10 | 🔲 | MEDIUM | Form 8995-A above-threshold SSTB W-2 | Scaffolded only |
+| 11 | 🔲 | LOW | IRC §25B(c)(1) student saver's credit | Known gap |
+| 12 | 🔲 | LOW | QSS stale death year validation | 2-year window |
+| 13 | 🔲 | LOW | Sch 1 Line 24a jury pay deduction | When remitted to employer |
+| 14 | 🔲 | LOW | §1231 5-year lookback auto-computation | Warning issued; reclassification not applied |
+| 15 | 🔲 | LOW | Form 2441 Line 6 workpaper display | Deemed income calc not shown on workpaper |
+| 16 | 🔲 | LOW | K-1 outside basis multi-year | Warnings issued; tracking not implemented |
+| 17 | 🔲 | LOW | Form 8829 home office actual-expense | Not implemented |
+| 18 | 🔲 | LOW | 1099-INT Box 9 PAB → AMT verify | Low impact |
+| 19 | 🔲 | LOW | Schedule B Line 3 Treasury bond premium | Display only |
+| 20 | 🔲 | LOW | Schedule C Part III COGS workpaper display | Product-based businesses |
 
 ---
 
 ## Appendix A — Why Calculation Mistakes Happen
 
-See Page 8 (Recurring Bug Patterns) for the full list. Summary:
-
 1. **safe_init() silent drop** — field name mismatch between UI JSON and dataclass → silently $0
 2. **Local var not in computed dict** — engine computes correctly but value not stored in result
 3. **UI import overwrites auto-compute** — `populateFromSchema()` overwrites a value the engine derives
 4. **map_result() manual drift** — manually listed keys diverge from engine; fixed permanently by `dict(c)` pass-through
-5. **Test helper inline __import__** — `__import__('dataclasses')` inside function body doesn't find new fields
-6. **Round-trip not tested** — new field in buildSchema but not ROUND_TRIP_CHECKS → import breaks silently.
-7. **Wrong layer diagnosis** — "not in export" interpreted as result dict missing, not populateFromSchema missing.
-8. **Wrong IRS rate from memory** — FETCH_VERIFIED protocol prevents this.
-9. **Wrong 1040 line routing** — IRA/pension in Sch1 instead of L4b; QBI in Sch1 instead of L13a.
-10. **Variable shadowing** — `map(r =>)` inside template literal shadows outer `r` → TypeError aborts innerHTML.
-11. **localStorage cross-origin** — workpaper as file:// never has data from localhost:5000. Use embedded standalone.
-12. **Independent re-computation** — `compute_qbi_deduction()` re-derived net profit from schema, missing mileage/NEC. Fixed: pass computed value from run().
-13. **Partial form implementation** — Form 8995 Lines 1–7 computed, Lines 6–9 (REIT/PTP) skipped. Always implement all form lines.
+5. **Test helper inline __import__** — `__import__('dataclasses').fields` inside function → field not found
+6. **Round-trip not tested** — new field in buildSchema but not ROUND_TRIP_CHECKS → import breaks silently
+7. **Wrong layer diagnosis** — "not in export" interpreted as result dict missing, not populateFromSchema missing
+8. **Wrong IRS rate from memory** — FETCH_VERIFIED protocol prevents this
+9. **Wrong 1040 line routing** — IRA/pension in Sch1 instead of L4b; QBI in Sch1 instead of L13a; OBBBA reducing AGI instead of L13b
+10. **Variable shadowing** — `map(r =>)` inside template literal shadows outer `r` → TypeError aborts innerHTML
+11. **localStorage cross-origin** — workpaper as file:// never has data from localhost:5000
+12. **Independent re-computation** — `compute_qbi_deduction()` re-derived net profit from schema, missing mileage/NEC. Fixed: pass computed value from run()
+13. **Partial form implementation** — Form 8995 Lines 1–7 computed, Lines 6–9 (REIT/PTP) skipped. Always implement all form lines
+14. **Planning Reference blank-page regression** — creating from scratch loses full changelog, all rules, all patterns. Always modify existing file (Rule 27)
 
 ---
 
-*Updated: 2026-05-24 · Version V17.1 · Rules 15+16 added*
-*IRS sources: irs.gov/pub/irs-pdf/ · IRS Pub 463 (2025) · IRS Notice 2025-5 · Rev. Proc. 2024-40 · Rev. Proc. 2025-32 · IR-2025-103 · IR-2025-128 · Notice 2025-65 · Notice 2025-67 · P.L. 119-21 (OBBBA) · f8995.pdf · i8995.pdf · i5329.pdf · f1040.pdf · IRC §21, §24, §25A, §32, §63, §86, §165, §199A, §219, §221, §465, §704, §1231, §1250, §1401 · IRS Pub 463, 503, 575, 596, 915, 939, 1001 · ftb.ca.gov/forms/2025/*
+*Updated: 2026-05-25 · Version V17.3*
+*IRS sources: irs.gov/pub/irs-pdf/ · IRS Pub 463 (2025) · IRS Notice 2025-5 · IRS Notice 2025-65 · IRS Notice 2025-67 · Rev. Proc. 2024-40 · Rev. Proc. 2025-32 · IR-2025-103 · IR-2025-128 · IR-2026-28 · P.L. 119-21 (OBBBA) · f8995.pdf · i8995.pdf · i5329.pdf · i2210.pdf · f1040.pdf · f1040s1.pdf · f1040s1a.pdf · f982.pdf · ftb.ca.gov/forms/2025/ · IRC §21, §24, §25A, §32, §63, §85, §86, §108, §163, §164, §170, §199A, §219, §221, §408(d)(8), §465, §469, §704, §1211, §1231, §1250, §1401 · IRS Pub 463, 503, 575, 596, 915, 939, 1001*

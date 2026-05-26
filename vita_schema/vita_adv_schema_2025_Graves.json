@@ -10,9 +10,7 @@
   "taxpayer_is_blind": false,
   "is_dependent_of_another": false,
   "dependent_earned_income": 0,
-  "taxpayer_is_full_time_student": false,
   "qbi_loss_carryforward": 0,
-  "capital_loss_carryover": 0,
   "deceased_spouse": {
     "name": "JANE GRAVES",
     "ssn": "329-00-1111",
@@ -42,11 +40,8 @@
       "box2_fed_wh": 1500,
       "box3_ss_wages": 38500,
       "box4_ss_wh": 2387,
-      "box5_medicare_wages": 38500,
-      "box6_medicare_wh": 558.25,
       "box7_ss_tips": 0,
       "box8_allocated_tips": 0,
-      "box10_dep_care": 0,
       "box11_nonqual_deferred": 0,
       "box13_retirement_plan": true,
       "box14_other": "",
@@ -65,7 +60,10 @@
       "box18_local_wages": 0,
       "box19_local_wh": 0,
       "box20_locality_name": "",
-      "for_spouse": false
+      "for_spouse": false,
+      "box5_med_wages": 38500,
+      "box6_med_wh": 558.25,
+      "box10_dependent_care": 0
     }
   ],
   "form_1099ints": [
@@ -76,8 +74,8 @@
       "box3_us_savings_bond": 0,
       "box4_fed_wh": 0,
       "box8_tax_exempt_interest": 0,
-      "box6_foreign_tax_paid": 0,
-      "box7_foreign_country": ""
+      "box7_foreign_country": "",
+      "box6_foreign_tax": 0
     }
   ],
   "form_1099divs": [],
@@ -109,14 +107,6 @@
   "auto_loan_interest": 0,
   "auto_loan_originated_after_2024": true,
   "auto_loan_vehicle_new_us_assembled": true,
-  "estimated_tax_payments": 0,
-  "estimated_tax_quarters": {
-    "q1": 0,
-    "q2": 0,
-    "q3": 0,
-    "q4": 0,
-    "prior_overpay": 0
-  },
   "prior_year_tax": 0,
   "prior_year_agi": 0,
   "schedule_es": [],
@@ -128,13 +118,13 @@
     "box5_net_benefits": 0,
     "box3_gross_benefits": 0,
     "box4_repayments": 0,
-    "box6_vol_wh": 0,
     "medicare_part_b_premiums": 0,
     "medicare_part_d_premiums": 0,
     "medicare_part_c_premiums": 0,
     "mfs_lived_apart": false,
     "lump_sum_election": false,
-    "lump_sum_years": []
+    "lump_sum_years": [],
+    "box6_voluntary_wh": 0
   },
   "gambling_winnings_w2g": 0,
   "gambling_wh": 0,
@@ -189,5 +179,36 @@
     "renter_credit": false,
     "other_subtractions": 0,
     "ca_itemized_override": null
+  },
+  "capital_loss_carryover_prior": 0,
+  "estimated_tax_payments": {
+    "q1": 0,
+    "q2": 0,
+    "q3": 0,
+    "q4": 0,
+    "prior_year_overpayment_applied": 0
+  },
+  "estimated_tax_quarters": {
+    "q1": 0,
+    "q2": 0,
+    "q3": 0,
+    "q4": 0,
+    "prior_overpay": 0
+  },
+  "california": {
+    "sdi_withheld": 0,
+    "renter_credit": false,
+    "other_subtractions": 0,
+    "ca_itemized_override": null
+  },
+  "jury_duty_income": 0,
+  "prize_award_income": 0,
+  "other_income_8z": 0,
+  "other_income_8z_desc": "",
+  "ca_foster_youth_taxpayer": false,
+  "ca_foster_youth_spouse": false,
+  "form_2210": {
+    "prior_year_tax": 0,
+    "prior_year_agi": 0
   }
 }

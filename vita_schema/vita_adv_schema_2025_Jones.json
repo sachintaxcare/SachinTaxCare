@@ -10,7 +10,6 @@
   "taxpayer_is_blind": false,
   "is_dependent_of_another": false,
   "dependent_earned_income": 0,
-  "taxpayer_is_full_time_student": false,
   "qbi_loss_carryforward": 0,
   "capital_loss_carryover": 0,
   "dependents": [],
@@ -208,7 +207,13 @@
   "auto_loan_interest": 0,
   "auto_loan_originated_after_2024": true,
   "auto_loan_vehicle_new_us_assembled": true,
-  "estimated_tax_payments": 0,
+  "estimated_tax_payments": {
+    "q1": 0,
+    "q2": 0,
+    "q3": 0,
+    "q4": 0,
+    "prior_year_overpayment_applied": 0
+  },
   "estimated_tax_quarters": {
     "q1": 0,
     "q2": 0,
@@ -279,14 +284,15 @@
       "student_is": "taxpayer",
       "student_who": "taxpayer",
       "credit_type": "aoc",
-      "first_four_years": true,
+      "first_four_years": false,
       "aoc_years_claimed_prior": 4,
       "out_of_pocket_books": 0,
       "out_of_pocket_supplies": 0,
       "out_of_pocket_other": 0,
       "box8_at_least_half_time": false,
       "aoc_drug_conviction": false,
-      "box9_graduate": false
+      "box9_graduate": false,
+      "box8_half_time": false
     }
   ],
   "aca_household_size": 0,
@@ -314,5 +320,22 @@
     "renter_credit": false,
     "other_subtractions": 0,
     "ca_itemized_override": null
-  }
+  },
+  "california": {
+    "sdi_withheld": 0,
+    "renter_credit": false,
+    "other_subtractions": 0,
+    "ca_itemized_override": null
+  },
+  "jury_duty_income": 0,
+  "prize_award_income": 0,
+  "other_income_8z": 0,
+  "other_income_8z_desc": "",
+  "ca_foster_youth_taxpayer": false,
+  "ca_foster_youth_spouse": false,
+  "form_2210": {
+    "prior_year_tax": 0,
+    "prior_year_agi": 0
+  },
+  "capital_loss_carryover_prior": 0
 }

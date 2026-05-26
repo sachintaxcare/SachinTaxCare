@@ -105,6 +105,7 @@ _SCALAR_NESTED = {
     'deceased_spouse':   e.DeceasedSpouse,
     'california':        e.CaliforniaData,  # key matches TaxpayerSchema.california
     'form_982':          e.Form982Data,      # F6: insolvency/bankruptcy exclusion worksheet (IRC §108)
+    'estimated_tax_payments': e.EstimatedTaxPayments,  # Q1-Q4 + prior overpayment
     # NOTE: Form1099INT.box2_early_withdrawal_penalty matches JSON key exactly (renamed 2026-05-19).
     # No bridge transformation needed — safe_init passes it through directly.
     # Source: f1099int.pdf Box 2; i1040s1.pdf Line 18; IRC §62(a)(9)
@@ -115,11 +116,29 @@ _SCALAR_NESTED = {
 
 
 def _safe_init(cls, data: dict):
-    """Construct a dataclass from a dict, ignoring unknown keys."""
+    """Construct a dataclass from a dict, ignoring unknown keys.
+    Replaces JSON null (None) with the field's declared default for scalar
+    typed fields (float, int, bool, str) to prevent TypeError on comparison.
+    Source: bridge hardening 2026-05-26 — ca_itemized_total None crash fix.
+    """
     if not isinstance(data, dict):
         return None
-    valid = {f.name for f in dataclasses.fields(cls)}
-    filtered = {k: v for k, v in data.items() if k in valid}
+    valid_fields = {f.name: f for f in dataclasses.fields(cls)}
+    filtered = {}
+    for k, v in data.items():
+        if k not in valid_fields:
+            continue
+        f = valid_fields[k]
+        if v is None:
+            # Replace None with declared default for scalar types
+            # to avoid TypeError when engine does comparisons (> 0, etc.)
+            if f.default is not dataclasses.MISSING:
+                filtered[k] = f.default
+            elif f.default_factory is not dataclasses.MISSING:
+                filtered[k] = f.default_factory()
+            # else required field — pass None and let cls() raise
+        else:
+            filtered[k] = v
     try:
         return cls(**filtered)
     except Exception:

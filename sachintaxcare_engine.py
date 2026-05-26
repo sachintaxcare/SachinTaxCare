@@ -4445,7 +4445,7 @@ def compute_california_540(
     # OBBBA nonconformity addback — CA did NOT adopt P.L. 119-21
     # Source: CA FTB Announcement 2025-4; 2025-540-ca-instructions.html
     ca_obbba_addback = (cd.ca_obbba_addback_override
-                        if cd.ca_obbba_addback_override > 0
+                        if cd.ca_obbba_addback_override is not None and cd.ca_obbba_addback_override > 0
                         else obbba_total_federal)
 
     # Bonus depreciation addback — IRC §168(k) nonconformity
@@ -4538,7 +4538,7 @@ def compute_california_540(
                       fed_schedule_a.carryover_charitable)
         ca_misc = rnd(fed_schedule_a.other_misc)
         ca_itemized = rnd(ca_med + ca_salt + ca_mort + ca_chr + ca_misc)
-    if cd.ca_itemized_total > 0:
+    if cd.ca_itemized_total is not None and cd.ca_itemized_total > 0:
         ca_itemized = rnd(cd.ca_itemized_total)
 
     use_itemized = (cd.use_ca_itemized or fed_deduction_type == "itemized") and ca_itemized > ca_std
@@ -7828,18 +7828,25 @@ def run(schema: TaxpayerSchema) -> dict:
     # Source: f1040.pdf page 36 QDCGT Worksheet; irs.gov/pub/irs-pdf/i1040gi.pdf
     # §1250 recapture (25%) and collectibles (28%) are special-rate components
     # Source: IRC §1(h)(1)(D),(4); i1040sd.pdf Lines 18–19
+    # Unrecaptured §1250 from 1099-DIV Box 2b (RIC/REIT distributions of §1250 gain)
+    # added to Form 4797 §1250 — both taxed at max 25% rate
+    # Source: f1099div.pdf Box 2b instructions; IRC §1(h)(6)(A)
+    div_unrec_1250 = rnd(sum(getattr(f, 'box2b_unrec_1250', 0) for f in schema.form_1099divs))
+    total_unrec_1250 = rnd(f4797_unrec_1250 + div_unrec_1250)
     collectibles_gain_total = rnd(
         sum(getattr(f, 'box2d_collectibles', 0) for f in schema.form_1099divs) +
         sum(getattr(k, 'collectibles_gain', 0) for k in schema.schedule_k1s)
     )
     income_tax = compute_qdcgt_tax(taxable, qdcgt_income, fs,
                                     tax_year=schema.tax_year,
-                                    unrecaptured_sec1250=f4797_unrec_1250,
+                                    unrecaptured_sec1250=total_unrec_1250,
                                     collectibles_gain=collectibles_gain_total)
-    if qdcgt_income > 0 or f4797_unrec_1250 > 0 or collectibles_gain_total > 0:
+    if qdcgt_income > 0 or total_unrec_1250 > 0 or collectibles_gain_total > 0:
         note = f"QDCGT Worksheet applied: ${qdcgt_income:,} preferential"
         if f4797_unrec_1250 > 0:
-            note += f" + §1250 recapture ${f4797_unrec_1250:,} @ 25%"
+            note += f" + §1250 recapture ${f4797_unrec_1250:,} @ 25% (Form 4797)"
+        if div_unrec_1250 > 0:
+            note += f" + §1250 from 1099-DIV Box 2b ${div_unrec_1250:,} @ 25%"
         if collectibles_gain_total > 0:
             note += f" + collectibles ${collectibles_gain_total:,} @ 28%"
         result["warnings"].append(note + ". Source: f1040.pdf QDCGT Worksheet; IRC §1(h).")
@@ -8579,6 +8586,7 @@ def run(schema: TaxpayerSchema) -> dict:
         "allocated_tips": allocated_tips,
         "nonqual_def_comp": nonqual_def_comp,
         "dividends": dividends, "dividends_qual": dividends_qual,
+        "qualified_dividends": dividends_qual,  # alias — 1040 Line 3a; same as dividends_qual
         "div_cap_gain_dist": div_cap_gain_dist,
         "qdcgt_income": qdcgt_income,
         "cap_gain_net": rnd(net_cap_gain),
@@ -8820,6 +8828,9 @@ def run(schema: TaxpayerSchema) -> dict:
         "f5329": f5329_result,
         "f1116": f1116_result,
         "ftc_credit": ftc_credit,
+        "foreign_tax_credit": ftc_credit,   # alias for UI/workpaper — Sch 3 L1
+        "div_unrec_1250": div_unrec_1250,   # 1099-DIV Box 2b §1250 component (25% rate)
+        "unrecap_1250_gain": total_unrec_1250,  # total §1250 in QDCGT (Form 4797 + DIV Box 2b)
         "excess_aptc_repayment": excess_aptc_repayment,
         "sch2_l2_excess_aptc": sch2_l2_excess_aptc,
         # v10 new forms

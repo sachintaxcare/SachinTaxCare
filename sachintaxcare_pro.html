@@ -62,7 +62,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .btn-compute{background:var(--gold);color:var(--ink);font-weight:600;}.btn-compute:hover{background:var(--gold-border);}
 .btn-sm{padding:5px 10px;font-size:11px;}
 
-
 .content{padding:28px 32px;flex:1;}
 .panel{display:none;}.panel.active{display:block;animation:panelIn .18s ease;}
 @keyframes panelIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
@@ -405,6 +404,13 @@ select{cursor:pointer;}
         <div class="card card-accent-gold">
           <div class="card-header"><div><div class="card-title">1099-DIV — Dividends &amp; distributions</div><div class="card-sub">// Box 1b qualified → QDCGT rates · Box 5 §199A REIT → QBI deduction · Box 7 foreign tax → Form 1116. Source: f1099div.pdf</div></div><button class="btn btn-ghost btn-sm" onclick="addDIV()">+ Add 1099-DIV</button></div>
           <div id="div-list"></div>
+          <div class="note note-blue" style="margin-top:8px"><span class="note-icon">ℹ</span><span>If you don't have individual 1099-DIV slips, enter totals below. These override the row-by-row totals above. Leave blank if using 1099-DIV rows above.</span></div>
+          <div class="g2" style="margin-top:6px">
+            <div class="field"><div class="label">Total ordinary dividends — 1040 Line 3b ($) <span style="font-size:10px;color:var(--muted)">fallback if no 1099-DIV rows</span></div>
+              <input type="number" id="div-ordinary-total" placeholder="0" title="Enter only if not using individual 1099-DIV rows above. Goes to 1040 Line 3b. Source: f1040.pdf L3b; IRC §61."/></div>
+            <div class="field"><div class="label">Total qualified dividends — 1040 Line 3a ($) <span style="font-size:10px;color:var(--muted)">fallback if no 1099-DIV rows</span></div>
+              <input type="number" id="div-qualified-total" placeholder="0" title="Enter only if not using individual 1099-DIV rows above. Preferential QDCGT rates. Source: f1040.pdf L3a; IRC §1(h)(11)."/></div>
+          </div>
         </div>
         <div class="card card-accent-green">
           <div class="card-header"><div><div class="card-title">1099-R — Pension, annuity &amp; IRA distributions</div><div class="card-sub">// IRA/SEP/SIMPLE → Lines 4a/4b · Pension → Lines 5a/5b · Code Y = QCD (excluded from 4b). Source: f1099r.pdf</div></div><button class="btn btn-ghost btn-sm" onclick="addR()">+ Add 1099-R</button></div>
@@ -539,7 +545,7 @@ select{cursor:pointer;}
 
       <!-- OTHER INCOME -->
       <div class="panel" id="panel-other-inc">
-        <div class="ph"><div class="pt">Other Income</div><div class="pd">// Schedule 1 Part I — 1099-G · W-2G · 1099-C · 1099-NEC · K-1 · Jury Duty · Alimony · Other</div></div>
+        <div class="ph"><div class="pt">Other Income</div><div class="pd">// Schedule 1 Part I — 1099-G · W-2G · 1099-C · 1099-NEC · K-1 · Alimony · Other</div></div>
         <div class="card card-accent-blue">
           <div class="card-title" style="margin-bottom:10px">1099-G — Government payments</div>
           <div class="g3">
@@ -555,24 +561,24 @@ select{cursor:pointer;}
         </div>
         <div class="card">
           <div class="card-title" style="margin-bottom:8px">Other Schedule 1 Income — Lines 8h / 8i / 8z</div>
-          <div class="note note-blue"><span class="note-icon">ℹ</span><span>These items go on Schedule 1 Line 8 (Other income) and are fully taxable as ordinary income. Source: <a href="https://www.irs.gov/pub/irs-pdf/f1040s1.pdf" target="_blank">f1040s1.pdf</a> Lines 8h–8z; IRC §61(a).</span></div>
+          <div class="note note-blue"><span class="note-icon">ℹ</span><span>These items go on Schedule 1 Line 8 and are fully taxable as ordinary income. Source: <a href="https://www.irs.gov/pub/irs-pdf/f1040s1.pdf" target="_blank">f1040s1.pdf</a> Lines 8h–8z; IRC §61(a).</span></div>
           <div class="g2">
             <div class="field">
-              <div class="label">Jury duty pay → Sch 1 Line 8h ($) <span style="font-size:10px;color:var(--muted)">Source: f1040s1.pdf L8h; IRC §61(a)</span></div>
-              <input type="number" id="jury-duty" placeholder="0" title="Jury duty fees received are taxable. If you remitted jury pay to your employer, that amount is deductible on Sch 1 Line 24a."/>
+              <div class="label">Jury duty pay → Sch 1 Line 8h ($) <span style="font-size:10px;color:var(--muted)">IRC §61(a)</span></div>
+              <input type="number" id="jury-duty" placeholder="0" title="Jury duty fees received are taxable. Source: f1040s1.pdf L8h; IRC §61(a)."/>
             </div>
             <div class="field">
-              <div class="label">Prizes and awards → Sch 1 Line 8i ($) <span style="font-size:10px;color:var(--muted)">Source: f1040s1.pdf L8i; IRC §74</span></div>
-              <input type="number" id="prize-award" placeholder="0" title="Taxable prizes and awards not reported on 1099-MISC (e.g., Nobel Prize, employer achievement awards above exclusion). Source: f1040s1.pdf L8i; IRC §74."/>
+              <div class="label">Prizes and awards → Sch 1 Line 8i ($) <span style="font-size:10px;color:var(--muted)">IRC §74</span></div>
+              <input type="number" id="prize-award" placeholder="0" title="Taxable prizes and awards. Source: f1040s1.pdf L8i; IRC §74."/>
             </div>
           </div>
           <div class="g2" style="margin-top:8px">
             <div class="field">
               <div class="label">Other income not reported elsewhere → Sch 1 Line 8z ($)</div>
-              <input type="number" id="other-income-8z" placeholder="0" title="Any taxable income not fitting other lines — foreign income, hobby income, etc. Provide description. Source: f1040s1.pdf L8z."/>
+              <input type="number" id="other-income-8z" placeholder="0"/>
             </div>
             <div class="field">
-              <div class="label">Description of Line 8z income (required)</div>
+              <div class="label">Description of Line 8z income</div>
               <input type="text" id="other-income-8z-desc" placeholder="e.g. Foreign income, hobby income" maxlength="60"/>
             </div>
           </div>
@@ -1113,11 +1119,11 @@ select{cursor:pointer;}
           </div>
           <div class="g2" style="margin-top:10px">
             <div class="field"><div class="label">Other CA subtractions (US bond interest, etc.) ($)</div><input type="number" id="ca-sub" placeholder="0"/></div>
-            <div class="field"><div class="label">CA other additions ($)</div><input type="number" id="ca-add" placeholder="0" title="CA additions: HSA deduction addback is auto-computed; enter any additional CA Schedule CA additions here"/></div>
+            <div class="field"><div class="label">CA other additions ($)</div><input type="number" id="ca-add" placeholder="0" title="HSA deduction addback is auto-computed; enter additional CA Schedule CA additions here"/></div>
           </div>
           <div class="g2" style="margin-top:10px">
             <div class="field"><div class="label">Use CA itemized deductions?</div><select id="ca-use-itemized"><option value="no">No — use CA standard deduction</option><option value="yes">Yes — enter CA itemized total below</option></select></div>
-            <div class="field"><div class="label">CA itemized total (if itemizing on CA — no SALT cap) ($)</div><input type="number" id="ca-itemized" placeholder="0" title="CA has no SALT cap. Leave 0 if using CA standard deduction."/></div>
+            <div class="field"><div class="label">CA itemized total (if itemizing on CA — no SALT cap) ($)</div><input type="number" id="ca-itemized" placeholder="0"/></div>
           </div>
           <div class="sec-divider" style="margin-top:10px">CA Schedule CA — Additions (non-conformity items)</div>
           <div class="g2">
@@ -1131,17 +1137,17 @@ select{cursor:pointer;}
             </div>
             <div class="field">
               <div class="label">NOL suspension addback ($) <span style="font-size:10px;color:var(--muted)">R&amp;TC §17276.24</span></div>
-              <input type="number" id="ca-nol-add" placeholder="0" title="CA suspended NOL carryforward 2024–2026 for modified AGI ≥ $1M. Enter federal NOL deduction amount to add back. Source: R&TC §17276.24"/>
+              <input type="number" id="ca-nol-add" placeholder="0" title="CA suspended NOL carryforward 2024–2026 for modified AGI ≥ $1M. Source: R&TC §17276.24"/>
             </div>
           </div>
           <div class="g2" style="margin-top:10px">
-            <div class="field"><div class="label">CA military pay exclusion ($)</div><input type="number" id="ca-military-pay" placeholder="0" title="Active duty military pay excluded from CA tax — Mil &amp; Vet Code §402; FTB 3504"/></div>
-            <div class="field"><div class="label">CA student loan forgiveness excluded ($)</div><input type="number" id="ca-loan-forgive" placeholder="0" title="CA AB 1577 — student loan forgiveness excluded from CA income"/></div>
+            <div class="field"><div class="label">CA military pay exclusion ($)</div><input type="number" id="ca-military-pay" placeholder="0" title="Active duty military pay excluded from CA tax — R&amp;TC §17132.9; $20k cap for TY 2025–2029"/></div>
+            <div class="field"><div class="label">CA student loan forgiveness excluded ($)</div><input type="number" id="ca-loan-forgive" placeholder="0"/></div>
           </div>
           <div class="sec-divider" style="margin-top:10px">CalEITC / YCTC / FYTC Eligibility — FTB Schedule 3514</div>
           <div class="g2">
             <div class="field"><div class="label">Taxpayer age (for CalEITC — must be 18+)</div><input type="number" id="ca-tp-age" placeholder="0" title="CalEITC requires taxpayer age 18 or older — FTB 3514 Step 1"/></div>
-            <div class="field"><div class="label">CA investment income (CalEITC — must be ≤$4,814) ($)</div><input type="number" id="ca-invest-caleitc" placeholder="0" title="CalEITC disqualified if investment income &gt; $4,814 — FTB 3514 Worksheet 1"/></div>
+            <div class="field"><div class="label">CA investment income (CalEITC — must be ≤$4,814) ($)</div><input type="number" id="ca-invest-caleitc" placeholder="0"/></div>
           </div>
           <div class="g2" style="margin-top:10px">
             <div class="field"><div class="label">Qualifying child under age 6?</div><select id="ca-young-child"><option value="no">No</option><option value="yes">Yes — may qualify for Young Child Tax Credit (YCTC $1,189)</option></select></div>
@@ -1826,24 +1832,24 @@ function addDIV() {
       <div class="field"><div class="label">Box 1b — Qualified dividends → QDCGT rates ($)</div><input type="number" id="div-b1b-${id}" placeholder="0"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 2a — Total capital gain distributions ($)</div><input type="number" id="div-b2a-${id}" placeholder="0" title="Source: f1099div.pdf Box 2a — total cap gain dist from RIC/REIT → Schedule D Line 13"/></div>
-      <div class="field"><div class="label">Box 2b — Unrecap. §1250 gain (25% rate) ($)</div><input type="number" id="div-b2b-${id}" placeholder="0" title="Portion of 2a subject to 25% rate. Source: f1099div.pdf Box 2b; i1040sd.pdf §1250 worksheet"/></div>
-      <div class="field"><div class="label">Box 2c — Section 1202 gain ($)</div><input type="number" id="div-b2c-${id}" placeholder="0" title="Gain from small business stock §1202 (potential 50-100% exclusion). Source: f1099div.pdf Box 2c; i1040sd.pdf"/></div>
+      <div class="field"><div class="label">Box 2a — Total capital gain distributions ($)</div><input type="number" id="div-b2a-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 2b — Unrecap. §1250 gain (25% rate) ($)</div><input type="number" id="div-b2b-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 2c — Section 1202 gain ($)</div><input type="number" id="div-b2c-${id}" placeholder="0" title="Small business stock §1202. Source: f1099div.pdf Box 2c"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 2d — Collectibles (28%) gain ($)</div><input type="number" id="div-b2d-${id}" placeholder="0" title="Portion of 2a taxed at max 28% rate (coins, art, stamps). Source: f1099div.pdf Box 2d; IRC §1(h)(4)"/></div>
-      <div class="field"><div class="label">Box 3 — Nondividend distributions (return of capital) ($)</div><input type="number" id="div-b3-${id}" placeholder="0" title="Not taxable until basis reaches $0; then LTCG. Reduces cost basis. Source: f1099div.pdf Box 3; IRC §301(c)"/></div>
-      <div class="field"><div class="label">Box 4 — Federal backup WH → Line 25b ($)</div><input type="number" id="div-b4-${id}" placeholder="0" title="Backup withholding at 24%. Source: f1099div.pdf Box 4"/></div>
+      <div class="field"><div class="label">Box 2d — Collectibles (28%) gain ($)</div><input type="number" id="div-b2d-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 3 — Nondividend distributions (return of capital) ($)</div><input type="number" id="div-b3-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 4 — Federal backup WH → Line 25b ($)</div><input type="number" id="div-b4-${id}" placeholder="0"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 5 — §199A dividends (REIT/PTP → QBI deduction) ($)</div><input type="number" id="div-b5-${id}" placeholder="0" title="Qualified REIT dividends for §199A QBI deduction. Source: f1099div.pdf Box 5; f8995.pdf Line 6"/></div>
-      <div class="field"><div class="label">Box 6 — Investment expenses ($)</div><input type="number" id="div-b6-${id}" placeholder="0" title="Included in Box 1a. Expenses of nonpublicly offered RIC. Source: f1099div.pdf Box 6"/></div>
-      <div class="field"><div class="label">Box 7 — Foreign tax paid → Form 1116 ($)</div><input type="number" id="div-b7-${id}" placeholder="0" title="May claim as credit (Form 1116) or deduction. Source: f1099div.pdf Box 7"/></div>
+      <div class="field"><div class="label">Box 5 — §199A dividends (REIT/PTP → QBI) ($)</div><input type="number" id="div-b5-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 6 — Investment expenses ($)</div><input type="number" id="div-b6-${id}" placeholder="0" title="Source: f1099div.pdf Box 6"/></div>
+      <div class="field"><div class="label">Box 7 — Foreign tax paid → Form 1116 ($)</div><input type="number" id="div-b7-${id}" placeholder="0"/></div>
     </div>
     <div class="g3" style="margin-top:8px">
-      <div class="field"><div class="label">Box 11 — Exempt-interest dividends → Line 2a ($)</div><input type="number" id="div-b11-${id}" placeholder="0" title="Tax-exempt interest from municipal bonds. Included in SS provisional income. Source: f1099div.pdf Box 11"/></div>
-      <div class="field"><div class="label">Box 12 — Specified private activity bond interest ($)</div><input type="number" id="div-b12-${id}" placeholder="0" title="Included in Box 11. AMT preference item. Source: f1099div.pdf Box 12; Form 6251 L3"/></div>
-      <div class="field"><div class="label">Box 9 — Cash liquidation distributions ($)</div><input type="number" id="div-b9-${id}" placeholder="0" title="Return of capital; taxable as LTCG to extent exceeds basis. Source: f1099div.pdf Box 9; Pub 550"/></div>
+      <div class="field"><div class="label">Box 11 — Exempt-interest dividends → Line 2a ($)</div><input type="number" id="div-b11-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 12 — Specified private activity bond interest ($)</div><input type="number" id="div-b12-${id}" placeholder="0"/></div>
+      <div class="field"><div class="label">Box 9 — Cash liquidation distributions ($)</div><input type="number" id="div-b9-${id}" placeholder="0"/></div>
     </div>
     <div class="g2" style="margin-top:8px">
       <div class="field"><div class="label">Box 15 — State WH ($)</div><input type="number" id="div-b15-${id}" placeholder="0"/></div>
@@ -2110,7 +2116,7 @@ function addScheE() {
       <div class="field"><div class="label">Days rented at fair market rate</div><input type="number" id="sche-dr-${id}" placeholder="365"/></div>
       <div class="field"><div class="label">Days personal use</div><input type="number" id="sche-dp-${id}" placeholder="0" title="§280A vacation rules apply if personal use > 14 days or 10% of rental days"/></div>
       <div class="field"><div class="label">Enforce §280A vacation home proration?</div>
-        <select id="sche-280a-${id}" title="Engine auto-detects if personal days > 14 or 10% of rental days; override here if needed">
+        <select id="sche-280a-${id}" title="Engine auto-detects if personal days > 14 or 10% of rental days">
           <option value="auto">Auto-detect (recommended)</option>
           <option value="yes">Yes — apply §280A expense proration</option>
           <option value="no">No — property is not a vacation home</option>
@@ -2447,19 +2453,22 @@ function addCOD() {
       <div class="field"><div class="label">Box 7 — FMV of property (if applicable, $)</div><input type="number" id="cod-fmv-${id}" placeholder="0" title="Fair market value of property given up in foreclosure or short sale"/></div>
       <div class="field"><div class="label">Exclusion applies? (insolvency / bankruptcy → Form 982)</div>
         <select id="cod-excl-${id}"><option value="no">No — fully taxable</option><option value="yes">Yes — Form 982 required</option><option value="partial">Partial — Form 982 (insolvency up to amount)</option></select></div>
-      <div class="field"><div class="label">Form 982 — exclusion type</div>
-        <select id="cod-982-type-${id}" title="Source: f982.pdf Line 1; IRC §108">
-          <option value="insolvency">Insolvency (total liabilities exceeded total assets)</option>
-          <option value="bankruptcy">Bankruptcy — Title 11 case (Line 1a)</option>
-          <option value="qualified_farm">Qualified farm indebtedness (Line 1c)</option>
-          <option value="qualified_real">Qualified real property business debt (Line 1d)</option>
-          <option value="qualified_principal">Qualified principal residence debt (Line 1e)</option>
+    </div>
+    <div class="g3" style="margin-top:8px">
+      <div class="field"><div class="label">Form 982: Type of exclusion</div>
+        <select id="cod-982-type-${id}" title="Source: f982.pdf Box 1; IRC §108">
+          <option value="no">None — CoD is fully taxable</option>
+          <option value="bankruptcy">Bankruptcy Title 11 case (Box 1a)</option>
+          <option value="insolvency">Insolvency (Box 1b)</option>
+          <option value="farm">Qualified farm indebtedness (Box 1c)</option>
+          <option value="real_property">Qualified real property business debt (Box 1d)</option>
+          <option value="principal_residence">Principal residence debt relief (Box 1e)</option>
         </select></div>
-    </div>
-    <div class="g2" id="cod-982-wrap-${id}" style="margin-top:8px">
-      <div class="field"><div class="label">Form 982 — Total liabilities immediately before discharge ($)</div><input type="number" id="cod-liab-${id}" placeholder="0" title="Insolvency test: liabilities − assets = insolvency amount. IRC §108(d)(3)"/></div>
-      <div class="field"><div class="label">Form 982 — Total assets FMV immediately before discharge ($)</div><input type="number" id="cod-assets-${id}" placeholder="0" title="If liabilities > assets, insolvency = liabilities − assets. IRC §108(d)(3)"/></div>
-    </div>
+      <div class="field"><div class="label">Form 982: Total liabilities before discharge ($)</div>
+        <input type="number" id="cod-liab-${id}" placeholder="0" title="IRC §108(d)(3) — total liabilities immediately before discharge"/></div>
+      <div class="field"><div class="label">Form 982: FMV of all assets ($)</div>
+        <input type="number" id="cod-assets-${id}" placeholder="0" title="IRC §108(d)(3) — FMV of total assets immediately before discharge"/></div>
+    </div>`;
   document.getElementById('cod-list').appendChild(el);
   document.getElementById('cod-empty').classList.add('hidden');
 }
@@ -2645,6 +2654,7 @@ function buildSchema() {
     taxpayer_is_full_time_student: v('tp-student') === 'yes',
     qbi_loss_carryforward: n('qbi-loss-cf'),
     capital_loss_carryover: n('cap-carryover'),
+    capital_loss_carryover_prior: n('cap-carryover'),  // exact engine field name
   };
 
   // QSS
@@ -2769,25 +2779,30 @@ function buildSchema() {
     box7_foreign_country: v('int-box7-' + id),
   }));
 
+  // 1099-DIV
+  // Standalone dividend totals (fallback when no 1099-DIV rows entered)
+  // Engine uses these only when form_1099divs is empty — Source: f1040.pdf L3a/3b; IRC §61
+  schema.dividends_ordinary  = n('div-ordinary-total') || 0;
+  schema.dividends_qualified = n('div-qualified-total') || 0;
+
   // 1099-DIV — exact engine field names per Form1099DIV dataclass
-  // Source: irs.gov/pub/irs-pdf/f1099div.pdf
   schema.form_1099divs = S.divs.map(id => ({
     payer:                  v('div-payer-' + id),
-    box1a_ordinary_div:     n('div-b1a-' + id),       // → Line 3b; Schedule B
-    box1b_qualified_div:    n('div-b1b-' + id),       // → Line 3a; QDCGT rates
-    box2a_total_cap_gain:   n('div-b2a-' + id),       // → Schedule D Line 13
-    box2a_cap_gain_dist:    n('div-b2a-' + id),       // alias — engine reads either
-    box2b_unrec_1250:       n('div-b2b-' + id),       // → 25% rate QDCGT worksheet
-    box2c_sec1202:          n('div-b2c-' + id),       // → Schedule D §1202 exclusion
-    box2d_collectibles:     n('div-b2d-' + id),       // → 28% rate QDCGT worksheet
-    box3_nondiv_dist:       n('div-b3-' + id),        // Return of capital (reduces basis)
-    box4_fed_wh:            n('div-b4-' + id),        // → Line 25b backup WH
-    box5_sec199a_div:       n('div-b5-' + id),        // → Form 8995 Line 6 REIT component
-    box6_invest_expense:    n('div-b6-' + id),        // Investment expenses (included in 1a)
-    box7_foreign_tax:       n('div-b7-' + id),        // → Form 1116 or Line 1 deduction
-    box11_exempt_interest:  n('div-b11-' + id),       // → Line 2a + SS provisional income
-    box12_private_activity: n('div-b12-' + id),       // → Form 6251 AMT preference
-    box15_state_wh:         n('div-b15-' + id),       // → State return
+    box1a_ordinary_div:     n('div-b1a-' + id),
+    box1b_qualified_div:    n('div-b1b-' + id),
+    box2a_total_cap_gain:   n('div-b2a-' + id),
+    box2a_cap_gain_dist:    n('div-b2a-' + id),
+    box2b_unrec_1250:       n('div-b2b-' + id),
+    box2c_sec1202:          n('div-b2c-' + id),
+    box2d_collectibles:     n('div-b2d-' + id),
+    box3_nondiv_dist:       n('div-b3-' + id),
+    box4_fed_wh:            n('div-b4-' + id),
+    box5_sec199a_div:       n('div-b5-' + id),
+    box6_invest_expense:    n('div-b6-' + id),
+    box7_foreign_tax:       n('div-b7-' + id),
+    box11_exempt_interest:  n('div-b11-' + id),
+    box12_private_activity: n('div-b12-' + id),
+    box15_state_wh:         n('div-b15-' + id),
   }));
 
   // 1099-R
@@ -2818,12 +2833,12 @@ function buildSchema() {
       use_simplified_method: smYes,
       simplified_method: smYes ? {
         annuity_type: v('r-smtype-' + id) || 'single',
-        age_at_start: parseInt(v('r-smage-' + id)) || 0,
-        joint_age_at_start: parseInt(v('r-smagej-' + id)) || 0,
+        age_at_annuity_start: parseInt(v('r-smage-' + id)) || 0,       // exact engine field name
+        joint_age_at_annuity_start: parseInt(v('r-smagej-' + id)) || 0, // exact engine field name
         fixed_period_months: parseInt(v('r-smfixed-' + id)) || 0,
-        prior_tax_free_recovered: n('r-smprior-' + id),
-        start_after_nov_1996: v('r-smstart-' + id) !== 'before',
-        annuity_start_date: v('r-smdate-' + id),
+        prior_year_tax_free_recovered: n('r-smprior-' + id),            // exact engine field name
+        annuity_start_after_nov_18_1996: v('r-smstart-' + id) !== 'before', // exact engine field name
+        start_after_nov_1996: v('r-smstart-' + id) !== 'before',       // legacy alias for compat
       } : null,
     };
   });
@@ -2844,12 +2859,12 @@ function buildSchema() {
 
   // Other income
   schema.unemployment_income = n('unemp');
+  schema.state_tax_refund = n('state-refund');
+  schema.state_refund_prior_year_itemized = v('prior-yr-itemized') === 'yes';
   schema.jury_duty_income    = n('jury-duty');
   schema.prize_award_income  = n('prize-award');
   schema.other_income_8z     = n('other-income-8z');
-  schema.other_income_8z_desc = v('other-income-8z-desc') || '';
-  schema.state_tax_refund = n('state-refund');
-  schema.state_refund_prior_year_itemized = v('prior-yr-itemized') === 'yes';
+  schema.other_income_8z_desc = v('other-income-8z-desc');
   schema.unemployment_wh = n('unemp-wh');
   schema.unemployment_state_wh = n('unemp-state-wh');
   schema.gambling_losses = n('gambling-losses');
@@ -2936,14 +2951,14 @@ function buildSchema() {
   schema.taxpayer_age_for_senior_ded = _tpAgeFld > 0 ? _tpAgeFld : _ageFromDob(v('tp-dob'));
   schema.spouse_age_for_senior_ded   = _spAgeFld > 0 ? _spAgeFld : _ageFromDob(v('sp-dob'));
   schema.qualified_tips              = n('qualified-tips');
+  schema.ca_foster_youth_taxpayer    = v('ca-foster-tp') === 'yes';
+  schema.ca_foster_youth_spouse      = v('ca-foster-sp') === 'yes';
   schema.tip_occupation              = v('tip-occupation') || '';
   schema.overtime_pay_qualifying     = n('overtime-pay');
   schema.overtime_flsa_confirmed     = document.getElementById('overtime-flsa-confirmed')?.checked || false;
   schema.auto_loan_interest          = n('auto-loan-interest');
   schema.auto_loan_originated_after_2024    = v('auto-loan-post2024') === '1';
   schema.auto_loan_vehicle_new_us_assembled = v('auto-loan-us-vehicle') === '1';
-  schema.ca_foster_youth_taxpayer = v('ca-foster-tp') === 'yes';
-  schema.ca_foster_youth_spouse   = v('ca-foster-sp') === 'yes';
   schema.estimated_tax_payments = (n('est-q1') + n('est-q2') + n('est-q3') + n('est-q4') + n('est-prior'));
   schema.estimated_tax_quarters = { q1: n('est-q1'), q2: n('est-q2'), q3: n('est-q3'), q4: n('est-q4'), prior_overpay: n('est-prior') };
   schema.prior_year_tax = n('py-tax');
@@ -3071,9 +3086,9 @@ function buildSchema() {
         box7_fmv: n('cod-fmv-' + id),
         exclusion_applies: v('cod-excl-' + id) !== 'no',
         exclusion_type: v('cod-excl-' + id),
-        bankruptcy_title11: v('cod-982-type-' + id) === 'bankruptcy',
-        total_liabilities_before: n('cod-liab-' + id),
-        total_assets_fmv_before: n('cod-assets-' + id),
+        cod_982_type: v('cod-982-type-' + id),
+        cod_liabilities: n('cod-liab-' + id),
+        cod_assets_fmv: n('cod-assets-' + id),
       }; });
   if (codRows.length) schema.form_1099cs = codRows;
   schema.cancellation_of_debt = codRows.reduce((s,c) => s + (!c.exclusion_applies ? (c.box2_discharged||0) : 0), 0);
@@ -3231,7 +3246,7 @@ function buildSchema() {
     schema.form_8880 = { ira_contributions: n('f8880-ira'), elective_deferrals: n('f8880-deferrals'), disqualifying_dist: n('f8880-dist') };
   }
   // Form 2441 employer dep care
-  if (n('emp-dep-care')) schema.emp_dependent_care = n('emp-dep-care');
+  if (n('emp-dep-care')) { schema.emp_dependent_care = n('emp-dep-care'); schema.employer_dep_care = n('emp-dep-care'); }
   // C2: Form 2441 Line 6 — deemed earned income for student/disabled spouse
   const _careStatus = v('care-spouse-status');
   schema.care_spouse_is_student  = _careStatus === 'student';
@@ -3419,24 +3434,20 @@ function renderResult(schema, r) {
     ['6b', 'Social security benefits — taxable (Line 6b)',       r.l6b_ss_taxable],
     ['7',  'Capital gain or loss (Line 7)',                      r.cap_gains || r.cap_gain_net],
     ['8',  'Additional income — Schedule 1, line 10 (Line 8)',   r.additional_income],
-    ...((r.unemployment_income||0)>0  ? [['↳L7',  'Unemployment compensation (Sch 1 L7)',              r.unemployment_income]] : []),
-    ...((r.gambling_income||0)>0      ? [['↳L8b', 'Gambling winnings — W-2G (Sch 1 L8b)',              r.gambling_income]] : []),
-    ...((r.jury_duty_income||0)>0     ? [['↳L8h', 'Jury duty pay (Sch 1 L8h)',                         r.jury_duty_income]] : []),
-    ...((r.prize_income||0)>0         ? [['↳L8i', 'Prizes and awards (Sch 1 L8i)',                     r.prize_income]] : []),
-    ...((r.cancelled_debt||0)>0       ? [['↳L8c', 'Cancellation of debt (Sch 1 L8c)',                  r.cancelled_debt]] : []),
+    ...((r.unemployment_income || 0) > 0 ? [['  ↳','Unemployment compensation (L7)', r.unemployment_income]] : []),
+    ...((r.gambling_income || 0) > 0 ? [['  ↳','Gambling winnings (L8b)', r.gambling_income]] : []),
+    ...((r.jury_duty_income || 0) > 0 ? [['  ↳','Jury duty income (L8h)', r.jury_duty_income]] : []),
     ['9',  'Total income (Line 9)',                              r.total_income],
     ['10', 'Adjustments to income — Schedule 1, line 26',        r.total_adjustments ? -r.total_adjustments : null],
     ['11', 'Adjusted gross income (Line 11)',                    r.agi],
     ['12', 'Deduction — ' + (r.deduction_type === 'itemized' ? 'Itemized (Schedule A)' : 'Standard'),
                                                                  r.deduction_used],
     ['13a','QBI deduction — Form 8995/8995-A (Line 13a)',        r.adj_qbi],
-    ...((r.l13b_schedule1a || 0) > 0 ? [
-      ['13b','Schedule 1-A — OBBBA additional deductions (Line 13b)', -(r.l13b_schedule1a)],
-      ...((r.obbba_senior_deduction||0)>0   ? [['↳','  Senior Bonus Deduction (age 65+)',        -(r.obbba_senior_deduction)]] : []),
-      ...((r.obbba_tip_deduction||0)>0      ? [['↳','  Qualified tip income deduction',          -(r.obbba_tip_deduction)]] : []),
-      ...((r.obbba_overtime_deduction||0)>0 ? [['↳','  FLSA overtime pay deduction',             -(r.obbba_overtime_deduction)]] : []),
-      ...((r.obbba_auto_loan_deduction||0)>0? [['↳','  Auto loan interest deduction',            -(r.obbba_auto_loan_deduction)]] : []),
-    ] : []),
+    ...((r.l13b_schedule1a || 0) > 0 ? [['13b','Schedule 1-A — OBBBA additional deductions (Line 13b)', -(r.l13b_schedule1a)]] : []),
+    ...((r.obbba_senior_deduction || 0) > 0 ? [['  ↳','Senior bonus deduction §70103', -(r.obbba_senior_deduction)]] : []),
+    ...((r.obbba_tip_deduction || 0) > 0 ? [['  ↳','Tip deduction §70201', -(r.obbba_tip_deduction)]] : []),
+    ...((r.obbba_overtime_deduction || 0) > 0 ? [['  ↳','Overtime deduction §70202', -(r.obbba_overtime_deduction)]] : []),
+    ...((r.obbba_auto_deduction || 0) > 0 ? [['  ↳','Auto loan interest deduction §70301', -(r.obbba_auto_deduction)]] : []),
     ['15', 'Taxable income (Line 15)',                           r.taxable_income],
     ['16', 'Tax (Line 16)',                                       r.l16_income_tax || r.income_tax],
     ...((r.l17_amt || r.amt_tax || 0) > 0 ? [['17', 'Alternative minimum tax — Form 6251 (Line 17)', r.l17_amt || r.amt_tax]] : []),
@@ -3591,9 +3602,9 @@ function populateFromSchema(sc) {
     sv('w2-spouse-' + id, w.for_spouse ? 'yes' : 'no');
     sv('w2-box1-' + id, w.box1_wages || ''); sv('w2-box2-' + id, w.box2_fed_wh || '');
     sv('w2-box3-' + id, w.box3_ss_wages || ''); sv('w2-box4-' + id, w.box4_ss_wh || '');
-    sv('w2-box5-' + id, w.box5_medicare_wages || ''); sv('w2-box6-' + id, w.box6_medicare_wh || '');
+    sv('w2-box5-' + id, w.box5_medicare_wages || w.box5_med_wages || ''); sv('w2-box6-' + id, w.box6_medicare_wh || w.box6_med_wh || '');
     sv('w2-box7-' + id, w.box7_ss_tips || ''); sv('w2-box8-' + id, w.box8_allocated_tips || '');
-    sv('w2-box10-' + id, w.box10_dep_care || ''); sv('w2-box11-' + id, w.box11_nonqual_deferred || '');
+    sv('w2-box10-' + id, w.box10_dep_care || w.box10_dependent_care || ''); sv('w2-box11-' + id, w.box11_nonqual_deferred || '');
     // Box 12: reconstruct "CODE AMT" string
     ['a','b','c','d'].forEach(x => {
       const code = w['box12' + x + '_code'], amt = w['box12' + x + '_amt'];
@@ -3621,7 +3632,7 @@ function populateFromSchema(sc) {
     sv('int-box2-' + id, f.box2_early_withdrawal_penalty || '');
     sv('int-box3-' + id, f.box3_us_savings_bond || '');
     sv('int-box4-' + id, f.box4_fed_wh || ''); sv('int-box8-' + id, f.box8_tax_exempt_interest || '');
-    sv('int-box6-' + id, f.box6_foreign_tax_paid || ''); sv('int-box7-' + id, f.box7_foreign_country || '');
+    sv('int-box6-' + id, f.box6_foreign_tax_paid || f.box6_foreign_tax || ''); sv('int-box7-' + id, f.box7_foreign_country || '');
   });
 
   // ── 1099-DIV ─────────────────────────────────────────────────────────────
@@ -3630,17 +3641,14 @@ function populateFromSchema(sc) {
     const id = S.divs[S.divs.length - 1];
     sv('div-payer-' + id, f.payer);
     sv('div-b1a-' + id, f.box1a_ordinary_div || ''); sv('div-b1b-' + id, f.box1b_qualified_div || '');
-    sv('div-b2a-' + id, f.box2a_total_cap_gain || f.box2a_cap_gain_dist || '');
-    sv('div-b2b-' + id, f.box2b_unrec_1250 || f.box2b_unrec_sec1250 || '');
+    sv('div-b2a-' + id, f.box2a_total_cap_gain || f.box2a_cap_gain_dist || ''); sv('div-b2b-' + id, f.box2b_unrec_1250 || f.box2b_unrec_sec1250 || '');
     sv('div-b2c-' + id, f.box2c_sec1202 || '');
-    sv('div-b2d-' + id, f.box2d_collectibles || f.box2d_collectibles_gain || '');
-    sv('div-b3-' + id, f.box3_nondiv_dist || f.box3_nondividend_dist || '');
+    sv('div-b2d-' + id, f.box2d_collectibles || f.box2d_collectibles_gain || ''); sv('div-b3-' + id, f.box3_nondiv_dist || f.box3_nondividend_dist || '');
     sv('div-b4-' + id, f.box4_fed_wh || ''); sv('div-b5-' + id, f.box5_sec199a_div || '');
     sv('div-b6-' + id, f.box6_invest_expense || '');
-    sv('div-b7-' + id, f.box7_foreign_tax || f.box7_foreign_tax_paid || '');
-    sv('div-b9-' + id, f.box9_cash_liquidation || '');
-    sv('div-b11-' + id, f.box11_exempt_interest || f.box11_exempt_interest_div || '');
-    sv('div-b12-' + id, f.box12_private_activity || f.box12_specified_pab_interest || '');
+    sv('div-b7-' + id, f.box7_foreign_tax || f.box7_foreign_tax_paid || ''); sv('div-b9-' + id, f.box9_cash_liquidation || '');
+    sv('div-b11-' + id, f.box11_exempt_interest_div || f.box11_exempt_interest || '');
+    sv('div-b12-' + id, f.box12_specified_pab_interest || f.box12_private_activity || '');
     sv('div-b15-' + id, f.box15_state_wh || '');
   });
 
@@ -3655,7 +3663,7 @@ function populateFromSchema(sc) {
     sv('r-box5-' + id, f.box5_employee_contrib || ''); sv('r-box6-' + id, f.box6_nua || '');
     sv('r-code-' + id, f.box7_code || '7'); sv('r-code2-' + id, f.box7_code2 || '');
     sv('r-ira-' + id, f.box7_ira_sep_simple ? 'yes' : 'no');
-    sv('r-box9a-' + id, f.box9a_pct || 100); sv('r-box9b-' + id, f.box9b_employee_contrib || '');
+    sv('r-box9a-' + id, f.box9a_pct || 100); sv('r-box9b-' + id, f.box9b_employee_contrib || f.box9b_employee_contribs || '');
     sv('r-box10-' + id, f.box10_irr || ''); sv('r-box11-' + id, f.box11_roth_yr || '');
     sv('r-box12-' + id, f.box12_fatca ? 'yes' : 'no'); sv('r-box13-' + id, f.box13_date || '');
     sv('r-statewh-' + id, f.box14_state_wh     || f.box14_state_wh     || ''); 
@@ -3804,6 +3812,9 @@ function populateFromSchema(sc) {
     sv('sale-term-' + id,  (b.is_long_term === true || b.term === 'long') ? 'long' : (b.is_long_term === false ? 'short' : 'long'));
   });
   sv('cap-carryover', sc.capital_loss_carryover || sc.capital_loss_carryover_prior || '');
+  // Standalone dividend fallback fields
+  sv('div-ordinary-total',  sc.dividends_ordinary  || '');
+  sv('div-qualified-total', sc.dividends_qualified || '');
 
   // ── SSA-1099 ──────────────────────────────────────────────────────────────
   if (sc.form_ssa1099) {
@@ -3833,12 +3844,12 @@ function populateFromSchema(sc) {
   sv('unemp', sc.unemployment_income || '');
   sv('unemp-wh', sc.unemployment_wh || '');
   sv('unemp-state-wh', sc.unemployment_state_wh || '');
+  sv('state-refund', sc.state_tax_refund || '');
+  sv('prior-yr-itemized', sc.state_refund_prior_year_itemized ? 'yes' : 'no');
   sv('jury-duty', sc.jury_duty_income || '');
   sv('prize-award', sc.prize_award_income || '');
   sv('other-income-8z', sc.other_income_8z || '');
   sv('other-income-8z-desc', sc.other_income_8z_desc || '');
-  sv('state-refund', sc.state_tax_refund || '');
-  sv('prior-yr-itemized', sc.state_refund_prior_year_itemized ? 'yes' : 'no');
   sv('gambling-losses', sc.gambling_losses || '');
   sv('other-income', sc.other_income || '');
   sv('alimony-received', sc.alimony_received || '');
@@ -3870,11 +3881,12 @@ function populateFromSchema(sc) {
   sv('adj-other', sc.other_adjustments || sc.other_above_line_adjustments || '');
   sv('nol-carryforward', sc.nol_carryforward_prior_year || '');
   sv('qbi-loss-cf', sc.qbi_loss_carryforward || '');
-  sv('est-q1', sc.estimated_tax_quarters ? sc.estimated_tax_quarters.q1 : '');
-  sv('est-q2', sc.estimated_tax_quarters ? sc.estimated_tax_quarters.q2 : '');
-  sv('est-q3', sc.estimated_tax_quarters ? sc.estimated_tax_quarters.q3 : '');
-  sv('est-q4', sc.estimated_tax_quarters ? sc.estimated_tax_quarters.q4 : '');
-  sv('est-prior', sc.estimated_tax_quarters ? sc.estimated_tax_quarters.prior_overpay : '');
+    const _etq = sc.estimated_tax_quarters || sc.estimated_tax_payments || {};
+  sv('est-q1', _etq.q1 || '');
+  sv('est-q2', _etq.q2 || '');
+  sv('est-q3', _etq.q3 || '');
+  sv('est-q4', _etq.q4 || '');
+  sv('est-prior', _etq.prior_overpay || _etq.prior_year_overpayment_applied || '');
   sv('py-tax', sc.prior_year_tax || '');
   sv('py-agi', sc.prior_year_agi || '');
 
@@ -3888,6 +3900,14 @@ function populateFromSchema(sc) {
   sv('qualified-tips', sc.qualified_tips || '');
   if (sc.tip_occupation) sv('tip-occupation', sc.tip_occupation);
   sv('overtime-pay', sc.overtime_pay_qualifying || '');
+  // Restore FLSA checkbox — must use .checked property not sv()
+  const _flsaEl = document.getElementById('overtime-flsa-confirmed');
+  if (_flsaEl) _flsaEl.checked = sc.overtime_flsa_confirmed === true;
+  // Care spouse status — restore select and months
+  if (sc.care_spouse_is_student) sv('care-spouse-status', 'student');
+  else if (sc.care_spouse_is_disabled) sv('care-spouse-status', 'disabled');
+  else sv('care-spouse-status', 'none');
+  if (sc.care_spouse_months_qualified > 0) sv('care-spouse-months', sc.care_spouse_months_qualified);
   sv('auto-loan-interest', sc.auto_loan_interest || '');
   sv('auto-loan-post2024', sc.auto_loan_originated_after_2024 !== false ? '1' : '');
   sv('auto-loan-us-vehicle', sc.auto_loan_vehicle_new_us_assembled !== false ? '1' : '');
@@ -3939,10 +3959,14 @@ function populateFromSchema(sc) {
     sv('t-type-' + id,      t.credit_type      || 'aoc');
     sv('t-aoc-prior-' + id, t.aoc_years_claimed_prior != null ? t.aoc_years_claimed_prior
                             : (t.aoc_prior_years != null ? t.aoc_prior_years : 0));
+    const _4yr = t.first_four_years != null ? t.first_four_years
+                 : ((t.aoc_years_claimed_prior || 0) < 4);
+    sb('t-4yr-' + id, _4yr);
     sv('t-books-' + id,     t.out_of_pocket_books    || t.books    || '');
     sv('t-supplies-' + id,  t.out_of_pocket_supplies || t.supplies || '');
     sv('t-other-qee-' + id, t.out_of_pocket_other    || t.other_qee|| '');
-    sb('t-halftime-' + id,  t.box8_at_least_half_time != null ? t.box8_at_least_half_time : t.half_time);
+    sb('t-halftime-' + id,  t.box8_at_least_half_time != null ? t.box8_at_least_half_time
+                            : (t.box8_half_time != null ? t.box8_half_time : t.half_time));
     if (t.aoc_drug_conviction) sv('t-drug-' + id, 'yes');
     sb('t-grad-' + id,      t.box9_graduate != null ? t.box9_graduate : t.graduate);
   });
@@ -3981,8 +4005,8 @@ function populateFromSchema(sc) {
   }
 
   // ── California ────────────────────────────────────────────────────────────
-  if (sc.california) {
-    const ca = sc.california;
+  if (sc.california || sc.ca_540) {
+    const ca = sc.california || sc.ca_540;
     sv('ca-sdi', ca.ca_sdi_withheld || ca.sdi_withheld || '');
     sv('ca-renter', (ca.paid_rent_over_half_year || ca.renters_credit) ? 'yes' : 'no');
     sv('ca-sub', ca.ca_other_subtractions || ca.ca_subtractions || '');
@@ -4056,9 +4080,9 @@ function populateFromSchema(sc) {
     sv('cod-code-' + id,      c.box6_event_code    || c.box6_code || 'F');
     sv('cod-fmv-' + id,       c.box7_fmv           || '');
     sv('cod-excl-' + id,      c.exclusion_applies ? 'yes' : (c.exclusion_type || 'no'));
-    sv('cod-982-type-' + id,  c.bankruptcy_title11 ? 'bankruptcy' : (c.exclusion_type || 'insolvency'));
-    sv('cod-liab-' + id,      c.total_liabilities_before || '');
-    sv('cod-assets-' + id,    c.total_assets_fmv_before || '');
+    sv('cod-982-type-' + id, c.cod_982_type || 'no');
+    sv('cod-liab-' + id,     c.cod_liabilities || '');
+    sv('cod-assets-' + id,   c.cod_assets_fmv || '');
   });
 
   // ── 1099-MISC ────────────────────────────────────────────────────────────
@@ -4145,7 +4169,7 @@ function populateFromSchema(sc) {
   if (sc.form_8889) sv('hsa-nonmed', sc.form_8889.non_medical_dist || sc.form_8889.hsa_nonmed || '');
 
   // ── California additional field ───────────────────────────────────────────
-  if (sc.california) sv('ca-sub', sc.california.ca_other_subtractions || sc.california.ca_subtractions || '');
+
 
   // ── Form 8606 full field set ──────────────────────────────────────────────
   if (sc.form_8606) {

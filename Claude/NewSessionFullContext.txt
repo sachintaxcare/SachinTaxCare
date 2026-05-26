@@ -29,3 +29,14 @@ Ask "Are you using project's files as baseline for this session inclduing TaxRet
 
 Step 4 — End of session, download any changed files from outputs/ and replace them in the project before closing the chat.
 The single biggest protection against drift: always end a session by updating the project files before closing, and always start by asking Claude to verify the sync audit before doing any work.
+
+
+Why this keeps happening — the root cause:
+
+When writing a new version of TaxReturn_PlanningReference.md, I treat it like a summary task — I look at what was done in the session and write a document describing it. That's the wrong mental model. The right model is: this is a living log, like a git history. You don't rewrite git history when you commit — you append. I was effectively doing git reset --hard then writing a new commit instead of git commit.
+The fix is now encoded as two new rules in the document itself:
+
+Pattern 14 (Appendix A): "Creating PlanningReference from scratch loses all prior content. Always modify existing file."
+Rule 27 (Page 10): "Always open TaxReturn_PlanningReference.md and modify it. Never create from scratch."
+9B step 8: Explicit instruction to update via str_replace, never rewrite.
+

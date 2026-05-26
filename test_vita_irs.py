@@ -2311,6 +2311,53 @@ check("32.13b Taxable income reduced by $25k OBBBA (L13b below-the-line — not 
 
 print()
 print("=" * 65)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section 36 — 1099-DIV routing regression tests (V17.3 bugs fixed 2026-05-26)
+# ══════════════════════════════════════════════════════════════════════════════
+print("\n── Section 36: 1099-DIV routing regression (V17.3) ─────────────────")
+
+r36_div = e.run(e.TaxpayerSchema(
+    first='DIV', last='Regression', filing_status='single', tax_year=2025,
+    w2s=[e.W2(employer='Corp', box1_wages=50000, box2_fed_wh=5000)],
+    form_1099divs=[e.Form1099DIV(
+        payer='Fund',
+        box1a_ordinary_div=1000, box1b_qualified_div=800,
+        box2b_unrec_1250=200,
+        box2d_collectibles=100,
+        box7_foreign_tax=50,
+        box11_exempt_interest=500,
+    )]
+))
+c36 = r36_div['computed']
+
+check("36.1 1099-DIV box1b → qualified_dividends alias (was missing, V17.3 fix)",
+      "f1099div.pdf Box 1b; IRC §1(h)(11); 1040 Line 3a",
+      c36.get('qualified_dividends', 0), 800, tolerance=0)
+
+check("36.2 1099-DIV box2b unrec §1250 → div_unrec_1250 result key",
+      "f1099div.pdf Box 2b; IRC §1(h)(6)(A); V17.3 fix",
+      c36.get('div_unrec_1250', 0), 200, tolerance=0)
+
+check("36.3 1099-DIV box2b unrec §1250 → included in QDCGT unrecap_1250_gain pool",
+      "f1040.pdf QDCGT Worksheet L19; IRC §1(h)(1)(D); V17.3 fix",
+      c36.get('unrecap_1250_gain', 0), 200, tolerance=0)
+
+check("36.4 1099-DIV box7 foreign tax → foreign_tax_credit alias",
+      "f1040s3.pdf L1; IRC §901; f1116.pdf; V17.3 alias",
+      c36.get('foreign_tax_credit', 0), 50, tolerance=0)
+
+check("36.5 1099-DIV box11 exempt interest → tax_exempt_interest (unchanged)",
+      "f1099div.pdf Box 11; IRC §103; 1040 Line 2a",
+      c36.get('tax_exempt_interest', 0), 500, tolerance=0)
+
+check("36.6 1099-DIV box1a ordinary → dividends (unchanged)",
+      "f1099div.pdf Box 1a; IRC §61; 1040 Line 3b",
+      c36.get('dividends', 0), 1000, tolerance=0)
+
+print(f"Results: {PASS} passed  |  {FAIL} failed  |  {WARN} warnings")
+print("=" * 65)
+
 print(f"Results: {PASS} passed  |  {FAIL} failed  |  {WARN} warnings")
 if FAIL == 0:
     print("✅ ALL TESTS PASSED")

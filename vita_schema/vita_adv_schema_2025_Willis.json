@@ -13,6 +13,7 @@
   "taxpayer_is_full_time_student": false,
   "qbi_loss_carryforward": 0,
   "capital_loss_carryover": 0,
+  "capital_loss_carryover_prior": 0,
   "dependents": [
     {
       "first": "ABBEY",
@@ -44,6 +45,8 @@
       "box10_dep_care": 0,
       "box11_nonqual_deferred": 0,
       "box13_retirement_plan": true,
+      "box13_statutory_employee": false,
+      "box13_third_party_sick": false,
       "box14_other": "",
       "box12a_code": "D",
       "box12a_amt": 2000,
@@ -55,6 +58,7 @@
       "box12d_amt": 0,
       "box15_state": "CA",
       "box15_state_id": "CA",
+      "box15_state_employer_id": "CA",
       "box16_state_wages": 39353,
       "box17_state_wh": 600,
       "box18_local_wages": 0,
@@ -80,6 +84,8 @@
   "spouse_last": "WILLIS",
   "spouse_dob": "10-08-1955",
   "form_1099ints": [],
+  "dividends_ordinary": 0,
+  "dividends_qualified": 0,
   "form_1099divs": [],
   "form_1099rs": [
     {
@@ -107,12 +113,12 @@
       "use_simplified_method": true,
       "simplified_method": {
         "annuity_type": "joint",
-        "age_at_start": 67,
-        "joint_age_at_start": 58,
+        "age_at_annuity_start": 67,
+        "joint_age_at_annuity_start": 58,
         "fixed_period_months": 0,
-        "prior_tax_free_recovered": 1259,
-        "start_after_nov_1996": true,
-        "annuity_start_date": "11-01-2022"
+        "prior_year_tax_free_recovered": 1259,
+        "annuity_start_after_nov_18_1996": true,
+        "start_after_nov_1996": true
       }
     }
   ],
@@ -120,6 +126,10 @@
   "unemployment_income": 0,
   "state_tax_refund": 0,
   "state_refund_prior_year_itemized": false,
+  "jury_duty_income": 0,
+  "prize_award_income": 0,
+  "other_income_8z": 0,
+  "other_income_8z_desc": "",
   "unemployment_wh": 0,
   "unemployment_state_wh": 0,
   "gambling_losses": 0,
@@ -131,12 +141,15 @@
   "se_retirement_plan_type": "sep",
   "teacher_expense": 275,
   "student_loan_interest": 0,
+  "form_1098es": [],
   "early_withdrawal_penalty": 0,
   "other_above_line_adjustments": 0,
   "nol_carryforward_prior_year": 0,
   "taxpayer_age_for_senior_ded": 61,
   "spouse_age_for_senior_ded": 70,
   "qualified_tips": 0,
+  "ca_foster_youth_taxpayer": false,
+  "ca_foster_youth_spouse": false,
   "tip_occupation": "",
   "overtime_pay_qualifying": 0,
   "overtime_flsa_confirmed": false,
@@ -185,7 +198,10 @@
       "box6_event_code": "F",
       "box7_fmv": 0,
       "exclusion_applies": false,
-      "exclusion_type": "no"
+      "exclusion_type": "no",
+      "cod_982_type": "no",
+      "cod_liabilities": 0,
+      "cod_assets_fmv": 0
     }
   ],
   "cancellation_of_debt": 850,
@@ -268,8 +284,25 @@
   },
   "ca_540": {
     "sdi_withheld": 0,
+    "ca_sdi_withheld": 0,
     "renter_credit": false,
+    "paid_rent_over_half_year": false,
     "other_subtractions": 0,
-    "ca_itemized_override": null
+    "ca_other_subtractions": 0,
+    "ca_other_additions": 0,
+    "ca_itemized_override": null,
+    "ca_itemized_total": null,
+    "use_ca_itemized": false,
+    "ca_bonus_depreciation_addback": 0,
+    "ca_lottery_winnings": 0,
+    "ca_alimony_addback": 0,
+    "ca_nol_addback": 0,
+    "ca_military_pay_exclusion": 0,
+    "ca_loan_forgiveness_excluded": 0,
+    "ca_taxpayer_age": 0,
+    "ca_investment_income_caleitc": 0,
+    "has_young_child_under6": false,
+    "foster_youth_taxpayer": false,
+    "foster_youth_spouse": false
   }
 }
