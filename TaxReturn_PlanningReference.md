@@ -16,8 +16,8 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 | File | Lines | Version | Role |
 |---|---|---|---|
 | `sachintaxcare_engine.py` | **8,908** | V17.3 — qualified_dividends alias, DIV box2b unrec§1250→QDCGT, FTC alias | Computation engine (TY 2025 + TY 2026) |
-| `sachintaxcare_pro.html` | **4,820** | v9 — FLSA restore, care spouse restore, standalone div fields, div aliases | Primary UI — intake + results |
-| `sachintaxcare_server.py` | **805** | v17 — EstimatedTaxPayments bridge, unemployment bridge, jury bridge, strict mode | Flask server + bridge |
+| `sachintaxcare_pro.html` | **4,821** | v9 — FLSA restore, care spouse restore, standalone div fields, div aliases | Primary UI — intake + results |
+| `sachintaxcare_server.py` | **835** | v18 — safe_init None guard, Windows UTF-8 startup fix, SM buildSchema field names | Flask server + bridge |
 | `sachintaxcare_workpaper.html` | **1,670** | v8 — 18 pages, try/catch, pre-declared sub-dicts, QBI L13a, Sch C summary | CPA workpaper |
 | `sachintaxcare_test.py` | **2,527** | v4.2 — **593 PASS · 0 FAIL · 0 WARN** | Regression suite |
 | `test_vita_irs.py` | **2,486** | v12.3 — **218/218 PASS**; Section 35 P1/P2/P3; Section 36 DIV routing regression | VITA known-answer tests |
@@ -36,6 +36,23 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 
 ## Page 1A — Changelog (most recent first)
 
+### Session 2026-05-26 — **V17.4** — Filing rules expanded + Windows server fix + Willis null crash
+
+**Gate results (no test changes — documentation and bug fixes only):**
+- sachintaxcare_test.py: **593 PASS · 0 FAIL · 0 WARN**
+- test_vita_irs.py: **218/218 PASS**
+- test_ui_fields.js: **404 PASS · 0 FAIL**
+
+| Fix | Severity | Item | What changed |
+|---|---|---|---|
+| Windows UTF-8 crash | CRIT | `subprocess.run(text=True)` used cp1252 on Windows → UnicodeDecodeError on startup | Removed `text=True`; decode bytes manually with `utf-8 errors=replace`; added `PYTHONIOENCODING=utf-8` to env |
+| None + str crash | HIGH | `result.stdout + result.stderr` crashed when stdout=None after encoding failure | Guarded with `if result.stdout else ''` |
+| Willis null crash | CRIT | `ca_itemized_total: null` from JSON → `safe_init()` passed None → `None > 0` TypeError | `_safe_init()` now replaces JSON null with field default for all scalar typed fields |
+| ca_itemized_total guard | MED | `if cd.ca_itemized_total > 0` in engine — no None guard | Added `is not None and` guard (defense-in-depth) |
+| SM buildSchema keys | HIGH | `buildSchema` sent old SM key names (`age_at_start` etc.) → dropped by safe_init() → wrong pension taxable | buildSchema now sends exact engine names: `age_at_annuity_start`, `joint_age_at_annuity_start`, `prior_year_tax_free_recovered`, `annuity_start_after_nov_18_1996` |
+| Startup banner | LOW | Banner said "Engine v15 · 180/180 tests" (stale) | Updated to "Engine V17.3 · 593 tests · 218 VITA tests" |
+| Rules 17–25 added | DOC | 9 new filing rules documenting existing engine behavior | See Page 5 Rules 17–25 (renumbered; former Rules 25/26/27 → 26/27/28) |
+
 ### Session 2026-05-26 — **V17.3** — 1099-DIV routing fixes + Import/Export round-trip gaps
 
 **Gate results after this session:**
@@ -53,7 +70,7 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 | Standalone dividend fields | NEW | No UI path to enter dividends without individual 1099-DIV rows | Added `div-ordinary-total` / `div-qualified-total` fields below 1099-DIV list; wired to `dividends_ordinary` / `dividends_qualified` in buildSchema + populateFromSchema |
 | File sync | LOW | `sachintaxcare_pdf.py`, `sachintaxcare_report.py`, `test_report.py` missing from outputs | Copied to /mnt/user-data/outputs/ |
 
-
+### Session 2026-05-25 — **V17.2** — CA P1, Form 2210 quarterly, income routing
 
 **Gate results after this session:**
 - sachintaxcare_test.py: **593 PASS · 0 FAIL · 0 WARN** (was 584/0/4)
@@ -866,5 +883,5 @@ print(f'{"="*60}')
 
 ---
 
-*Updated: 2026-05-25 · Version V17.3*
+*Updated: 2026-05-26 · Version V17.4*
 *IRS sources: irs.gov/pub/irs-pdf/ · IRS Pub 463 (2025) · IRS Notice 2025-5 · IRS Notice 2025-65 · IRS Notice 2025-67 · Rev. Proc. 2024-40 · Rev. Proc. 2025-32 · IR-2025-103 · IR-2025-128 · IR-2026-28 · P.L. 119-21 (OBBBA) · f8995.pdf · i8995.pdf · i5329.pdf · i2210.pdf · f1040.pdf · f1040s1.pdf · f1040s1a.pdf · f982.pdf · ftb.ca.gov/forms/2025/ · IRC §21, §24, §25A, §32, §63, §85, §86, §108, §163, §164, §170, §199A, §219, §221, §408(d)(8), §465, §469, §704, §1211, §1231, §1250, §1401 · IRS Pub 463, 503, 575, 596, 915, 939, 1001*
