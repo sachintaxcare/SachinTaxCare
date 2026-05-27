@@ -1758,8 +1758,8 @@ section("FILE REGISTRY -- Line Count Audit")
 import os
 
 FILE_REGISTRY = [
-    ("sachintaxcare_engine.py",        8908,  100),
-    ("sachintaxcare_pro.html",         4821,   50),
+    ("sachintaxcare_engine.py",        8912,  100),
+    ("sachintaxcare_pro.html",         4822,   50),
     ("sachintaxcare_server.py",         835,   50),
     ("sachintaxcare_workpaper.html",   1639,   50),
     ("sachintaxcare_test.py",          None,   None),   # self -- skip

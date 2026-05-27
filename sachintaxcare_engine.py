@@ -8582,6 +8582,10 @@ def run(schema: TaxpayerSchema) -> dict:
         # Income
         "wages": wages, "interest": interest,
         "us_bond_interest": us_bond_interest,
+        # Line 2b = Box 1 interest + Box 3 US savings bond/Treasury interest (both go to Sch B Part I Line 1,
+        # then Sch B Line 4 → 1040 Line 2b). Source: f1099int.pdf Box 3; i1040sb.pdf Part I; f1040.pdf L2b;
+        # IRC §61(a)(4); Pub. 550 "How To Report Interest Income". FETCH_VERIFIED 2026-05-26.
+        "l2b_interest": rnd(interest + us_bond_interest),
         "tax_exempt_interest": tax_exempt_interest,
         "allocated_tips": allocated_tips,
         "nonqual_def_comp": nonqual_def_comp,

@@ -730,7 +730,7 @@ function render(s, r, name) {
       <div class="sec-hdr">Income</div>
       <div class="lines">
         ${lineRow('1a', 'Total amount from Form(s) W-2, box 1', rn(r.wages))}
-        ${lineIf('2b', 'Taxable interest. Attach Sch. B if required', rn(r.interest))}
+        ${lineIf('2b', 'Taxable interest. Attach Sch. B if required', rn(r.l2b_interest || r.interest))}
         ${lineIf('3b', 'Ordinary dividends. Attach Sch. B if required', rn(r.dividends))}
         ${lineIf('3a', 'Qualified dividends', rn(r.dividends_qual || r.qualified_dividends))}
         ${lineIf('4a', 'IRA distributions &mdash; gross amount', rn(r.l4a_ira_gross))}
@@ -773,9 +773,9 @@ function render(s, r, name) {
       <div class="sec-hdr" style="margin-top:5px">Tax, Credits, and Other Taxes</div>
       <div class="lines">
         ${lineRow('16', 'Tax (see instructions). Check if any from: Form(s) 8814 &#9744; 4972 &#9744;', rn(r.income_tax))}
-        ${lineIf('17', 'Alternative minimum tax &mdash; Form 6251', rn(r.amt_tax))}
+        ${lineRow('17', 'Alternative minimum tax &mdash; Form 6251', rn(r.amt_tax))}
         ${lineRow('18', 'Add lines 16 and 17', rn(r.income_tax) + rn(r.amt_tax), 'subtotal')}
-        ${lineIf('19', 'Child tax credit or credit for other dependents &mdash; Sch 8812', rn(r.l19_ctc))}
+        ${lineRow('19', 'Child tax credit or credit for other dependents &mdash; Sch 8812', rn(r.l19_ctc))}
         ${rn((r.sch3 && r.sch3.l8_total_nonref) || 0) > 0 ? lineRow('20', 'Schedule 3 nonrefundable credits (line 8) — care, education, saver, FTC', rn((r.sch3 && r.sch3.l8_total_nonref) || 0)) : ''}
         ${rn((r.sch3 && r.sch3.l3_edu) || 0) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Education credits (Form 8863 nonrefundable) &mdash; Schedule 3 line 3</span><span class="line-amt">${fd(rn((r.sch3 && r.sch3.l3_edu) || 0))}</span></div>` : ''}
         ${rn(r.care_credit) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Child and dependent care (Form 2441) &mdash; Schedule 3 line 2</span><span class="line-amt">${fd(rn(r.care_credit))}</span></div>` : ''}
@@ -805,11 +805,11 @@ function render(s, r, name) {
           return lineRow('25b', 'Federal income tax withheld &mdash; Form(s) 1099 and SSA-1099', total25b, '', note);
         })()}
         ${lineRow('25d', 'Total withholding. Add lines 25a and 25b', rn(r.l25d_total_wh), 'subtotal')}
-        ${lineIf('26',  'Estimated tax payments and amount applied from prior year', rn(Math.max(0,(r.l33_total_pmts||0)-(r.l25d_total_wh||0)-(r.l32||0))))}
+        ${lineRow('26', 'Estimated tax payments and amount applied from prior year', rn(Math.max(0,(r.l33_total_pmts||0)-(r.l25d_total_wh||0)-(r.l32||0))))}
         ${lineIf('27a', 'Earned income credit (EIC)', rn(r.l27a_eitc), '', 'Source: IRS EIC Table p1040.pdf pp.16+ · $50 band algorithm')}
-        ${lineIf('28',  'Additional child tax credit from Schedule 8812', rn(r.l28_actc))}
-        ${lineIf('29',  'American opportunity credit from Form 8863, line 8', rn(r.l29_aoc))}
-        ${lineIf('31',  'Net premium tax credit &mdash; Form 8962', rn(r.ptc_net))}
+        ${lineRow('28', 'Additional child tax credit from Schedule 8812', rn(r.l28_actc))}
+        ${lineRow('29', 'American opportunity credit from Form 8863, line 8', rn(r.l29_aoc))}
+        ${lineRow('31', 'Net premium tax credit &mdash; Form 8962', rn(r.ptc_net))}
         ${rn(r.l32) > 0 ? lineRow('32', 'Total other credits and payments. Add lines 27a through 31', rn(r.l32), 'subtotal') : ''}
         ${lineRow('33', 'Total payments. Add lines 25d through 32', rn(r.l33_total_pmts), 'total')}
       </div>
@@ -921,7 +921,10 @@ function render(s, r, name) {
       <div class="sec-hdr" style="margin-top:8px">Form ${r.qbi_form_used || '8995'} &mdash; §199A Qualified Business Income Deduction</div>
       <div class="lines">
         ${(r.qbi_detail && r.qbi_detail.per_biz) ? r.qbi_detail.per_biz.map(biz =>
-          \`<div class="line-row"><span class="line-ref">Biz</span><span class="line-desc">\${biz.name}\${biz.business_code ? ' (' + biz.business_code + ')' : ''} — Net profit \${fd(biz.net_profit)}\${biz.is_sstb ? ' <em>(SSTB)</em>' : ''}</span><span class="line-amt">\${fd(biz.net_profit)}</span></div>\`
+          '<div class="line-row"><span class="line-ref">Biz</span><span class="line-desc">' +
+          (biz.name||'') + (biz.business_code ? ' (' + biz.business_code + ')' : '') +
+          ' — Net profit ' + fd(biz.net_profit) + (biz.is_sstb ? ' <em>(SSTB)</em>' : '') +
+          '</span><span class="line-amt">' + fd(biz.net_profit) + '</span></div>'
         ).join('') : ''}
         ${lineRow('2', 'Qualified business income (net profit × 92.35%)', rn(r.qbi_detail && r.qbi_detail.l2_qbi))}
         ${lineRow('3', 'Tentative deduction — 20% of line 2', rn(r.qbi_detail && r.qbi_detail.l3_tentative))}
@@ -1033,7 +1036,7 @@ function render(s, r, name) {
         ${lineIf('1', 'Foreign tax credit &mdash; attach Form 1116',             rn(_sch3.l1_ftc))}
         ${lineIf('2', 'Child and dependent care expenses &mdash; Form 2441, line 11', rn(_sch3.l2_care))}
         ${lineIf('3', 'Education credits from Form 8863, line 19',               rn(_sch3.l3_edu))}
-        ${lineIf('4', "Retirement savings contributions credit &mdash; Form 8880, line 12", rn(_sch3.l4_saver))}
+        ${lineIf('4', 'Retirement savings contributions credit &mdash; Form 8880, line 12', rn(_sch3.l4_saver))}
         ${lineRow('8', 'Add lines 1 through 7 &mdash; enter on Form 1040, line 20', rn(_sch3.l8_total_nonref), 'total')}
       </div>
       <div class="sec-hdr" style="margin-top:8px">Part II &mdash; Other Payments and Refundable Credits</div>
@@ -1052,7 +1055,7 @@ function render(s, r, name) {
   </div>` : '';
 
   // ── PAGE 5: Schedule 8812 — Child Tax Credit / ODC ───────────────────────
-  const _s8812 = r.s8812 || {};
+  // _s8812 declared at top of render()
   // Show Sch 8812 whenever CTC, ODC, or ACTC is present
   const has8812 = rn(_s8812.ctc_total) > 0 || rn(_s8812.odc_total) > 0 || rn(_s8812.l27_actc) > 0 || rn(_s8812.l14_ctc) > 0;
   const page5 = has8812 ? `
@@ -1097,7 +1100,7 @@ function render(s, r, name) {
   </div>` : '';
 
   // ── PAGE 6: Form 8863 — Education Credits ────────────────────────────────
-  const _f8863 = r.f8863 || {};
+  // _f8863 declared at top of render()
   const has8863 = (_f8863.details || []).length > 0;
   const page6 = has8863 ? `
   <div class="f-page">
@@ -1137,7 +1140,7 @@ function render(s, r, name) {
   </div>` : '';
 
   // ── PAGE 7: Form 8880 — Saver's Credit ───────────────────────────────────
-  const _f8880 = r.f8880 || {};
+  // _f8880 declared at top of render()
   const has8880 = rn(_f8880.l3) > 0;
   const page7 = has8880 ? `
   <div class="f-page">
@@ -1388,16 +1391,16 @@ function render(s, r, name) {
         ${(s.form_1099ints || []).some(f => (f.box3_us_savings_bond||0) > 0) ?
           lineRow('3', 'U.S. savings bond / Treasury interest (state-exempt)',
             (s.form_1099ints || []).reduce((a, f) => a + (f.box3_us_savings_bond||0), 0)) : ''}
-        ${lineRow('4', 'Total taxable interest — enter on Form 1040, line 2b', rn(r.interest), 'subtotal')}
+        ${lineRow('4', 'Total taxable interest — enter on Form 1040, line 2b', rn(r.l2b_interest || r.interest), 'subtotal')}
       </div>` : ''}
       ${(s.form_1099divs && s.form_1099divs.some(f => f.box1a_ordinary_div > 0)) ? `
       <div class="sec-hdr" style="margin-top:8px">Part II &mdash; Ordinary Dividends (Form(s) 1099-DIV)</div>
       <div class="lines">
         ${(s.form_1099divs || []).filter(fd2 => fd2.box1a_ordinary_div > 0).map(fd2 =>
           lineRow('', fd2.payer, fd2.box1a_ordinary_div||0, '',
-                  (f.box1b_qualified_div||0) > 0 ? 'Qualified: ' + fd(f.box1b_qualified_div) +
-                  ((f.box2a_total_cap_gain||f.box2a_cap_gain_dist||0) > 0 ? ' · Cap gain dist: ' + fd(f.box2a_total_cap_gain||f.box2a_cap_gain_dist) : '') +
-                  ((f.box5_sec199a_div||0) > 0 ? ' · §199A div: ' + fd(f.box5_sec199a_div) : '') : '')
+                  (fd2.box1b_qualified_div||0) > 0 ? 'Qualified: ' + fd(fd2.box1b_qualified_div) +
+                  ((fd2.box2a_total_cap_gain||fd2.box2a_cap_gain_dist||0) > 0 ? ' · Cap gain dist: ' + fd(fd2.box2a_total_cap_gain||fd2.box2a_cap_gain_dist) : '') +
+                  ((fd2.box5_sec199a_div||0) > 0 ? ' · §199A div: ' + fd(fd2.box5_sec199a_div) : '') : '')
         ).join('')}
         ${lineRow('6', 'Total ordinary dividends — enter on Form 1040, line 3b', rn(r.dividends), 'subtotal')}
         ${rn(r.dividends_qual) > 0 ? lineRow('', 'Qualified dividends — Form 1040 line 3a', rn(r.dividends_qual), '', 'Taxed at 0% / 15% / 20%') : ''}

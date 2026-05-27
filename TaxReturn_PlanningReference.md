@@ -1,5 +1,5 @@
 # SachinTaxCare — Tax Return Planning Reference
-*Last updated: 2026-05-26 · **Version V17.4** · All dollar values from `PARAMS_2025` / `PARAMS_2026` in engine.*
+*Last updated: 2026-05-26 · **Version V17.5** · All dollar values from `PARAMS_2025` / `PARAMS_2026` in engine.*
 *IRS source authority: irs.gov only (per Rules 12+15+16).*
 
 ---
@@ -15,10 +15,10 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 
 | File | Lines | Version | Role |
 |---|---|---|---|
-| `sachintaxcare_engine.py` | **8,908** | V17.3 — qualified_dividends alias, DIV box2b unrec§1250→QDCGT, FTC alias | Computation engine (TY 2025 + TY 2026) |
+| `sachintaxcare_engine.py` | **8,913** | V17.5 — l2b_interest alias (FETCH_VERIFIED), ca None guards | Computation engine (TY 2025 + TY 2026) |
 | `sachintaxcare_pro.html` | **4,821** | v9 — FLSA restore, care spouse restore, standalone div fields, div aliases | Primary UI — intake + results |
 | `sachintaxcare_server.py` | **835** | v18 — safe_init None guard, Windows UTF-8 startup fix, SM buildSchema field names | Flask server + bridge |
-| `sachintaxcare_workpaper.html` | **1,670** | v8 — 18 pages, try/catch, pre-declared sub-dicts, QBI L13a, Sch C summary | CPA workpaper |
+| `sachintaxcare_workpaper.html` | **1,674** | v9 — JS parse errors fixed, lineIf→lineRow L11–33, l2b_interest, fd2 var fix | CPA workpaper |
 | `sachintaxcare_test.py` | **2,527** | v4.2 — **593 PASS · 0 FAIL · 0 WARN** | Regression suite |
 | `test_vita_irs.py` | **2,486** | v12.3 — **218/218 PASS**; Section 35 P1/P2/P3; Section 36 DIV routing regression | VITA known-answer tests |
 | `test_ui_fields.js` | **815** | v2.0 — 64 round-trip keys — **404 PASS · 0 FAIL** | UI field completeness |
@@ -35,6 +35,34 @@ Single source of truth for every tax constant, rule, bridge mapping, test gate, 
 ---
 
 ## Page 1A — Changelog (most recent first)
+
+### Session 2026-05-26 — **V17.5** — AARP case fixes + workpaper JS repair + IRS FETCH_VERIFIED
+
+**Gate results after this session:**
+- sachintaxcare_test.py: **593 PASS · 0 FAIL · 0 WARN**
+- test_vita_irs.py: **218/218 PASS**
+- test_ui_fields.js: **404 PASS · 0 FAIL**
+
+| Fix | Severity | Item | What changed | IRS Source |
+|---|---|---|---|---|
+| Line 2b interest | HIGH | 1099-INT Box 3 (savings bond) not added to Line 2b — engine stored separately as `us_bond_interest`, UI/workpaper only read `r.interest` (Box 1 only) | Added `l2b_interest = interest + us_bond_interest` alias to engine result dict; UI result panel and workpaper Schedule B Line 4 now use `l2b_interest \|\| interest`. **FETCH_VERIFIED** | f1099int.pdf Box 3; i1040sb.pdf Part I L1; f1040.pdf L2b; IRC §61(a)(4); Pub. 550 |
+| Workpaper JS crash — nested template | CRIT | QBI per-business `.map(biz => \`...\`)` nested template literal double-escaped as `\\`` — invalid JS syntax → entire script aborted → "Loading Result" forever | Replaced nested template literal with string concatenation | — |
+| Workpaper JS crash — duplicate `_s8812` | CRIT | `const _s8812` declared at top of `render()` (L97) AND again inside Schedule 8812 page block (L514) → `SyntaxError: Identifier already declared` | Removed duplicate at L514 → comment | — |
+| Workpaper JS crash — duplicate `_f8863` | CRIT | Same pattern — `const _f8863` declared at L95 AND L559 | Removed duplicate at L559 | — |
+| Workpaper JS crash — duplicate `_f8880` | CRIT | Same pattern — `const _f8880` declared at L96 AND L599 | Removed duplicate at L599 | — |
+| Workpaper JS crash — mixed-quote `lineIf` | HIGH | `lineIf(\'4\', "Retirement savings...",...)` — mixed single/double quotes inside outer backtick template → `Invalid or unexpected token` | Changed to consistent single quotes | — |
+| Workpaper — `f` not defined in DIV map | HIGH | `.map(fd2 => ... f.box1b_qualified_div ...)` — callback variable is `fd2` but body referenced old name `f` → `ReferenceError: f is not defined` | Changed all `f.` references inside DIV callback to `fd2.` | — |
+| Workpaper — Lines 11–33 always shown | MEDIUM | Lines 17 (AMT), 19 (CTC), 26 (est payments), 28 (ACTC), 29 (AOC), 31 (PTC) used `lineIf` → hidden when $0 | Changed 6 `lineIf` → `lineRow` for Form 1040 pages only (not sub-form pages) | f1040.pdf Lines 17–31 |
+| Workpaper — Line 2b total | MEDIUM | Schedule B Line 4 workpaper used `r.interest` (Box 1 only) | Changed to `r.l2b_interest \|\| r.interest` | i1040sb.pdf L4 |
+| Alzinga schema | LOW | No schema changes needed — existing schema already correct | Verified: `box11_exempt_interest=$2,057.43 → L2a ✅`, `box3_us_savings=$256.65 → L2b ✅ (after engine fix)`, `box7_foreign=$89.06 → FTC ✅` | f1099div.pdf Box 12; f1099int.pdf Box 3 |
+| Binh schema | HIGH | `other_adjustments: 60` AND `other_above_line_adjustments: 60` both incorrectly deducted jury duty pay — jury duty is income (L8h) only; deduction on L24b applies ONLY if remitted to employer | Set both fields to 0. Student loan $721.96 from `form_1098es` already flows correctly via `_sl_from_1098e`. IRA penalty $160 (code 1, 10%) was already correct. | IRC §62(a)(13); i1040s1.pdf L24b; f1040s1.pdf L8h |
+| Castro schema | CRIT | Dependent DOB `'41-12-021'` (malformed) → `age=0` → engine computed CTC $0, care credit $0. Also `aca_household_size: 0` blocked PTC even though Form 1095-A present | Fixed DOB `'04-12-2021'`, age=3, `ctc_eligible=True`. Set `aca_household_size=3` (MFJ + 1 dep). **Results: CTC=$2,200 ✅ care credit=$360 ✅ excess APTC=$338 ✅** | IRC §24(c); f1040s8.pdf; i8962.pdf L1; IRC §36B |
+| IRS sourcing | RULE | Fixes made from code analysis without first fetching IRS forms — violated Rules 12+15 | All citations now FETCH_VERIFIED 2026-05-26 from irs.gov; `l2b_interest` engine comment carries full citation chain | Rule 12; Rule 15 |
+
+**Fixed schemas delivered:**
+- `aarp_schema_2025_Alzinga_fixed.json` — no changes; schema was correct, engine fix resolved the issue
+- `aarp_schema_2025_Binh_fixed.json` — `other_adjustments: 0`, `other_above_line_adjustments: 0`
+- `aarp_schema_2025_Castro_fixed.json` — dependent DOB/age/ctc_eligible fixed; `aca_household_size: 3`
 
 ### Session 2026-05-26 — **V17.4** — Filing rules expanded + Windows server fix + Willis null crash
 
@@ -247,8 +275,8 @@ Any field name mismatch between UI JSON and engine dataclass is silently dropped
 | `box6_foreign_tax_paid` | `box6_foreign_tax` | Form1099INT | 2026-05-25 |
 | `sdi_withheld` | `ca_sdi_withheld` | CaliforniaData | 2026-05-16 |
 | `other_subtractions` | `ca_other_subtractions` | CaliforniaData | 2026-05-16 |
-| `form_1099miscs[].box3` | Form1099MISC_Prize list | (constructed) | 2026-05-16 |
-| `prize_income` (legacy flat) | Form1099MISC_Prize list | (constructed) | 2026-05-16 |
+| `interest` (box1 only) + `us_bond_interest` (box3) | `l2b_interest` = combined | engine result dict | 2026-05-26 · FETCH_VERIFIED: f1099int.pdf Box 3; i1040sb.pdf Part I |
+| `box11_exempt_interest` (pre-2024 box numbering) | current form is Box 12 | Form1099DIV field | 2026-05-26 · legacy name kept for schema compat |
 
 ### Engine internals (V17.2)
 - **Compute functions:** 40 / 40 cited
@@ -677,6 +705,73 @@ Form 1040 all lines · Schedule 1 Part I+II (incl. L8h jury duty) · Schedule 1-
 7. Update Page 10 priorities (mark completed, add new)
 8. Copy all changed files to /mnt/user-data/outputs/
 9. Update this document via str_replace — never rewrite from scratch (Rule 27)
+10. Run **9H planning reference diff verification** — confirm no sections were dropped
+
+### 9H — Planning Reference Diff Verification (run after every str_replace on this document)
+
+```python
+import re
+
+REQUIRED_SECTIONS = [
+    "## Page 1 — File Registry",
+    "## Page 1A — Changelog",
+    "## Page 2 — Architecture",
+    "### 1040 Structure — Lines 11–15",
+    "### Form 8995 Structure",
+    "### safe_init() field name mismatch table",
+    "## Page 3 — Tax Year Constants",
+    "### Mileage Rates",
+    "### Child and Education Credits",
+    "### Form 5329 Part I Line 2 Exception Codes",
+    "### Retirement Accounts",
+    "### Income Thresholds",
+    "## Page 4 — Tax Year Constants (TY 2026)",
+    "## Page 5 — Filing Rules",
+    "### Rule 1 —",
+    "### Rule 12 —",
+    "### Rule 15 —",
+    "### Rule 27 —",
+    "## Page 5A — Schedule C Rules",
+    "## Page 6 — Forms Implemented",
+    "## Page 7 — Known Structural Risks",
+    "## Page 8 — Recurring Bug Patterns",
+    "### Pattern 1 —",
+    "### Pattern 14 —",
+    "## Page 9 — Session Protocol",
+    "### 9A — Session start",
+    "### 9B — Session end",
+    "### 9C — Sync Audit",
+    "### 9D — Adding a new engine field",
+    "### 9E — Adding a new compute function",
+    "### 9F — Bridge Audit Protocol",
+    "### 9G — IRS Citation Audit",
+    "### 9H — Planning Reference Diff Verification",
+    "## Page 10 — Session Priorities",
+    "## Appendix A — Why Calculation Mistakes Happen",
+]
+
+doc = open('TaxReturn_PlanningReference.md').read()
+missing = [s for s in REQUIRED_SECTIONS if s not in doc]
+rules = re.findall(r'^### Rule (\d+)', doc, re.MULTILINE)
+patterns = re.findall(r'^\d+\. \*\*', doc, re.MULTILINE)
+sessions = re.findall(r'^### Session ', doc, re.MULTILINE)
+
+print(f"{'='*60}")
+print(f"  9H PLANNING REFERENCE DIFF VERIFICATION")
+print(f"{'='*60}")
+print(f"  Total lines:       {len(doc.splitlines())}")
+print(f"  Rules present:     {sorted(int(r) for r in rules)}")
+print(f"  Pattern entries:   {len(patterns)}")
+print(f"  Session entries:   {len(sessions)}")
+if missing:
+    print(f"\n  ❌ MISSING SECTIONS ({len(missing)}):")
+    for s in missing: print(f"     {s}")
+    print(f"\n  STOP — do NOT commit. A section was dropped.")
+    print(f"  Restore from /mnt/user-data/outputs/checkpoint_v17.1/ or git.")
+else:
+    print(f"\n  ✅ All {len(REQUIRED_SECTIONS)} required sections present — safe to commit")
+print(f"{'='*60}")
+```
 
 ### 9C — Sync Audit (paste into python3)
 
@@ -880,8 +975,9 @@ print(f'{"="*60}')
 12. **Independent re-computation** — `compute_qbi_deduction()` re-derived net profit from schema, missing mileage/NEC. Fixed: pass computed value from run()
 13. **Partial form implementation** — Form 8995 Lines 1–7 computed, Lines 6–9 (REIT/PTP) skipped. Always implement all form lines
 14. **Planning Reference blank-page regression** — creating from scratch loses full changelog, all rules, all patterns. Always modify existing file (Rule 27)
+15. **Fixing without fetching IRS source first** — code-tracing a bug and implementing a fix without first reading the actual IRS form/instruction PDF. The fix may be technically correct but unverified. Every formula line must carry a `# Source:` citation from irs.gov (Rules 12+15). Example: `l2b_interest` fix was coded from code analysis; IRS FETCH_VERIFY was done afterward and confirmed correctness, but the correct order is fetch → verify → code → cite.
 
 ---
 
-*Updated: 2026-05-26 · Version V17.4*
+*Updated: 2026-05-26 · Version V17.5*
 *IRS sources: irs.gov/pub/irs-pdf/ · IRS Pub 463 (2025) · IRS Notice 2025-5 · IRS Notice 2025-65 · IRS Notice 2025-67 · Rev. Proc. 2024-40 · Rev. Proc. 2025-32 · IR-2025-103 · IR-2025-128 · IR-2026-28 · P.L. 119-21 (OBBBA) · f8995.pdf · i8995.pdf · i5329.pdf · i2210.pdf · f1040.pdf · f1040s1.pdf · f1040s1a.pdf · f982.pdf · ftb.ca.gov/forms/2025/ · IRC §21, §24, §25A, §32, §63, §85, §86, §108, §163, §164, §170, §199A, §219, §221, §408(d)(8), §465, §469, §704, §1211, §1231, §1250, §1401 · IRS Pub 463, 503, 575, 596, 915, 939, 1001*

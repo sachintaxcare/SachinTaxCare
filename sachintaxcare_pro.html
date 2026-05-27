@@ -3423,7 +3423,7 @@ function renderResult(schema, r) {
   const _stdBase   = (r.std_deduction || r.deduction_used || 0) - (_seniorDed > 0 ? 0 : 0);
   const lines = [
     ['1z', 'Total wages (Line 1z)',                              r.wages],
-    ['2b', 'Taxable interest (Line 2b)',                         r.interest],
+    ['2b', 'Taxable interest (Line 2b)',                         r.l2b_interest || r.interest],
     ['3a', 'Qualified dividends (Line 3a)',                      r.dividends_qual || r.qualified_dividends],
     ['3b', 'Ordinary dividends (Line 3b)',                       r.dividends],
     ['4a', 'IRA distributions — gross (Line 4a)',                r.l4a_ira_gross],
