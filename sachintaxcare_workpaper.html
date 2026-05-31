@@ -730,17 +730,17 @@ function render(s, r, name) {
       <div class="sec-hdr">Income</div>
       <div class="lines">
         ${lineRow('1a', 'Total amount from Form(s) W-2, box 1', rn(r.wages))}
-        ${lineIf('2b', 'Taxable interest. Attach Sch. B if required', rn(r.l2b_interest || r.interest))}
-        ${lineIf('3b', 'Ordinary dividends. Attach Sch. B if required', rn(r.dividends))}
-        ${lineIf('3a', 'Qualified dividends', rn(r.dividends_qual || r.qualified_dividends))}
-        ${lineIf('4a', 'IRA distributions &mdash; gross amount', rn(r.l4a_ira_gross))}
-        ${lineIf('4b', 'IRA distributions &mdash; taxable amount', rn(r.l4b_ira_taxable))}
-        ${lineIf('5a', 'Pensions and annuities &mdash; gross amount', rn(r.l5a_pension_gross))}
-        ${lineIf('5b', 'Pensions and annuities &mdash; taxable amount', rn(r.l5b_pension_taxable))}
-        ${lineIf('6a', 'Social security benefits &mdash; total amount', rn(r.l6a_ss_total))}
-        ${lineIf('6b', 'Social security benefits &mdash; taxable amount', rn(r.l6b_ss_taxable))}
-        ${lineIf('7',  'Capital gain or (loss). Attach Schedule D if required', rn(r.cap_gains || r.cap_gain_net))}
-        ${lineIf('8',  'Additional income from Schedule 1, line 10 (Sch C $' + fd(rn(r.se_net_profit)) + ' + other $' + fd(rn(r.misc_other_income||0)) + ')', rn(r.additional_income || r.l8_other_income))}
+        ${lineRow('2b', 'Taxable interest. Attach Sch. B if required', rn(r.l2b_interest || r.interest))}
+        ${lineRow('3b', 'Ordinary dividends. Attach Sch. B if required', rn(r.dividends))}
+        ${lineRow('3a', 'Qualified dividends', rn(r.dividends_qual || r.qualified_dividends))}
+        ${lineRow('4a', 'IRA distributions &mdash; gross amount', rn(r.l4a_ira_gross))}
+        ${lineRow('4b', 'IRA distributions &mdash; taxable amount', rn(r.l4b_ira_taxable))}
+        ${lineRow('5a', 'Pensions and annuities &mdash; gross amount', rn(r.l5a_pension_gross))}
+        ${lineRow('5b', 'Pensions and annuities &mdash; taxable amount', rn(r.l5b_pension_taxable))}
+        ${lineRow('6a', 'Social security benefits &mdash; total amount', rn(r.l6a_ss_total))}
+        ${lineRow('6b', 'Social security benefits &mdash; taxable amount', rn(r.l6b_ss_taxable))}
+        ${lineRow('7',  'Capital gain or (loss). Attach Schedule D if required', rn(r.cap_gains || r.cap_gain_net))}
+        ${lineRow('8',  'Additional income from Schedule 1, line 10 (Sch C $' + fd(rn(r.se_net_profit)) + ' + other $' + fd(rn(r.misc_other_income||0)) + ')', rn(r.additional_income || r.l8_other_income))}
         ${lineRow('9',  'Total income. Add lines 1z through 8', rn(r.total_income), 'subtotal')}
         ${lineRow('10', 'Adjustments to income from Schedule 1, Part II, line 26', -rn(r.total_adjustments))}
         ${lineRow('11', 'Adjusted gross income. Subtract line 10 from line 9', rn(r.agi), 'total')}
@@ -765,8 +765,8 @@ function render(s, r, name) {
       <div class="sec-hdr">Standard Deduction or Itemized Deductions</div>
       <div class="lines">
         ${lineRow('12', 'Standard deduction or itemized deductions (from Schedule A)', rn(r.deduction_used), '', r.deduction_type === 'itemized' ? '(Itemized &mdash; Schedule A attached)' : '(Standard deduction)')}
-        ${lineIf('13a', 'Qualified business income deduction (Form 8995 or 8995-A)', rn(r.adj_qbi))}
-        ${rn(r.l13b_schedule1a) > 0 ? lineRow('13b', 'Additional deductions (Schedule 1-A) — tips, overtime, auto loan, senior', rn(r.l13b_schedule1a), '', 'f1040s1a.pdf Part VI · IR-2026-28 · P.L. 119-21') : ''}
+        ${lineRow('13a', 'Qualified business income deduction (Form 8995 or 8995-A)', rn(r.adj_qbi))}
+        ${lineRow('13b', 'Additional deductions (Schedule 1-A) — tips, overtime, auto loan, senior', rn(r.l13b_schedule1a), '', 'f1040s1a.pdf Part VI · IR-2026-28 · P.L. 119-21')}
         ${lineRow('15', 'Taxable income. Subtract lines 12, 13a, and 13b from line 11', rn(r.taxable_income), 'total')}
       </div>
 
@@ -776,16 +776,15 @@ function render(s, r, name) {
         ${lineRow('17', 'Alternative minimum tax &mdash; Form 6251', rn(r.amt_tax))}
         ${lineRow('18', 'Add lines 16 and 17', rn(r.income_tax) + rn(r.amt_tax), 'subtotal')}
         ${lineRow('19', 'Child tax credit or credit for other dependents &mdash; Sch 8812', rn(r.l19_ctc))}
-        ${rn((r.sch3 && r.sch3.l8_total_nonref) || 0) > 0 ? lineRow('20', 'Schedule 3 nonrefundable credits (line 8) — care, education, saver, FTC', rn((r.sch3 && r.sch3.l8_total_nonref) || 0)) : ''}
+        ${lineRow('20', 'Schedule 3 nonrefundable credits (line 8) — care, education, saver, FTC', rn((r.sch3 && r.sch3.l8_total_nonref) || 0))}
         ${rn((r.sch3 && r.sch3.l3_edu) || 0) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Education credits (Form 8863 nonrefundable) &mdash; Schedule 3 line 3</span><span class="line-amt">${fd(rn((r.sch3 && r.sch3.l3_edu) || 0))}</span></div>` : ''}
         ${rn(r.care_credit) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Child and dependent care (Form 2441) &mdash; Schedule 3 line 2</span><span class="line-amt">${fd(rn(r.care_credit))}</span></div>` : ''}
         ${rn((r.sch3 && r.sch3.l4_saver) || 0) > 0 ? `<div class="line-row" style="padding-left:32px;font-size:7.5pt;color:#555"><span class="line-ref" style="color:#888">&#8627;20</span><span class="line-desc">Saver&rsquo;s credit (Form 8880) &mdash; Schedule 3 line 4</span><span class="line-amt">${fd(rn((r.sch3 && r.sch3.l4_saver)||0))}</span></div>` : ''}
         ${lineRow('21', 'Subtract lines 19 and 20 from line 18 — tax after credits', Math.max(0, rn(r.income_tax) + rn(r.amt_tax) - rn(r.l19_ctc||0) - rn((r.sch3 && r.sch3.l8_total_nonref)||0)), 'subtotal')}
-        ${(r.sch2 && rn(r.sch2.l4_se_tax)) ? lineRow('Sch2 L4', 'Self-employment tax (Schedule SE)', rn(r.sch2.l4_se_tax)) : ''}
-        ${(r.sch2 && rn(r.sch2.l8_5329_penalty)) ? lineRow('Sch2 L8', 'Form 5329 early distribution penalty', rn(r.sch2.l8_5329_penalty)) : ''}
-        ${(r.sch2 && rn(r.sch2.l8_hsa_penalty)) ? lineRow('Sch2 L8', 'HSA penalty', rn(r.sch2.l8_hsa_penalty)) : ''}
-        ${(r.sch2 && rn(r.sch2.l11_addl_med)) ? lineRow('Sch2 L11', 'Additional Medicare tax 0.9%', rn(r.sch2.l11_addl_med)) : ''}
-        ${(r.sch2 && rn(r.sch2.l12_niit)) ? lineRow('Sch2 L12', 'Net investment income tax 3.8%', rn(r.sch2.l12_niit)) : ''}
+        ${lineRow('Sch2 L4',  'Self-employment tax (Schedule SE)', rn(r.sch2 ? r.sch2.l4_se_tax : 0))}
+        ${lineRow('Sch2 L8',  'Other taxes — Form 5329 / HSA penalty', rn(r.sch2 ? (r.sch2.l8_5329_penalty||0) + (r.sch2.l8_hsa_penalty||0) : 0))}
+        ${lineRow('Sch2 L11', 'Additional Medicare tax 0.9% (Form 8959)', rn(r.sch2 ? r.sch2.l11_addl_med : 0))}
+        ${lineRow('Sch2 L12', 'Net investment income tax 3.8% (Form 8960)', rn(r.sch2 ? r.sch2.l12_niit : 0))}
         ${lineRow('17/other', 'Other taxes (Schedule 2 line 17)', rn((r.sch2 && r.sch2.l17_total) || 0), 'subtotal')}
         ${lineRow('24', 'Total tax. Add lines 16 through 23', rn(r.l24_total_tax), 'total')}
       </div>
@@ -797,20 +796,19 @@ function render(s, r, name) {
           const r1099 = rn(r.l25b_1099r_wh || 0);
           const rssa  = rn(r.l25b_ssa_wh   || 0);
           const total25b = r1099 + rssa;
-          if (total25b === 0) return '';
           const note = [
             r1099 > 0 ? `1099-R: ${fd(r1099)}` : '',
             rssa  > 0 ? `SSA Box 6: ${fd(rssa)}`  : '',
-          ].filter(Boolean).join(' + ');
+          ].filter(Boolean).join(' + ') || '—';
           return lineRow('25b', 'Federal income tax withheld &mdash; Form(s) 1099 and SSA-1099', total25b, '', note);
         })()}
         ${lineRow('25d', 'Total withholding. Add lines 25a and 25b', rn(r.l25d_total_wh), 'subtotal')}
         ${lineRow('26', 'Estimated tax payments and amount applied from prior year', rn(Math.max(0,(r.l33_total_pmts||0)-(r.l25d_total_wh||0)-(r.l32||0))))}
-        ${lineIf('27a', 'Earned income credit (EIC)', rn(r.l27a_eitc), '', 'Source: IRS EIC Table p1040.pdf pp.16+ · $50 band algorithm')}
+        ${lineRow('27a', 'Earned income credit (EIC)', rn(r.l27a_eitc), '', 'Source: IRS EIC Table p1040.pdf pp.16+ · $50 band algorithm')}
         ${lineRow('28', 'Additional child tax credit from Schedule 8812', rn(r.l28_actc))}
         ${lineRow('29', 'American opportunity credit from Form 8863, line 8', rn(r.l29_aoc))}
         ${lineRow('31', 'Net premium tax credit &mdash; Form 8962', rn(r.ptc_net))}
-        ${rn(r.l32) > 0 ? lineRow('32', 'Total other credits and payments. Add lines 27a through 31', rn(r.l32), 'subtotal') : ''}
+        ${lineRow('32', 'Total other credits and payments. Add lines 27a through 31', rn(r.l32), 'subtotal')}
         ${lineRow('33', 'Total payments. Add lines 25d through 32', rn(r.l33_total_pmts), 'total')}
       </div>
 
@@ -1614,9 +1612,9 @@ function render(s, r, name) {
       <div class="lines">
         ${lineRow('1', 'Family size (household members)', rn(_f8962.l1_family_size))}
         ${lineRow('2a','Modified AGI', rn(_f8962.l2a_magi))}
-        ${lineRow('4', 'Federal poverty line (${_f8962.l1_family_size || 1}-person household, contiguous US)', rn(_f8962.l4_fpl))}
-        ${lineRow('5', 'Household income as percentage of FPL (MAGI ÷ FPL)', (_f8962.l5_pct_raw ? (_f8962.l5_pct_raw * 100).toFixed(0) + '%' : ''))  }
-        ${lineRow('7', 'Applicable figure (Table 2 — TRUNCATE, never round)', rn(_f8962.l7_app_figure), '', 'Source: Rev. Proc. 2024-35 Table 2; i8962.pdf — truncate to whole number')}
+        ${lineRow('4', 'Federal poverty line (' + (_f8962.l1_family_size || 1) + '-person household, contiguous US)', rn(_f8962.l4_fpl))}
+        <div class="line-row"><div class="l-num">5</div><div class="l-desc">Household income as % of FPL (MAGI ÷ FPL — TRUNCATED per i8962.pdf)<span class="l-note">Must truncate, never round · Source: i8962.pdf L5</span></div><div class="l-amt"><div class="amt-wrap">${_f8962.l5_int !== undefined ? _f8962.l5_int + '%' : '&mdash;'}</div></div></div>
+        <div class="line-row"><div class="l-num">7</div><div class="l-desc">Applicable figure — Table 2 (contribution rate at FPL%)<span class="l-note">Source: Rev. Proc. 2024-35 Table 2; i8962.pdf</span></div><div class="l-amt"><div class="amt-wrap">${_f8962.l7_app_figure != null ? (_f8962.l7_app_figure * 100).toFixed(1) + '%' : '&mdash;'}</div></div></div>
         ${lineRow('8a','Annual contribution amount (MAGI × applicable figure)', rn(_f8962.l8a_annual_contrib))}
       </div>
       <div class="sec-hdr" style="margin-top:6px">Part II &mdash; Premium Tax Credit Computation (Annual Method)</div>
