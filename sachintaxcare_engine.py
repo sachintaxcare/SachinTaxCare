@@ -79,6 +79,7 @@ class W2:
     # Box 12: up to 4 entries (stored as list of (code, amount) tuples or use 4 pairs)
     box12a_code: str = ""
     box12a_amt: float = 0
+    box12a_amount: float = 0               # Bridge alias for box12a_amt — UI sends 'box12a_amount'. Source: w2.pdf Box 12
     box12b_code: str = ""
     box12b_amt: float = 0
     box12c_code: str = ""
@@ -291,6 +292,7 @@ class Form1099R:
     use_simplified_method: bool = False      # True = use simplified method to compute taxable portion. Source: f1099r.pdf; Pub 575
     payer_ein: str = ""                      # Payer EIN (identification). Source: f1099r.pdf
     recipient: str = "taxpayer"              # "taxpayer" | "spouse" — which person received the distribution
+    for_spouse: bool = False                 # Bridge alias: True = distribution belongs to spouse (mirrors recipient=="spouse"). Source: f1099r.pdf; i1099r.pdf
 
 
 # ── Box 7 distribution codes (complete 2025 list) ──────────────────────────────
@@ -611,6 +613,11 @@ class ScheduleC:
 
     # Bridge hardening 2026-05-19 — for_spouse was in run() via getattr but not in dataclass
     for_spouse: bool = False  # True = this Schedule C belongs to spouse (MFJ SE income split). Source: f1040sc.pdf
+    # Bridge hardening 2026-05-30 — alias fields sent by UI / reference table
+    mileage: float = 0                     # Bridge alias for business_miles. Source: f1040sc.pdf Part IV; Rev. Proc. 2024-45
+    actual_vehicle_expense: float = 0      # Actual vehicle expenses (gas, insurance, depreciation) if not using standard mileage. Source: f1040sc.pdf Part IV; IRC §179
+    home_office_sqft: float = 0            # Bridge alias for home_office_sq_ft (business sqft). Source: f8829.pdf; IRC §280A
+    home_total_sqft: float = 0             # Total home sqft — required for actual-expense home office ratio. Source: f8829.pdf Line 1; IRC §280A(c)(1)
 
 @dataclass
 class Form1099DIV:
